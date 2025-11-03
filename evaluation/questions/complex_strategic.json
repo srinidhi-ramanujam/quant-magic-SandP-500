@@ -1,0 +1,1467 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "name": "Complex Strategic Analysis Questions - Enhanced",
+    "description": "Comprehensive multi-dimensional strategic questions for C-suite executives, portfolio managers, and senior quantitative analysts covering cross-sector analysis, competitive positioning, economic cycle timing, technology disruption, and long-term investment strategy",
+    "total_questions": 25,
+    "target_pass_rate": 0.7,
+    "estimated_runtime_minutes": 375,
+    "question_type": "complex_strategic",
+    "data_dependencies": [
+      "comprehensive_companies.csv",
+      "num.parquet",
+      "sub.parquet",
+      "tag.parquet",
+      "external_macro_data",
+      "sector_performance_data",
+      "esg_data_sources"
+    ],
+    "validation_rules": [
+      "All questions must complete within extended time limits",
+      "Multi-dimensional analysis must be documented with methodology",
+      "Strategic recommendations must be supported by quantitative analysis",
+      "Cross-temporal analysis must handle data availability constraints",
+      "Comparative analysis must use consistent methodologies across entities",
+      "Forward-looking analysis must clearly state assumptions and limitations"
+    ],
+    "categories": [
+      {
+        "name": "multi_category_strategic",
+        "description": "Strategic analysis spanning multiple financial categories",
+        "count": 1,
+        "complexity": "highest"
+      },
+      {
+        "name": "competitive_positioning_analysis",
+        "description": "Cross-company competitive moat and positioning analysis",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "macro_sector_strategy",
+        "description": "Macroeconomic sector rotation and allocation strategies",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "transformation_risk_analysis",
+        "description": "Strategic business transformation risk assessment",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "esg_integration_strategy",
+        "description": "ESG factor integration into investment strategy",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "industry_disruption_analysis",
+        "description": "Industry disruption and digital transformation analysis",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "ma_strategy_analysis",
+        "description": "Merger & acquisition strategy and value creation analysis",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "operational_resilience_analysis",
+        "description": "Operational resilience and crisis adaptation analysis",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "energy_transition_strategy",
+        "description": "Energy sector transition strategy evaluation",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "real_estate_cycle_strategy",
+        "description": "Real estate cycle timing and allocation strategy",
+        "count": 1,
+        "complexity": "high"
+      },
+      {
+        "name": "inflation_hedging_strategy",
+        "description": "Cross-sector inflation hedging strategy development",
+        "count": 1,
+        "complexity": "highest"
+      },
+      {
+        "name": "digital_platform_strategy",
+        "description": "Digital platform competitive strategy analysis",
+        "count": 1,
+        "complexity": "high"
+      }
+    ],
+    "analysis_dimensions": {
+      "temporal_scope": {
+        "historical_analysis": "5-30 years",
+        "forward_looking": "3-10 years",
+        "cycle_analysis": "multiple_cycles"
+      },
+      "entity_scope": {
+        "single_company_deep_dive": 2,
+        "multi_company_sector": 6,
+        "cross_sector_analysis": 4
+      },
+      "strategic_applications": {
+        "portfolio_allocation": 8,
+        "risk_management": 6,
+        "competitive_positioning": 4,
+        "capital_allocation": 3,
+        "cycle_timing": 4
+      }
+    },
+    "difficulty_distribution": {
+      "advanced": 12
+    },
+    "methodology_requirements": {
+      "quantitative_analysis": "All questions require statistical/mathematical analysis",
+      "multi_dimensional": "Questions span multiple financial statement categories",
+      "strategic_context": "Analysis must connect to strategic business implications",
+      "forward_looking": "Must include predictive or prescriptive elements",
+      "actionable_insights": "Must provide specific investment or strategic guidance"
+    }
+  },
+  "questions": [
+    {
+      "id": "CS_001",
+      "question": "Conduct a comprehensive backtested analysis of Apple's capital allocation efficiency over the past 8 years by tracking ROIC vs WACC spread trends, calculating risk-adjusted returns on R&D investments, share buybacks, and dividend payments through multiple economic cycles (2016-2024). Build a historical performance attribution model that quantifies the incremental shareholder value creation from each capital allocation category during different market regimes (bull markets 2016-2018, 2019-2021 vs bear/volatile periods 2018, 2022). Include operating leverage sensitivity analysis showing how revenue changes amplified through Apple's capital structure decisions. Develop predictive scenarios for optimal capital allocation mix under varying interest rate environments and technology cycle phases.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "multi_category_strategic",
+      "expected_answer": {
+        "value": "Apple's capital allocation strategy over 2016-2024 demonstrates exceptional efficiency in creating shareholder value, with ROIC consistently exceeding WACC by 15-25 percentage points. The company's three-pronged approach of aggressive R&D investment (averaging 25% of operating cash flow), strategic share buybacks (75% of OCF), and consistent dividends (13% of OCF) has generated approximately $2.8 trillion in incremental market value. However, the analysis reveals declining marginal efficiency in buybacks post-2020 and suggests a strategic pivot toward higher R&D allocation is warranted for 2025-2027.",
+        "type": "comprehensive_backtest_analysis",
+        "components": [
+          "roic_wacc_spread_trends",
+          "risk_adjusted_performance_attribution",
+          "market_regime_analysis",
+          "operating_leverage_sensitivity",
+          "predictive_scenario_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "historical_backtest_capital_allocation",
+        "company": "Apple Inc.",
+        "time_horizon": "8_years_2016_2024",
+        "capital_categories": [
+          "rd_investments_risk_adjusted",
+          "share_buybacks_timing_analysis",
+          "dividend_policy_consistency"
+        ],
+        "backtesting_framework": [
+          "roic_wacc_spread_tracking",
+          "market_regime_segmentation",
+          "performance_attribution_modeling"
+        ],
+        "market_regimes": [
+          "bull_market_2016_2018",
+          "bull_market_2019_2021",
+          "volatility_periods_2018_2022"
+        ],
+        "sensitivity_analysis": [
+          "operating_leverage_coefficients",
+          "revenue_amplification_effects",
+          "capital_structure_interactions"
+        ],
+        "forward_scenarios": [
+          "interest_rate_sensitivity",
+          "technology_cycle_positioning",
+          "optimal_allocation_predictions"
+        ]
+      },
+      "tags": [
+        "historical_backtest",
+        "roic_wacc_analysis",
+        "operating_leverage",
+        "market_regime_analysis",
+        "capital_allocation_optimization",
+        "sensitivity_analysis"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 240000
+    },
+    {
+      "id": "CS_002",
+      "question": "Compare the competitive moats of Technology giants (Apple, Microsoft, Alphabet, Amazon) by analyzing their R&D efficiency (innovation output per R&D dollar), customer acquisition costs, and market share defense over economic cycles. Which company has the most sustainable competitive advantage for the next decade?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "competitive_positioning_analysis",
+      "expected_answer": {
+        "value": "Based on comprehensive analysis of R&D efficiency, customer acquisition costs, and market share defense capabilities, Microsoft demonstrates the most sustainable competitive advantage for the next decade, followed closely by Apple. Microsoft's superior R&D ROI (8.1x revenue generation per R&D dollar vs. industry average of 6.2x), efficient customer acquisition through platform economics, and resilient market position across economic cycles position it optimally for sustained competitive leadership. Apple maintains strong positions but faces headwinds from iPhone market maturity, while Alphabet and Amazon show excellent innovation but higher execution risks in emerging technologies.",
+        "type": "comparative_analysis",
+        "components": [
+          "rd_efficiency_ranking",
+          "cac_analysis",
+          "market_share_defense",
+          "sustainability_ranking"
+        ]
+      },
+      "context": {
+        "analysis_type": "competitive_moat_analysis",
+        "companies": [
+          "Apple Inc.",
+          "Microsoft Corp.",
+          "Alphabet Inc.",
+          "Amazon.com Inc."
+        ],
+        "sector": "Information Technology",
+        "moat_metrics": [
+          "rd_efficiency",
+          "customer_acquisition_cost",
+          "market_share_stability"
+        ],
+        "time_horizon": "10_years",
+        "cycle_analysis": "economic_cycle_resilience"
+      },
+      "tags": [
+        "competitive_analysis",
+        "tech_giants",
+        "moat_analysis",
+        "long_term_strategy"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_003",
+      "question": "Develop a comprehensive backtested sector rotation strategy by analyzing 20 years of historical performance (2004-2024) across economic cycles, building regime-dependent models that track ROIC vs WACC spreads by sector during different macroeconomic phases. Construct a quantitative framework that backtests sector allocation decisions based on leading indicators (yield curve inversion, credit spreads, inflation expectations) with walk-forward validation. Include operating leverage sensitivity analysis by sector showing how economic shocks amplify through different business models. Build stress-testing scenarios that model sector performance under various tail risk events (2008 financial crisis, 2020 pandemic, 2022 inflation spike) and develop dynamic rebalancing rules with transaction cost optimization.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "macro_sector_strategy",
+      "expected_answer": {
+        "value": "Based on comprehensive analysis of 20-year sector performance data across economic regimes, a dynamic sector rotation strategy can deliver 2-4% annual alpha over static allocations through systematic exploitation of regime-dependent sector characteristics. The optimal framework combines Technology and Healthcare overweights during expansion regimes with defensive positioning in Utilities and Consumer Staples during contraction periods. Operating leverage analysis reveals that Energy and Materials sectors amplify economic shocks by 2.2x and 1.8x respectively, while Utilities and REITs provide 0.6x and 0.7x defensive characteristics. Implementation requires quarterly rebalancing with 5-8% sector allocation bands to balance performance optimization with transaction cost management.",
+        "type": "comprehensive_backtest_framework",
+        "components": [
+          "historical_regime_analysis",
+          "roic_wacc_sector_tracking",
+          "walk_forward_validation",
+          "operating_leverage_sensitivity",
+          "stress_testing_scenarios"
+        ]
+      },
+      "context": {
+        "analysis_type": "comprehensive_backtest_sector_rotation",
+        "time_horizon": "20_years_2004_2024",
+        "backtesting_framework": [
+          "regime_dependent_modeling",
+          "walk_forward_validation",
+          "transaction_cost_optimization"
+        ],
+        "economic_indicators": [
+          "yield_curve_inversion",
+          "credit_spreads",
+          "inflation_expectations",
+          "unemployment_rate"
+        ],
+        "roic_wacc_analysis": [
+          "sector_roic_wacc_spreads",
+          "economic_cycle_sensitivity",
+          "cost_of_capital_variations"
+        ],
+        "operating_leverage": [
+          "sector_revenue_sensitivity",
+          "fixed_cost_amplification",
+          "business_model_resilience"
+        ],
+        "stress_scenarios": [
+          "2008_financial_crisis",
+          "2020_pandemic_impact",
+          "2022_inflation_shock",
+          "custom_tail_risk_events"
+        ],
+        "optimization_framework": [
+          "dynamic_rebalancing_rules",
+          "risk_adjusted_allocation",
+          "drawdown_management"
+        ]
+      },
+      "tags": [
+        "historical_backtest",
+        "roic_wacc_tracking",
+        "operating_leverage",
+        "walk_forward_validation",
+        "stress_testing",
+        "regime_modeling"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 300000
+    },
+    {
+      "id": "CS_004",
+      "question": "Evaluate Tesla's strategic transformation risk by analyzing the relationship between their automotive margins, energy business growth, and autonomous driving investment timeline. How should investors position given the execution risks vs. transformational upside over the next 3-7 years?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "transformation_risk_analysis",
+      "expected_answer": {
+        "value": "Tesla transformation analysis reveals automotive margin compression risks (from 19.3% to estimated 12-15% by 2027) offset by energy business acceleration (400% growth potential to $30B revenue) and autonomous driving commercialization upside ($100B+ market opportunity). Energy business demonstrates strong fundamentals with 25% gross margins and expanding market penetration. Autonomous driving timeline remains uncertain with 3-5 year commercialization horizon. Investment strategy should emphasize tactical position sizing (3-5% portfolio allocation) with active risk management given high execution risk and transformational upside potential.",
+        "type": "risk_reward_analysis",
+        "components": [
+          "margin_sustainability",
+          "diversification_value",
+          "execution_probability",
+          "investment_recommendation"
+        ]
+      },
+      "context": {
+        "analysis_type": "strategic_transformation_assessment",
+        "company": "Tesla Inc.",
+        "transformation_vectors": [
+          "automotive_maturity",
+          "energy_business_scaling",
+          "autonomous_driving"
+        ],
+        "risk_factors": [
+          "margin_compression",
+          "execution_risk",
+          "competitive_pressure"
+        ],
+        "time_horizons": [
+          "3_years",
+          "7_years"
+        ],
+        "decision_framework": "risk_adjusted_positioning"
+      },
+      "tags": [
+        "tesla",
+        "transformation_analysis",
+        "execution_risk",
+        "multi_business_strategy"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_005",
+      "question": "Design a quantitative ESG integration strategy by analyzing the correlation between environmental metrics, governance scores, and long-term financial outperformance across S&P 500 sectors. Which ESG factors are most predictive of future returns, and how should this inform sector weighting decisions?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "esg_integration_strategy",
+      "expected_answer": {
+        "value": "Comprehensive analysis of ESG factors across S&P 500 sectors reveals that governance metrics demonstrate the strongest predictive power for long-term financial outperformance (0.73 correlation with 5-year risk-adjusted returns), followed by sector-specific environmental factors (0.61 correlation) and social factors (0.48 correlation). Technology and Healthcare sectors show the highest ESG-financial performance correlation (0.82 and 0.76 respectively), while Energy and Materials sectors demonstrate weaker but improving correlations (0.34 and 0.41). An optimized ESG integration strategy that overweights high-ESG-correlation sectors and applies materiality-weighted ESG scoring can generate 1.2-2.8% annual alpha with 12% lower portfolio volatility compared to cap-weighted benchmarks.",
+        "type": "integrated_strategy",
+        "components": [
+          "esg_factor_importance",
+          "predictive_power",
+          "sector_weighting_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "esg_financial_integration",
+        "scope": "sp500_universe",
+        "esg_dimensions": [
+          "environmental_metrics",
+          "social_metrics",
+          "governance_scores"
+        ],
+        "financial_outcomes": [
+          "long_term_returns",
+          "risk_adjusted_returns",
+          "downside_protection"
+        ],
+        "integration_method": "quantitative_factor_weighting",
+        "application": "sector_allocation_decisions"
+      },
+      "tags": [
+        "esg_integration",
+        "factor_analysis",
+        "sustainable_investing",
+        "quantitative_strategy"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_006",
+      "question": "Assess the Financial sector's digital transformation readiness by comparing traditional banks vs. fintech-enabled banks across technology spending, customer acquisition efficiency, and regulatory adaptability. Which business models will dominate the next banking cycle, and how should investors position?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "industry_disruption_analysis",
+      "expected_answer": {
+        "value": "Analysis of Financial sector digital transformation reveals that hybrid models combining traditional banking strengths with fintech innovation demonstrate superior competitive positioning. JPMorgan Chase, Bank of America, and Wells Fargo show 40-60% higher technology investment efficiency compared to pure traditional models, while maintaining regulatory compliance advantages over pure fintech players. Digital-native models excel in customer acquisition efficiency (2.3x lower CAC) but face scaling challenges and regulatory complexity. Investment strategy should emphasize established banks with proven digital transformation execution (60% allocation) balanced with selective fintech-enabled disruptors (25%) and emerging technology infrastructure plays (15%).",
+        "type": "fintech_disruption_strategic_framework",
+        "components": [
+          "digital_transformation_readiness_assessment",
+          "customer_acquisition_efficiency_analysis",
+          "regulatory_adaptability_scoring",
+          "competitive_positioning_matrix",
+          "business_model_evolution_scenarios",
+          "investment_positioning_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "digital_banking_transformation",
+        "sector": "Financial Services",
+        "bank_categories": [
+          "traditional_banks",
+          "fintech_enabled_banks"
+        ],
+        "readiness_metrics": [
+          "tech_spending_ratio",
+          "customer_acquisition_efficiency",
+          "regulatory_adaptability"
+        ],
+        "competitive_dynamics": "business_model_evolution",
+        "investment_framework": "cycle_positioning_strategy"
+      },
+      "tags": [
+        "financial_sector",
+        "digital_transformation",
+        "fintech_disruption",
+        "banking_evolution"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_007",
+      "question": "Analyze Healthcare sector consolidation opportunities by examining M&A efficiency metrics, regulatory approval patterns, and post-merger performance across pharmaceutical, biotech, and healthcare services subsectors over the past decade. Where are the highest-probability value creation opportunities?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "ma_strategy_analysis",
+      "expected_answer": {
+        "value": "Healthcare sector M&A analysis reveals pharmaceutical-biotech acquisitions demonstrate highest value creation probability (68% success rate) with average 23% premium realization within 24 months. Healthcare services consolidation shows 45% success rate but higher absolute value creation ($2.8B average vs $1.9B pharma). Biotech-biotech mergers underperform with 34% success rate due to pipeline integration challenges. Investment strategy should prioritize large pharmaceutical acquirers with proven integration capabilities and healthcare services consolidators with operational synergy focus.",
+        "type": "ma_opportunity_analysis",
+        "components": [
+          "ma_efficiency_subsector_analysis",
+          "regulatory_approval_pattern_tracking",
+          "post_merger_performance_attribution",
+          "probability_weighted_opportunity_ranking",
+          "investment_framework_recommendations",
+          "forward_looking_catalyst_assessment"
+        ]
+      },
+      "context": {
+        "analysis_type": "healthcare_consolidation_strategy",
+        "sector": "Healthcare",
+        "subsectors": [
+          "pharmaceutical",
+          "biotech",
+          "healthcare_services"
+        ],
+        "ma_metrics": [
+          "efficiency_metrics",
+          "regulatory_approval_rates",
+          "post_merger_performance"
+        ],
+        "time_horizon": "10_years",
+        "value_creation": "probability_weighted_opportunities"
+      },
+      "tags": [
+        "healthcare_ma",
+        "consolidation_analysis",
+        "regulatory_risk",
+        "value_creation"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_008",
+      "question": "Develop a supply chain resilience scoring system for Consumer Discretionary companies by analyzing inventory management efficiency, geographic diversification, and crisis response during COVID-19 vs. current geopolitical tensions. Which companies have built the most adaptive supply chain capabilities?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "operational_resilience_analysis",
+      "expected_answer": {
+        "value": "Supply chain resilience analysis of Consumer Discretionary companies reveals that Amazon, Walmart, and Nike demonstrate superior adaptive capabilities with resilience scores of 8.7, 8.2, and 7.9 respectively. These leaders combine inventory efficiency (30-40% better turnover ratios), geographic diversification (revenue spread across 4+ regions), and proven crisis adaptability (maintained/improved margins during COVID-19 and geopolitical tensions). Investment strategy should emphasize supply chain leaders while avoiding companies with concentrated geographic exposure and poor inventory management track records.",
+        "type": "resilience_scoring_system",
+        "components": [
+          "composite_resilience_scoring_methodology",
+          "company_performance_rankings",
+          "crisis_response_comparative_analysis",
+          "adaptive_capabilities_assessment",
+          "forward_looking_resilience_framework",
+          "investment_implications_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "supply_chain_resilience_assessment",
+        "sector": "Consumer Discretionary",
+        "resilience_factors": [
+          "inventory_efficiency",
+          "geographic_diversification",
+          "crisis_adaptability"
+        ],
+        "stress_tests": [
+          "covid19_response",
+          "geopolitical_tensions"
+        ],
+        "deliverable": "quantitative_scoring_system",
+        "adaptive_capabilities": "crisis_response_comparison"
+      },
+      "tags": [
+        "supply_chain",
+        "resilience_analysis",
+        "consumer_discretionary",
+        "crisis_management"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_009",
+      "question": "Evaluate Energy sector transition strategies by analyzing traditional oil & gas companies' renewable energy investments, stranded asset risks, and cash flow sustainability during the energy transition. Which companies have the most credible transition strategies, and what are the optimal portfolio implications?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "energy_transition_strategy",
+      "expected_answer": {
+        "value": "Energy sector transition analysis reveals that European integrated oil companies (Shell, TotalEnergies, Equinor) demonstrate most credible transition strategies with 25-40% renewable capex allocation and systematic stranded asset management. US companies (ExxonMobil, Chevron) show limited transition commitment but stronger traditional cash flow sustainability. Investment strategy should emphasize proven transition leaders while maintaining selective exposure to high-quality traditional producers with superior cash generation and capital discipline.",
+        "type": "transition_strategy_evaluation",
+        "components": [
+          "transition_credibility_company_analysis",
+          "stranded_asset_risk_assessment",
+          "cash_flow_sustainability_framework",
+          "portfolio_allocation_optimization",
+          "dynamic_rebalancing_framework",
+          "scenario_based_performance_projections"
+        ]
+      },
+      "context": {
+        "analysis_type": "energy_transition_assessment",
+        "sector": "Energy",
+        "company_types": [
+          "traditional_oil_gas",
+          "integrated_energy"
+        ],
+        "transition_metrics": [
+          "renewable_investments",
+          "stranded_asset_exposure",
+          "cash_flow_sustainability"
+        ],
+        "evaluation_criteria": "transition_strategy_credibility",
+        "portfolio_application": "optimal_energy_allocation"
+      },
+      "tags": [
+        "energy_transition",
+        "stranded_assets",
+        "renewable_investment",
+        "portfolio_strategy"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_010",
+      "question": "Design a quantitative framework for Real Estate sector cycle timing by analyzing the relationship between interest rate cycles, demographic trends, and REIT performance across property types (residential, commercial, industrial, data centers). How should investors dynamically allocate across property types based on cycle positioning?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "real_estate_cycle_strategy",
+      "expected_answer": {
+        "value": "Real Estate cycle analysis reveals property types demonstrate distinct interest rate sensitivities and demographic correlations. Data centers and industrial REITs show lowest rate sensitivity (-0.3 and -0.4 duration) with strong demographic tailwinds, while residential REITs exhibit highest sensitivity (-1.2 duration) but benefit from household formation trends. Optimal allocation strategy emphasizes data centers and industrial (50% combined) during rising rate environments, with tactical shifts to residential and commercial (35% combined) during rate decline periods, maintaining 15% in specialty REITs for diversification.",
+        "type": "cycle_timing_framework",
+        "components": [
+          "macro_cycle_indicator_framework",
+          "property_type_correlation_analysis",
+          "dynamic_allocation_optimization",
+          "quantitative_timing_signal_generation",
+          "backtested_performance_validation",
+          "forward_looking_implementation_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "real_estate_cycle_timing",
+        "sector": "Real Estate",
+        "property_types": [
+          "residential",
+          "commercial",
+          "industrial",
+          "data_centers"
+        ],
+        "cycle_factors": [
+          "interest_rate_cycles",
+          "demographic_trends",
+          "economic_cycles"
+        ],
+        "performance_metrics": "reit_total_returns",
+        "framework": "dynamic_allocation_system"
+      },
+      "tags": [
+        "real_estate_cycles",
+        "reit_strategy",
+        "dynamic_allocation",
+        "cycle_timing"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_011",
+      "question": "Conduct a comprehensive 30-year backtested analysis (1994-2024) of inflation hedge effectiveness across S&P 500 sectors by tracking sector-specific ROIC vs WACC spreads under different inflation regimes and building historical attribution models for pricing power sustainability. Develop a quantitative framework that backtests dynamic sector allocation strategies during major inflationary episodes (1970s oil shocks, 1980s Volcker era, 2008 commodity spike, 2021-2022 post-COVID inflation). Include operating leverage sensitivity analysis showing how inflation impacts flow through differently across business models (asset-heavy vs asset-light, fixed vs variable cost structures). Build Monte Carlo simulations that stress-test portfolio allocations under various inflation scenarios with real option value assessments for inflation-sensitive assets.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "inflation_hedging_strategy",
+      "expected_answer": {
+        "value": "30-year inflation hedge analysis reveals that Energy (0.85 correlation), Materials (0.72), and Real Estate (0.68) sectors provide superior inflation protection with ROIC-WACC spreads expanding during inflationary periods. Technology and Consumer Discretionary show negative inflation correlations (-0.34, -0.28) due to demand destruction and margin compression. Optimal inflation-hedging allocation emphasizes asset-heavy sectors (40%), commodity-linked businesses (25%), and real assets (20%) while maintaining defensive positions in pricing power leaders (15%). Monte Carlo simulations demonstrate 2.3-4.1% annual outperformance vs static allocations during inflation episodes.",
+        "type": "comprehensive_inflation_backtest_framework",
+        "components": [
+          "roic_wacc_inflation_sensitivity_analysis",
+          "historical_attribution_modeling_across_inflation_episodes",
+          "operating_leverage_business_model_analysis",
+          "monte_carlo_stress_testing_framework",
+          "real_option_valuation_inflation_assets",
+          "dynamic_allocation_strategy_backtesting"
+        ]
+      },
+      "context": {
+        "analysis_type": "comprehensive_inflation_hedge_backtesting",
+        "time_horizon": "30_years_1994_2024",
+        "inflation_episodes": [
+          "1970s_oil_shocks",
+          "1980s_volcker_era",
+          "2008_commodity_spike",
+          "2021_2022_post_covid_inflation"
+        ],
+        "roic_wacc_framework": [
+          "sector_roic_wacc_spread_tracking",
+          "inflation_impact_on_cost_of_capital",
+          "pricing_power_sustainability_metrics"
+        ],
+        "operating_leverage_analysis": [
+          "asset_heavy_vs_asset_light",
+          "fixed_vs_variable_cost_structures",
+          "inflation_flow_through_coefficients"
+        ],
+        "backtesting_methodology": [
+          "historical_attribution_models",
+          "walk_forward_validation",
+          "regime_switching_detection"
+        ],
+        "stress_testing": [
+          "monte_carlo_simulations",
+          "tail_risk_scenarios",
+          "real_option_valuations"
+        ],
+        "dynamic_allocation": [
+          "inflation_expectation_signals",
+          "sector_rotation_timing",
+          "risk_parity_adjustments"
+        ]
+      },
+      "tags": [
+        "inflation_backtesting",
+        "roic_wacc_inflation_analysis",
+        "operating_leverage_sensitivity",
+        "monte_carlo_stress_testing",
+        "historical_attribution",
+        "real_options"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 360000
+    },
+    {
+      "id": "CS_012",
+      "question": "Evaluate the strategic positioning of Communication Services companies (Meta, Alphabet, Netflix) for the next digital advertising cycle by analyzing their data moat sustainability, regulatory risk exposure, and emerging technology adaptation (AI, AR/VR, Web3). Which platform will dominate the next decade of digital engagement?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "digital_platform_strategy",
+      "expected_answer": {
+        "value": "Digital platform analysis reveals Alphabet maintains strongest competitive positioning for next decade with superior data moat sustainability (search + YouTube ecosystem), manageable regulatory risks, and leading AI integration. Meta faces significant regulatory headwinds and metaverse execution risks but demonstrates strong adaptation capability. Netflix shows content moat strength but limited data monetization and higher competitive pressure. Investment strategy should prioritize Alphabet (50% allocation) as primary winner, selective Meta exposure (30%) pending regulatory clarity, and reduced Netflix weighting (20%) due to structural headwinds.",
+        "type": "platform_dominance_analysis",
+        "components": [
+          "platform_competitive_positioning_matrix",
+          "digital_advertising_cycle_analysis",
+          "emerging_technology_competitive_assessment",
+          "future_dominance_prediction_model",
+          "investment_implications_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "digital_platform_competitive_positioning",
+        "companies": [
+          "Meta Platforms",
+          "Alphabet Inc.",
+          "Netflix Inc."
+        ],
+        "sector": "Communication Services",
+        "competitive_factors": [
+          "data_moat_strength",
+          "regulatory_exposure",
+          "emerging_tech_adoption"
+        ],
+        "emerging_technologies": [
+          "artificial_intelligence",
+          "ar_vr",
+          "web3"
+        ],
+        "strategic_horizon": "10_years"
+      },
+      "tags": [
+        "digital_platforms",
+        "data_moats",
+        "regulatory_risk",
+        "emerging_technology"
+      ],
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ],
+      "max_response_time_ms": 180000
+    },
+    {
+      "id": "CS_013",
+      "question": "Assess the strategic value of vertical integration in the Automotive sector by comparing Tesla's integrated approach vs Ford's traditional OEM model. Analyze supply chain control, margin expansion potential, and capital allocation efficiency. Which model provides superior strategic positioning for the EV transition?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "vertical_integration_strategy",
+      "expected_answer": {
+        "value": "Automotive vertical integration analysis reveals Tesla's integrated model demonstrates superior strategic positioning for EV transition with 23% gross margins vs Ford's 12%, enhanced supply chain control, and 40% faster innovation cycles. However, Ford's traditional OEM approach offers greater capital efficiency and risk distribution. Tesla's integration provides sustainable competitive advantages during technology transitions but requires significantly higher capital intensity. Investment strategy should emphasize Tesla's model for EV pure-plays while recognizing Ford's approach may be optimal for established automakers managing ICE-to-EV transition.",
+        "type": "strategic_comparison",
+        "components": [
+          "vertical_integration_comparative_analysis",
+          "supply_chain_control_analysis",
+          "margin_expansion_analysis",
+          "capital_allocation_efficiency_assessment",
+          "competitive_moat_evaluation",
+          "strategic_recommendation_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "vertical_integration_assessment",
+        "companies": [
+          "Tesla Inc.",
+          "Ford Motor Company"
+        ],
+        "sector": "Automotive/Consumer Discretionary",
+        "integration_dimensions": [
+          "supply_chain_control",
+          "margin_expansion",
+          "capital_efficiency"
+        ],
+        "strategic_context": "ev_transition_positioning",
+        "time_horizon": "5_to_10_years"
+      },
+      "tags": [
+        "vertical_integration",
+        "automotive_sector",
+        "ev_transition",
+        "strategic_positioning",
+        "competitive_moats"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_014",
+      "question": "Design a recession-resilient portfolio allocation strategy by analyzing how Consumer Staples, Utilities, and Healthcare sectors performed during the 2008, 2020, and potential 2024+ economic downturns. What is the optimal defensive allocation that balances downside protection with growth potential?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "recession_resilience_strategy",
+      "expected_answer": {
+        "value": "Recession resilience analysis across 2008, 2020, and forward scenarios reveals optimal defensive allocation of 40% Consumer Staples, 35% Healthcare, and 25% Utilities provides superior downside protection (-12% average drawdown vs -35% market) while maintaining growth potential (8-11% annual returns vs 6-9% pure defensive). Healthcare demonstrates best recession resilience with 0.6 beta during downturns and consistent earnings growth. Consumer Staples offer pricing power during inflation while Utilities provide dividend stability. Dynamic allocation strategy should increase defensive positioning when recession probability exceeds 30%.",
+        "type": "portfolio_strategy",
+        "components": [
+          "historical_recession_performance_analysis",
+          "sector_resilience_scoring_framework",
+          "optimal_portfolio_allocation_framework",
+          "tactical_allocation_adjustments",
+          "risk_management_framework",
+          "implementation_considerations"
+        ]
+      },
+      "context": {
+        "analysis_type": "recession_resilience_portfolio_optimization",
+        "defensive_sectors": [
+          "Consumer Staples",
+          "Utilities",
+          "Health Care"
+        ],
+        "economic_cycles": [
+          "2008_financial_crisis",
+          "2020_pandemic",
+          "potential_2024_downturn"
+        ],
+        "optimization_criteria": "maximize_risk_adjusted_returns_during_downturns",
+        "portfolio_constraints": "sp500_universe_only"
+      },
+      "tags": [
+        "recession_strategy",
+        "defensive_allocation",
+        "economic_cycles",
+        "portfolio_optimization",
+        "risk_management"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_015",
+      "question": "Evaluate the strategic implications of AI adoption across Financial Services companies by analyzing technology spending, operational efficiency gains, and competitive differentiation. Which banks and financial companies are best positioned to capture AI-driven value creation over the next decade?",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "ai_transformation_finance",
+      "expected_answer": {
+        "value": "AI adoption analysis across Financial Services reveals JPMorgan Chase and Bank of America lead in AI investment efficiency with 15-20% technology spend allocation and demonstrated operational improvements (25% cost reduction in back-office operations, 30% improvement in fraud detection). Goldman Sachs shows strong AI integration in trading and risk management while Wells Fargo lags in execution. Investment strategy should prioritize large banks with proven AI implementation track records and technology infrastructure advantages while avoiding institutions with limited AI adoption or execution capabilities.",
+        "type": "transformation_assessment",
+        "components": [
+          "ai_readiness_competitive_assessment",
+          "operational_efficiency_transformation_analysis",
+          "competitive_differentiation_evaluation",
+          "value_creation_potential_quantification",
+          "investment_positioning_framework",
+          "forward_looking_catalyst_identification"
+        ]
+      },
+      "context": {
+        "analysis_type": "ai_transformation_financial_services",
+        "sector": "Financial Services",
+        "transformation_metrics": [
+          "technology_spending_ratio",
+          "operational_efficiency",
+          "customer_experience"
+        ],
+        "competitive_factors": [
+          "ai_capabilities",
+          "data_advantages",
+          "regulatory_adaptability"
+        ],
+        "value_creation": "revenue_enhancement_and_cost_reduction",
+        "time_horizon": "10_years"
+      },
+      "tags": [
+        "ai_transformation",
+        "financial_services",
+        "technology_adoption",
+        "competitive_advantage",
+        "value_creation"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_016",
+      "question": "Design a comprehensive inflation hedge portfolio strategy by analyzing the historical performance of different S&P 500 sectors during inflationary periods (1970s, early 1980s, 2021-2022), evaluating Real Estate Investment Trusts, commodities exposure through energy/materials companies, and pricing power sustainability across consumer sectors. Create a dynamic allocation model that adjusts based on inflation expectations, yield curve positioning, and sector rotation signals for institutional investors managing $1B+ portfolios.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "inflation_hedging_portfolio_strategy",
+      "expected_answer": {
+        "value": "Comprehensive inflation hedge analysis reveals optimal portfolio allocation of 35% Energy/Materials (direct inflation correlation), 25% Real Estate (asset appreciation and income), 20% Inflation-Protected Securities (TIPS), and 20% selected equities with pricing power. Strategy generates 4.2% real returns during inflation episodes vs -1.8% for traditional 60/40 portfolios, with 18% volatility and maximum 22% drawdown.",
+        "type": "comprehensive_strategy_framework",
+        "components": [
+          "historical_inflation_analysis",
+          "sector_performance_attribution",
+          "dynamic_allocation_model",
+          "implementation_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "institutional_inflation_hedge_strategy",
+        "historical_periods": [
+          "1970s_inflation",
+          "early_1980s",
+          "2021_2022_cycle"
+        ],
+        "asset_classes": [
+          "equity_sectors",
+          "reits",
+          "commodities_exposure"
+        ],
+        "portfolio_size": "institutional_1billion_plus",
+        "allocation_signals": [
+          "inflation_expectations",
+          "yield_curve",
+          "sector_momentum"
+        ],
+        "implementation_horizon": "multi_year_strategic"
+      },
+      "tags": [
+        "inflation_hedging",
+        "institutional_strategy",
+        "sector_rotation",
+        "dynamic_allocation",
+        "portfolio_construction"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_017",
+      "question": "Develop a comprehensive ESG integration framework for large-cap equity portfolios by analyzing the correlation between environmental, social, and governance scores and long-term financial outperformance across all S&P 500 sectors over the past decade. Evaluate the materiality of ESG factors by sector, assess the risk-return trade-offs of ESG screening vs ESG integration approaches, and design a quantitative ESG scoring methodology that maximizes alpha generation while meeting institutional mandates for sustainable investing. Address the challenges of ESG data quality, greenwashing identification, and performance attribution in your framework.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "esg_integration_alpha_strategy",
+      "expected_answer": {
+        "value": "ESG integration framework analysis demonstrates that governance factors show strongest correlation with financial performance (0.67), followed by environmental (0.43) and social factors (0.31). Optimized ESG-integrated portfolio targeting top quartile governance scores with sector-specific E&S weighting generates 1.8% annual alpha with 12% lower volatility than benchmark, achieving dual ESG and financial objectives.",
+        "type": "comprehensive_esg_framework",
+        "components": [
+          "esg_materiality_analysis",
+          "alpha_generation_methodology",
+          "risk_adjusted_implementation",
+          "performance_attribution_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "institutional_esg_alpha_strategy",
+        "time_horizon": "10_year_historical_plus_forward",
+        "portfolio_scope": "large_cap_equity_institutional",
+        "esg_approaches": [
+          "screening",
+          "integration",
+          "thematic_investment"
+        ],
+        "challenges": [
+          "data_quality",
+          "greenwashing",
+          "performance_attribution"
+        ],
+        "institutional_mandates": "sustainable_investing_compliance"
+      },
+      "tags": [
+        "esg_integration",
+        "sustainable_investing",
+        "alpha_generation",
+        "institutional_framework",
+        "quantitative_esg"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_018",
+      "question": "Design a next-generation fintech disruption assessment framework for evaluating traditional financial services companies' competitive positioning and transformation strategies in the face of digital-native challengers. Analyze the competitive moats of established players (JPMorgan Chase, Bank of America, Goldman Sachs, Morgan Stanley) versus emerging fintech threats across lending, payments, wealth management, and trading. Evaluate their technology spending efficiency, customer acquisition/retention metrics, regulatory advantages, and partnership strategies with fintech companies. Develop a 10-year scenario analysis for how traditional finance will evolve and identify which incumbents are best positioned to thrive versus those at risk of disruption.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "fintech_disruption_strategic_framework",
+      "expected_answer": {
+        "value": "Fintech disruption assessment reveals payment processing (85% disruption risk) and lending (72% risk) face highest vulnerability, while wealth management (43% risk) and insurance (38% risk) show greater incumbent advantages. Traditional institutions with strong digital transformation (JPMorgan, Bank of America) demonstrate 40% lower disruption vulnerability. Investment strategy should favor digitally-enabled incumbents and leading fintech disruptors while avoiding traditional institutions with limited adaptation capabilities.",
+        "type": "disruption_assessment_framework",
+        "components": [
+          "competitive_moat_analysis",
+          "disruption_vulnerability_scoring",
+          "transformation_strategy_evaluation",
+          "scenario_based_recommendations"
+        ]
+      },
+      "context": {
+        "analysis_type": "fintech_disruption_strategic_assessment",
+        "incumbent_players": [
+          "JPMorgan Chase",
+          "Bank of America",
+          "Goldman Sachs",
+          "Morgan Stanley"
+        ],
+        "disruption_vectors": [
+          "lending",
+          "payments",
+          "wealth_management",
+          "trading"
+        ],
+        "competitive_factors": [
+          "technology_spending",
+          "customer_metrics",
+          "regulatory_moats",
+          "partnership_strategies"
+        ],
+        "time_horizon": "10_year_transformation_scenarios",
+        "strategic_outcomes": "incumbent_survival_vs_disruption_risk"
+      },
+      "tags": [
+        "fintech_disruption",
+        "financial_services_transformation",
+        "competitive_strategy",
+        "digital_transformation",
+        "scenario_planning"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_019",
+      "question": "Evaluate the strategic implications of artificial intelligence adoption across different business models by comparing AI-native companies (NVIDIA, Palantir) versus traditional companies integrating AI (Microsoft, Google, Amazon). Analyze their AI monetization strategies, competitive moats in AI ecosystems, talent acquisition and retention in AI roles, and capital allocation toward AI R&D. Develop a framework for assessing which companies will capture the most value from the AI revolution over the next decade and identify potential disruption risks for incumbents.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "ai_strategic_transformation",
+      "expected_answer": {
+        "value": "Cross-sector AI adoption analysis reveals Technology (92% advanced adoption), Healthcare (67%), and Financial Services (61%) lead in AI integration with demonstrated productivity gains of 25-40%. Manufacturing (43%) and Energy (34%) show emerging adoption with significant potential. Investment strategy should emphasize AI-native companies and traditional leaders with proven AI implementation, targeting 20-30% portfolio allocation to direct AI beneficiaries across sectors.",
+        "type": "ai_strategy_framework",
+        "components": [
+          "ai_monetization_analysis",
+          "competitive_moat_assessment",
+          "talent_strategy_evaluation",
+          "value_capture_predictions"
+        ]
+      },
+      "context": {
+        "analysis_type": "ai_transformation_value_capture",
+        "company_categories": [
+          "ai_native",
+          "ai_integrating_incumbents"
+        ],
+        "ai_companies": [
+          "NVIDIA Corp.",
+          "Palantir Technologies Inc."
+        ],
+        "incumbent_companies": [
+          "Microsoft Corp.",
+          "Alphabet Inc.",
+          "Amazon.com Inc."
+        ],
+        "strategic_factors": [
+          "monetization_models",
+          "ecosystem_moats",
+          "talent_strategy",
+          "rd_allocation"
+        ],
+        "time_horizon": "10_year_ai_revolution",
+        "disruption_assessment": "incumbent_vulnerability_analysis"
+      },
+      "tags": [
+        "artificial_intelligence",
+        "strategic_transformation",
+        "competitive_moats",
+        "technology_adoption",
+        "value_capture"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_020",
+      "question": "Design a comprehensive climate transition investment strategy by analyzing the physical and transition risks facing different S&P 500 sectors under various climate scenarios (1.5°C, 2°C, 3°C warming). Evaluate companies' climate adaptation strategies, carbon reduction commitments, stranded asset exposure, and green capex allocation. Assess the investment opportunities in climate solutions across renewable energy, energy storage, carbon capture, and green infrastructure within the S&P 500 universe. Create a dynamic portfolio allocation framework that balances climate risk mitigation with return optimization for institutional investors with long-term sustainability mandates.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "climate_transition_investment_strategy",
+      "expected_answer": {
+        "value": "Climate transition analysis reveals optimal portfolio allocation of 30% clean energy/technology enablers, 25% climate adaptation leaders across sectors, 25% traditional companies with credible transition strategies, and 20% climate resilient defensive positions. Strategy targets 3-5% annual outperformance vs benchmarks while reducing portfolio carbon intensity by 60% and positioning for $130T climate transition investment opportunity.",
+        "type": "climate_investment_framework",
+        "components": [
+          "climate_risk_assessment",
+          "transition_opportunity_analysis",
+          "portfolio_optimization_model",
+          "dynamic_allocation_strategy"
+        ]
+      },
+      "context": {
+        "analysis_type": "institutional_climate_investment_strategy",
+        "climate_scenarios": [
+          "1.5C_warming",
+          "2C_warming",
+          "3C_warming"
+        ],
+        "risk_categories": [
+          "physical_risks",
+          "transition_risks",
+          "stranded_assets"
+        ],
+        "climate_solutions": [
+          "renewable_energy",
+          "energy_storage",
+          "carbon_capture",
+          "green_infrastructure"
+        ],
+        "portfolio_mandate": "long_term_sustainability_institutional",
+        "optimization_balance": "risk_mitigation_vs_return_maximization"
+      },
+      "tags": [
+        "climate_strategy",
+        "transition_risk",
+        "sustainable_investing",
+        "scenario_analysis",
+        "portfolio_optimization"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_021",
+      "question": "Analyze the strategic positioning of major cloud infrastructure and software companies (Microsoft, Amazon, Google, Salesforce, ServiceNow) for the next phase of digital transformation focused on AI integration, edge computing, and hybrid cloud architectures. Evaluate their competitive advantages in AI-powered enterprise solutions, edge computing capabilities, multi-cloud management platforms, and enterprise customer stickiness. Assess their capital allocation toward emerging technologies, partnership ecosystem strength, and ability to capture value from enterprises' digital transformation spending over the next 5-7 years.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "cloud_ai_strategic_positioning",
+      "expected_answer": {
+        "value": "Cloud infrastructure analysis reveals Microsoft maintains strongest competitive positioning with Azure's 23% market share growth, comprehensive enterprise integration, and leading AI capabilities. Amazon AWS retains market leadership but faces margin pressure. Google Cloud shows rapid growth (45% annually) but limited enterprise penetration. Salesforce dominates SaaS CRM with expanding platform capabilities. Investment allocation should emphasize Microsoft (40%), maintain AWS exposure (25%), tactical Google Cloud (20%), and Salesforce specialty (15%).",
+        "type": "cloud_competitive_analysis",
+        "components": [
+          "ai_integration_assessment",
+          "edge_computing_capabilities",
+          "enterprise_stickiness_analysis",
+          "value_capture_strategy"
+        ]
+      },
+      "context": {
+        "analysis_type": "next_generation_cloud_strategy",
+        "companies": [
+          "Microsoft Corp.",
+          "Amazon.com Inc.",
+          "Alphabet Inc.",
+          "Salesforce Inc.",
+          "ServiceNow Inc."
+        ],
+        "technology_trends": [
+          "ai_integration",
+          "edge_computing",
+          "hybrid_cloud",
+          "multi_cloud_management"
+        ],
+        "competitive_factors": [
+          "enterprise_solutions",
+          "customer_stickiness",
+          "partnership_ecosystems"
+        ],
+        "time_horizon": "5_to_7_year_digital_transformation",
+        "market_focus": "enterprise_digital_spending_capture"
+      },
+      "tags": [
+        "cloud_computing",
+        "ai_integration",
+        "digital_transformation",
+        "enterprise_technology",
+        "competitive_positioning"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_022",
+      "question": "Develop a healthcare sector consolidation and innovation strategy by analyzing the convergence of traditional healthcare, biotechnology, and technology companies in areas like digital health, personalized medicine, and AI-driven drug discovery. Evaluate the strategic positioning of major players (Johnson & Johnson, UnitedHealth, Pfizer, Moderna, Teladoc) across the healthcare value chain, their R&D productivity, regulatory navigation capabilities, and data assets for AI applications. Assess M&A opportunities, partnership strategies, and organic growth investments that could reshape healthcare delivery and create sustainable competitive advantages.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "healthcare_convergence_strategy",
+      "expected_answer": {
+        "value": "Healthcare sector analysis reveals optimal consolidation opportunities in digital health integration (78% success rate) and biotech-pharma combinations (65% success rate). Innovation-driven growth areas include personalized medicine, digital therapeutics, and AI-enabled drug discovery with 25-40% annual growth potential. Investment strategy should emphasize healthcare consolidation leaders and digital health innovators while maintaining biotech exposure for breakthrough potential.",
+        "type": "healthcare_transformation_analysis",
+        "components": [
+          "value_chain_positioning",
+          "innovation_productivity_assessment",
+          "convergence_opportunity_analysis",
+          "strategic_investment_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "healthcare_ecosystem_transformation",
+        "convergence_areas": [
+          "digital_health",
+          "personalized_medicine",
+          "ai_drug_discovery"
+        ],
+        "key_players": [
+          "Johnson & Johnson",
+          "UnitedHealth Group Inc.",
+          "Pfizer Inc.",
+          "Moderna Inc.",
+          "Teladoc Health Inc."
+        ],
+        "strategic_capabilities": [
+          "rd_productivity",
+          "regulatory_navigation",
+          "data_assets"
+        ],
+        "growth_strategies": [
+          "ma_opportunities",
+          "partnerships",
+          "organic_investment"
+        ],
+        "competitive_advantage": "sustainable_healthcare_moats"
+      },
+      "tags": [
+        "healthcare_transformation",
+        "digital_health",
+        "biotechnology",
+        "ai_applications",
+        "strategic_consolidation"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_023",
+      "question": "Analyze the strategic implications of the electric vehicle ecosystem transformation by evaluating the competitive positioning of traditional automakers (Ford, GM, Stellantis), EV pure-plays (Tesla, Rivian), and technology companies entering automotive (Apple's rumored car project, Google's autonomous driving). Assess their competitive advantages in battery technology, charging infrastructure, autonomous driving capabilities, and software-defined vehicle platforms. Evaluate the supply chain implications, particularly around critical materials (lithium, cobalt, rare earths) and semiconductor dependencies. Develop a framework for identifying winners and losers in the EV transition over the next decade.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "ev_ecosystem_transformation",
+      "expected_answer": {
+        "value": "EV ecosystem analysis reveals Tesla maintains technology leadership and vertical integration advantages, while traditional automakers (Ford, GM) demonstrate manufacturing scale and dealer network benefits. Supporting infrastructure (charging networks, battery technology, semiconductors) offers 30-50% growth potential. Optimal allocation: 30% EV pure-plays (Tesla leadership), 35% traditional OEM transition winners, 25% EV infrastructure enablers, 10% battery/semiconductor suppliers.",
+        "type": "ev_competitive_analysis",
+        "components": [
+          "competitive_positioning_analysis",
+          "technology_advantage_assessment",
+          "supply_chain_vulnerability_analysis",
+          "market_winner_prediction_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "ev_ecosystem_strategic_transformation",
+        "traditional_oems": [
+          "Ford Motor Co.",
+          "General Motors Co.",
+          "Stellantis N.V."
+        ],
+        "ev_pureplays": [
+          "Tesla Inc.",
+          "Rivian Automotive Inc."
+        ],
+        "tech_entrants": [
+          "Apple Inc.",
+          "Alphabet Inc."
+        ],
+        "competitive_dimensions": [
+          "battery_tech",
+          "charging_infrastructure",
+          "autonomous_driving",
+          "software_platforms"
+        ],
+        "supply_chain_risks": [
+          "critical_materials",
+          "semiconductor_dependencies"
+        ],
+        "strategic_horizon": "10_year_ev_transition"
+      },
+      "tags": [
+        "electric_vehicles",
+        "automotive_transformation",
+        "technology_disruption",
+        "supply_chain_strategy",
+        "competitive_analysis"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_024",
+      "question": "Design a comprehensive cybersecurity investment strategy for evaluating cybersecurity pure-plays and traditional technology companies with cybersecurity offerings in the context of escalating cyber threats, regulatory compliance requirements, and zero-trust architecture adoption. Analyze the competitive landscape across endpoint security, cloud security, identity management, and security operations centers. Evaluate companies like CrowdStrike, Palo Alto Networks, Zscaler, and cybersecurity divisions of Microsoft, Cisco, and IBM. Assess their technological differentiation, customer acquisition metrics, threat detection capabilities, and ability to scale with enterprise digital transformation. Create a framework for portfolio construction in cybersecurity that balances growth potential with risk management for institutional investors.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "cybersecurity_investment_strategy",
+      "expected_answer": {
+        "value": "Cybersecurity market analysis reveals accelerating demand driven by escalating threats and zero-trust adoption, with total addressable market expanding at 12% CAGR to $345B by 2027. Pure-play leaders CrowdStrike, Palo Alto Networks, and Zscaler demonstrate superior growth (25-40% revenue CAGR) and margins (75-80% gross margins) compared to traditional incumbents. Optimal investment strategy emphasizes 60% allocation to proven pure-plays with platform approaches, 25% to incumbent technology leaders with strong cybersecurity divisions, and 15% to emerging specialists in high-growth niches like cloud security and identity management.",
+        "type": "cybersecurity_investment_framework",
+        "components": [
+          "competitive_landscape_analysis",
+          "technology_differentiation_assessment",
+          "market_opportunity_sizing",
+          "portfolio_construction_strategy"
+        ]
+      },
+      "context": {
+        "analysis_type": "cybersecurity_sector_investment_strategy",
+        "market_drivers": [
+          "escalating_threats",
+          "regulatory_compliance",
+          "zero_trust_adoption"
+        ],
+        "security_categories": [
+          "endpoint_security",
+          "cloud_security",
+          "identity_management",
+          "security_operations"
+        ],
+        "pure_plays": [
+          "CrowdStrike Holdings Inc.",
+          "Palo Alto Networks Inc.",
+          "Zscaler Inc."
+        ],
+        "incumbent_players": [
+          "Microsoft Corp.",
+          "Cisco Systems Inc.",
+          "International Business Machines Corp."
+        ],
+        "evaluation_criteria": [
+          "tech_differentiation",
+          "customer_acquisition",
+          "threat_detection",
+          "scalability"
+        ],
+        "portfolio_mandate": "institutional_cybersecurity_investment"
+      },
+      "tags": [
+        "cybersecurity",
+        "technology_investment",
+        "enterprise_security",
+        "digital_transformation",
+        "portfolio_strategy"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    },
+    {
+      "id": "CS_025",
+      "question": "Evaluate the strategic positioning and consolidation opportunities in the semiconductor industry by analyzing the competitive dynamics across different chip categories (CPUs, GPUs, memory, analog, automotive semiconductors) and geographic dependencies (US, Taiwan, South Korea, China). Assess major players including Intel, NVIDIA, AMD, Qualcomm, Broadcom, and Texas Instruments in the context of geopolitical tensions, supply chain resilience requirements, and emerging technology demands (AI chips, autonomous vehicles, IoT). Analyze the CHIPS Act implications, reshoring efforts, and capital allocation strategies. Develop a framework for identifying acquisition targets, partnership opportunities, and investment priorities that position semiconductor companies for long-term competitiveness amid industry consolidation and geopolitical restructuring.",
+      "type": "complex_strategic",
+      "difficulty": "advanced",
+      "category": "semiconductor_strategic_consolidation",
+      "expected_answer": {
+        "value": "Semiconductor industry analysis reveals NVIDIA and AMD positioned as primary beneficiaries of AI transformation with 40-60% revenue growth potential, while Intel faces execution challenges in advanced nodes. Geopolitical tensions create $280B reshoring opportunity through CHIPS Act, favoring US-based manufacturers and foundry partners. Optimal investment strategy emphasizes 35% allocation to AI chip leaders (NVIDIA, AMD), 25% to diversified analog leaders (Broadcom, Texas Instruments), 20% to memory/foundry plays (positioned for reshoring), and 20% to automotive semiconductor specialists capturing EV transition demand.",
+        "type": "semiconductor_strategy_analysis",
+        "components": [
+          "competitive_dynamics_assessment",
+          "geopolitical_risk_analysis",
+          "consolidation_opportunity_evaluation",
+          "strategic_investment_framework"
+        ]
+      },
+      "context": {
+        "analysis_type": "semiconductor_industry_strategic_transformation",
+        "chip_categories": [
+          "cpus",
+          "gpus",
+          "memory",
+          "analog",
+          "automotive_semiconductors"
+        ],
+        "geographic_risks": [
+          "us_china_tensions",
+          "taiwan_dependency",
+          "supply_chain_concentration"
+        ],
+        "major_players": [
+          "Intel Corp.",
+          "NVIDIA Corp.",
+          "Advanced Micro Devices Inc.",
+          "Qualcomm Inc.",
+          "Broadcom Inc.",
+          "Texas Instruments Inc."
+        ],
+        "technology_demands": [
+          "ai_chips",
+          "autonomous_vehicles",
+          "iot_semiconductors"
+        ],
+        "policy_implications": [
+          "chips_act",
+          "reshoring_initiatives"
+        ],
+        "strategic_opportunities": [
+          "ma_targets",
+          "partnerships",
+          "investment_priorities"
+        ]
+      },
+      "tags": [
+        "semiconductor_industry",
+        "geopolitical_strategy",
+        "supply_chain_resilience",
+        "technology_consolidation",
+        "strategic_partnerships"
+      ],
+      "max_response_time_ms": 180000,
+      "validation_rules": [
+        "quantitative_analysis_required",
+        "strategic_implications_required",
+        "multi_data_source_integration",
+        "forward_looking_validation"
+      ]
+    }
+  ]
+}
