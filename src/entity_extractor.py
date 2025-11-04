@@ -378,6 +378,11 @@ class EntityExtractor:
                     time.sleep(1 * (attempt + 1))  # Exponential backoff
                     continue
                 else:
+                    self.use_llm = False
+                    self.azure_client = None
+                    self.logger.warning(
+                        "Disabling LLM entity extraction after repeated parsing failures"
+                    )
                     raise ValueError(
                         f"Failed to parse LLM response after {max_retries + 1} attempts: {last_error}"
                     )
@@ -389,6 +394,12 @@ class EntityExtractor:
                     time.sleep(1 * (attempt + 1))
                     continue
                 else:
+                    self.use_llm = False
+                    self.azure_client = None
+                    self.logger.warning(
+                        "Disabling LLM entity extraction after repeated failures; "
+                        "falling back to deterministic extraction"
+                    )
                     raise Exception(
                         f"LLM extraction failed after {max_retries + 1} attempts: {last_error}"
                     )

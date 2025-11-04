@@ -7,23 +7,23 @@ For Phase 0, supports:
 - Debug mode flag
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 
-from src.query_engine import QueryEngine
 from src.config import get_config
-from src.entity_extractor import get_entity_extractor
-from src.sql_generator import get_sql_generator
+from src.entity_extractor import EntityExtractor
+from src.models import FormattedResponse, QueryResult
+from src.query_engine import QueryEngine
 from src.response_formatter import get_response_formatter
-from src.models import QueryResult, FormattedResponse
+from src.sql_generator import SQLGenerator
 from src.telemetry import (
-    setup_logging,
-    get_logger,
     create_request_context,
+    generate_telemetry_report,
+    get_logger,
     log_component_timing,
     log_error,
-    generate_telemetry_report,
+    setup_logging,
 )
 
 
@@ -39,9 +39,18 @@ class FinancialCLI:
         # Load configuration and initialize components
         self.config = get_config()
         self.query_engine = QueryEngine()
-        self.entity_extractor = get_entity_extractor(force_refresh=True)
-        self.sql_generator = get_sql_generator()
+        self.entity_extractor = EntityExtractor(config=self.config)
+        self.sql_generator = SQLGenerator()
         self.response_formatter = get_response_formatter()
+
+        if not self.entity_extractor.use_llm:
+            self.logger.warning(
+                "LLM entity extraction disabled; operating in deterministic mode"
+            )
+        if not self.sql_generator.use_llm:
+            self.logger.warning(
+                "LLM template selection disabled; operating in deterministic mode"
+            )
 
         self.logger.info("FinancialCLI initialized successfully")
 

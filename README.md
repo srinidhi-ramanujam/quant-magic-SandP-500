@@ -194,7 +194,7 @@ python -m pytest tests/ -v
 python -m pytest tests/test_entity_extractor_llm.py -v
 
 # Integration tests (require Azure OpenAI)
-python -m pytest tests/ -v -m integration
+ENABLE_AZURE_INTEGRATION_TESTS=true python -m pytest -m integration
 ```
 
 ### Test Status
@@ -307,6 +307,7 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 ### Security & Configuration
 - Required environment variables: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME` (plus optional embeddings deployment).
 - Store secrets in local env files or shell profiles and validate setup with `python -m src.cli --test-entity-extraction --use-llm`.
+- When Azure credentials are present, entity extraction and template selection use GPT-5 automatically; if credentials or network access are missing, the system logs a warning and falls back to deterministic templates without failing requests.
 
 ---
 

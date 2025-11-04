@@ -429,6 +429,12 @@ class SQLGenerator:
         self.logger.error(
             f"LLM template selection failed after {max_retries} attempts: {last_error}"
         )
+        self.use_llm = False
+        self.azure_client = None
+        self.logger.warning(
+            "Disabling LLM template selection after repeated failures; "
+            "falling back to deterministic matching"
+        )
 
         # Fallback to deterministic if available
         if candidate_templates and len(candidate_templates) > 0:
