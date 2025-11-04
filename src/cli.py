@@ -234,6 +234,58 @@ class FinancialCLI:
         if question_count > 0:
             print(f"📊 Session summary: Processed {question_count} questions")
 
+    def test_entity_extraction(self, question: str, use_llm: bool = False):
+        """
+        Test entity extraction on a question (Stage 1 testing).
+        
+        Args:
+            question: Natural language question
+            use_llm: Whether to use LLM-assisted extraction
+        """
+        from src.entity_extractor import EntityExtractor
+        
+        # Create entity extractor with specified mode
+        extractor = EntityExtractor(use_llm=use_llm)
+        context = create_request_context(question)
+        
+        print(f"\n🔬 Testing Entity Extraction ({'LLM mode' if use_llm else 'Deterministic mode'})")
+        print(f"❓ Question: {question}\n")
+        
+        try:
+            # Extract entities
+            entities = extractor.extract(question, context)
+            
+            # Display results
+            print("✅ Extraction Results:")
+            print(f"  Companies: {entities.companies if entities.companies else '(none)'}")
+            print(f"  Metrics: {entities.metrics if entities.metrics else '(none)'}")
+            print(f"  Sectors: {entities.sectors if entities.sectors else '(none)'}")
+            print(f"  Time Periods: {entities.time_periods if entities.time_periods else '(none)'}")
+            print(f"  Question Type: {entities.question_type}")
+            print(f"  Confidence: {entities.confidence:.2%}")
+            
+            # Show telemetry if LLM was used
+            llm_calls = context.metadata.get('llm_calls', [])
+            if use_llm and llm_calls:
+                print(f"\n📊 LLM Call Stats:")
+                for i, call in enumerate(llm_calls, 1):
+                    print(f"  Call {i}:")
+                    print(f"    - Stage: {call.get('stage', 'N/A')}")
+                    print(f"    - Success: {call.get('success', False)}")
+                    print(f"    - Latency: {call.get('latency_ms', 0)}ms")
+                    print(f"    - Tokens: {call.get('tokens', {})}")
+            
+            # Show timing
+            total_time = sum(context.component_timings.values())
+            print(f"\n⏱️  Total Time: {total_time:.4f}s")
+            
+            return entities
+            
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+            self.logger.error(f"Entity extraction test failed: {e}", exc_info=True)
+            return None
+
 
 def main():
     """Main CLI entry point."""
@@ -279,6 +331,16 @@ Examples:
     parser.add_argument(
         "--pretty", action="store_true", help="Pretty-print JSON output"
     )
+    parser.add_argument(
+        "--test-entity-extraction",
+        action="store_true",
+        help="Test entity extraction only (Stage 1) - shows extracted entities, confidence, and LLM stats",
+    )
+    parser.add_argument(
+        "--use-llm",
+        action="store_true",
+        help="Use LLM-assisted entity extraction (for --test-entity-extraction)",
+    )
 
     args = parser.parse_args()
 
@@ -286,6 +348,15 @@ Examples:
     cli = FinancialCLI()
 
     try:
+        # Test entity extraction mode (Stage 1)
+        if args.test_entity_extraction:
+            if not args.question:
+                print("❌ Error: Please provide a question to test entity extraction")
+                print("Example: python -m src.cli \"What is Apple's CIK?\" --test-entity-extraction --use-llm")
+                sys.exit(1)
+            cli.test_entity_extraction(args.question, use_llm=args.use_llm)
+            sys.exit(0)
+        
         # Interactive mode
         if args.interactive or not args.question:
             cli.run_interactive(debug_mode=args.debug)

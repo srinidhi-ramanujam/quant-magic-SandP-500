@@ -47,12 +47,64 @@ class Config(BaseModel):
         default_factory=lambda: os.getenv("AZURE_OPENAI_API_KEY")
     )
     azure_openai_deployment_name: Optional[str] = Field(
-        default_factory=lambda: os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+        default_factory=lambda: os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-5")
     )
     azure_openai_api_version: str = Field(
         default_factory=lambda: os.getenv(
             "AZURE_OPENAI_API_VERSION", "2024-02-15-preview"
         )
+    )
+
+    # Stage 1: Entity Extraction Settings
+    entity_extraction_model: str = Field(
+        default_factory=lambda: os.getenv(
+            "ENTITY_EXTRACTION_MODEL", "gpt-5"
+        ),
+        description="Model to use for entity extraction (uses azure_openai_deployment_name)"
+    )
+    entity_extraction_temperature: float = Field(
+        default=0.0,
+        description="Temperature for entity extraction (0.0 for deterministic)"
+    )
+    entity_extraction_max_retries: int = Field(
+        default=2,
+        description="Maximum retry attempts for entity extraction"
+    )
+    entity_extraction_timeout: int = Field(
+        default=30,
+        description="Timeout for entity extraction in seconds"
+    )
+
+    # Stage 2: Template Selection Settings
+    template_selection_use_llm: bool = Field(
+        default=False,
+        description="Use LLM for template selection (vs deterministic only)"
+    )
+    template_selection_fast_path_threshold: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Confidence threshold for fast path (skip LLM)"
+    )
+    template_selection_llm_threshold: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence to consider deterministic candidates"
+    )
+    template_selection_temperature: float = Field(
+        default=0.0,
+        description="Temperature for template selection (0.0 for deterministic)"
+    )
+    template_selection_max_retries: int = Field(
+        default=3,
+        ge=1,
+        description="Max retries for LLM template selection"
+    )
+    template_selection_timeout: int = Field(
+        default=10,
+        ge=1,
+        description="Timeout for LLM template selection (seconds)"
     )
 
     # Application settings

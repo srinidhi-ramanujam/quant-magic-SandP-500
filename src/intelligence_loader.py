@@ -48,13 +48,13 @@ PHASE_0_TEMPLATES = [
 class IntelligenceLoader:
     """Load and manage query intelligence templates."""
 
-    def __init__(self, use_phase_0_only: bool = True):
+    def __init__(self, use_phase_0_only: bool = False):
         """
         Initialize intelligence loader.
 
         Args:
-            use_phase_0_only: If True, only use Phase 0 templates (default).
-                             If False, also load templates from parquet files.
+            use_phase_0_only: If True, only use Phase 0 templates.
+                             If False, load all templates from parquet files (default).
         """
         self.logger = get_logger()
         self.templates: List[QueryTemplate] = []
@@ -67,31 +67,41 @@ class IntelligenceLoader:
 
     def _load_templates(self):
         """Load query templates from parquet and Phase 0 templates."""
-        # Always load Phase 0 templates first
-        self.templates.extend(PHASE_0_TEMPLATES)
-
-        # Optionally load advanced templates from parquet
-        if not self.use_phase_0_only:
+        if self.use_phase_0_only:
+            # Phase 0 only: Use hardcoded templates
+            self.templates.extend(PHASE_0_TEMPLATES)
+        else:
+            # Phase 1+: Load from parquet file (includes all 25 templates)
             try:
                 parquet_path = get_parquet_path("query_intelligence.parquet")
                 if parquet_path.exists():
+                    import json
                     df = pd.read_parquet(parquet_path)
 
                     for _, row in df.iterrows():
+                        # Parse parameters from JSON if stored as string
+                        params = row.get("parameters", [])
+                        if isinstance(params, str):
+                            params = json.loads(params)
+                        
                         template = QueryTemplate(
                             template_id=row["template_id"],
-                            name=row.get("intent_category", ""),
+                            name=row.get("name", row.get("intent_category", "")),
                             pattern=row["natural_language_pattern"],
                             sql_template=row["sql_template"],
-                            parameters=self._extract_parameters(row["sql_template"]),
-                            description=f"{row.get('tactical_strategic', '')} {row.get('intent_category', '')}",
+                            parameters=params if params else self._extract_parameters(row["sql_template"]),
+                            description=row.get("description", ""),
                         )
                         self.templates.append(template)
 
                     self.logger.info(f"Loaded {len(df)} templates from parquet")
+                else:
+                    self.logger.warning(f"Template file not found: {parquet_path}, falling back to Phase 0 templates")
+                    self.templates.extend(PHASE_0_TEMPLATES)
 
             except Exception as e:
-                self.logger.warning(f"Could not load templates from parquet: {e}")
+                self.logger.error(f"Error loading templates from parquet: {e}, falling back to Phase 0 templates")
+                self.templates.extend(PHASE_0_TEMPLATES)
 
     def _extract_parameters(self, sql_template: str) -> List[str]:
         """Extract parameter names from SQL template."""

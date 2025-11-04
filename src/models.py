@@ -431,3 +431,201 @@ class EmbeddingResponse(BaseModel):
         default=0, ge=0, description="Processing time in milliseconds"
     )
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+# ============================================================================
+# Stage 1: Entity Extraction Models
+# ============================================================================
+
+
+class LLMEntityRequest(BaseModel):
+    """Request for LLM-assisted entity extraction."""
+
+    question: str = Field(..., min_length=1, description="Natural language question")
+    context: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Additional context for extraction"
+    )
+
+    # Configuration overrides
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, gt=0)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "question": "What is Apple's revenue in Q3 2024?",
+                "context": {},
+            }
+        }
+    )
+
+
+class LLMEntityResponse(BaseModel):
+    """Response from LLM entity extraction."""
+
+    companies: List[str] = Field(
+        default_factory=list, description="Extracted company names (standardized)"
+    )
+    metrics: List[str] = Field(
+        default_factory=list, description="Extracted financial metrics (normalized)"
+    )
+    sectors: List[str] = Field(
+        default_factory=list, description="Extracted GICS sectors (official names)"
+    )
+    time_periods: List[str] = Field(
+        default_factory=list,
+        description="Extracted time periods (years, quarters, 'latest')",
+    )
+    question_type: str = Field(
+        ...,
+        description="Type of question: lookup, count, list, comparison, calculation, trend",
+    )
+    confidence: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="LLM's confidence in extraction quality (0-1)",
+    )
+    reasoning: str = Field(
+        ..., description="LLM's reasoning for extraction decisions"
+    )
+
+    # Processing metadata
+    processing_time_ms: int = Field(
+        default=0, ge=0, description="LLM processing time in milliseconds"
+    )
+    token_usage: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Token usage breakdown (prompt_tokens, completion_tokens)",
+    )
+
+    # Validation
+    @field_validator("confidence")
+    @classmethod
+    def validate_confidence(cls, v: float) -> float:
+        """Ensure confidence is between 0 and 1."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        return v
+
+    @field_validator("question_type")
+    @classmethod
+    def validate_question_type(cls, v: str) -> str:
+        """Validate question type is one of allowed values."""
+        allowed_types = ["lookup", "count", "list", "comparison", "calculation", "trend"]
+        if v.lower() not in allowed_types:
+            raise ValueError(
+                f"Question type must be one of: {', '.join(allowed_types)}"
+            )
+        return v.lower()
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "companies": ["APPLE INC"],
+                "metrics": ["revenue"],
+                "sectors": [],
+                "time_periods": ["Q3", "2024"],
+                "question_type": "lookup",
+                "confidence": 0.95,
+                "reasoning": "Ticker AAPL converted to APPLE INC. Revenue metric and Q3 2024 period clearly identified.",
+                "processing_time_ms": 1200,
+                "token_usage": {"prompt_tokens": 120, "completion_tokens": 36},
+            }
+        }
+    )
+
+
+# ============================================================================
+# Stage 2: Template Selection Models
+# ============================================================================
+
+
+class LLMTemplateSelectionRequest(BaseModel):
+    """Request for LLM-assisted template selection."""
+
+    question: str = Field(..., min_length=1, description="Natural language question")
+    entities: Dict[str, Any] = Field(
+        ..., description="Extracted entities from Stage 1"
+    )
+    candidate_templates: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of candidate templates from deterministic matching",
+    )
+
+    # Configuration overrides
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, gt=0)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "question": "How many companies in Technology?",
+                "entities": {
+                    "companies": [],
+                    "metrics": [],
+                    "sectors": ["Information Technology"],
+                    "time_periods": [],
+                    "question_type": "count",
+                },
+                "candidate_templates": [
+                    {
+                        "template_id": "sector_company_count",
+                        "name": "Count companies by sector",
+                        "parameters": ["sector"],
+                    }
+                ],
+            }
+        }
+    )
+
+
+class LLMTemplateSelectionResponse(BaseModel):
+    """Response from LLM template selection."""
+
+    selected_template_id: Optional[str] = Field(
+        None, description="ID of selected template, or null if custom SQL needed"
+    )
+    confidence: float = Field(
+        ..., ge=0.0, le=1.0, description="Confidence in template selection (0-1)"
+    )
+    reasoning: str = Field(..., description="Explanation of selection decision")
+    use_custom_sql: bool = Field(
+        ..., description="Whether custom SQL generation is recommended"
+    )
+    parameter_mapping: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Mapping of template parameters to entity values",
+    )
+
+    # Processing metadata
+    processing_time_ms: int = Field(
+        default=0, ge=0, description="LLM processing time in milliseconds"
+    )
+    token_usage: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Token usage breakdown (prompt_tokens, completion_tokens)",
+    )
+
+    # Validation
+    @field_validator("confidence")
+    @classmethod
+    def validate_confidence(cls, v: float) -> float:
+        """Ensure confidence is between 0 and 1."""
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("Confidence must be between 0.0 and 1.0")
+        return v
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "selected_template_id": "sector_company_count",
+                "confidence": 0.92,
+                "reasoning": "Question asks for count by sector, template matches exactly.",
+                "use_custom_sql": False,
+                "parameter_mapping": {"sector": "Information Technology"},
+                "processing_time_ms": 800,
+                "token_usage": {"prompt_tokens": 89, "completion_tokens": 42},
+            }
+        }
+    )

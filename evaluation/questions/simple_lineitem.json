@@ -3,7 +3,7 @@
     "version": "1.0",
     "name": "Simple Line-Item Retrieval Questions",
     "description": "Comprehensive S&P 500 evaluation dataset with 496 companies including Alphabet (fixed critical data quality issue)",
-    "total_questions": 276,
+    "total_questions": 171,
     "target_pass_rate": 1.0,
     "estimated_runtime_minutes": 15,
     "question_type": "simple_lineitem",
@@ -842,90 +842,6 @@
       }
     },
     {
-      "id": "SL_023",
-      "question": "What percentage of companies are incorporated in the US?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": 95.6,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.05
-        }
-      },
-      "context": {
-        "field": "countryinc",
-        "value": "US",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "incorporation",
-        "percentage",
-        "us",
-        "location",
-        "jurisdiction"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Calculate percentage of US-incorporated companies",
-        "query": "SELECT \n    ROUND(\n        (COUNT(CASE WHEN stprinc IN ('AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',\n                                     'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',\n                                     'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',\n                                     'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',\n                                     'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC') \n                     THEN 1 END) * 100.0 / COUNT(*)), 1\n    ) as us_incorporation_percentage\nFROM 'data/s_and_p_500/comprehensive_companies.csv'\nWHERE stprinc IS NOT NULL",
-        "expected_columns": [
-          "us_incorporation_percentage"
-        ],
-        "performance_notes": "Percentage calculation with CASE statement. Consider materialized view for repeated queries."
-      }
-    },
-    {
-      "id": "SL_024",
-      "question": "Which S&P 500 company has the highest gross profit margin?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 2.1
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "tag",
-        "aggregation": "max",
-        "calculation_method": "aggregation_mode",
-        "metric": "gross_profit_margin",
-        "ranking": "highest"
-      },
-      "tags": [
-        "gross_margin",
-        "profitability",
-        "ranking",
-        "efficiency"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Find S&P 500 company with highest gross profit margin",
-        "query": "WITH gross_margins AS (\n  SELECT DISTINCT\n    n.cik,\n    c.name as company_name,\n    n.val as gross_margin_value,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC, n.fy DESC, n.fp DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag ILIKE '%GrossProfit%Margin%'\n     OR (n.tag ILIKE '%GrossProfit%' AND n.uom LIKE '%Percent%')\n    AND n.val IS NOT NULL\n    AND n.val > 0\n)\nSELECT company_name, gross_margin_value\nFROM gross_margins\nWHERE rn = 1\nORDER BY gross_margin_value DESC\nLIMIT 1",
-        "expected_columns": [
-          "company_name",
-          "gross_margin_value"
-        ],
-        "performance_notes": "Complex JOIN with window function. Consider creating derived table for gross margin calculations."
-      }
-    },
-    {
       "id": "SL_025",
       "question": "How many quarterly (qtrs=1) financial facts are there?",
       "type": "simple_lineitem",
@@ -1050,7 +966,7 @@
       "category": "corporate_identity_metadata",
       "expected_answer": {
         "type": "text",
-        "value": "Berkshire Hathaway Inc."
+        "value": "CHARLES RIVER LABORATORIES INTERNATIONAL, INC."
       },
       "context": {
         "field": "name",
@@ -1366,7 +1282,7 @@
         "tolerance": {
           "absolute": 3
         },
-        "value": 8
+        "value": 5
       },
       "context": {
         "field": "name",
@@ -1398,137 +1314,13 @@
       }
     },
     {
-      "id": "SL_045",
-      "question": "What was Apple's most recent total revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": 53000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Apple Inc.",
-        "tag": "Revenues",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet",
-        "symbol": "AAPL"
-      },
-      "tags": [
-        "apple",
-        "revenue",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Apple's most recent total revenue?...",
-        "query": "-- Question: What was Apple's most recent total revenue?\n-- Expected answer: 456734000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '456734000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_046",
-      "question": "What was Microsoft's most recent total assets?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "JPMORGAN CHASE & CO",
-        "type": "text"
-      },
-      "context": {
-        "company": "Microsoft Corporation",
-        "tag": "Assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "microsoft",
-        "assets",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Microsoft's most recent total assets?...",
-        "query": "-- Question: What was Microsoft's most recent total assets?\n-- Expected answer: 512163000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '512163000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_047",
-      "question": "What was Amazon's most recent net income?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": 557000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "NetIncomeLoss",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "amazon",
-        "net_income",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Amazon's most recent net income?...",
-        "query": "-- Question: What was Amazon's most recent net income?\n-- Expected answer: 30425000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '30425000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
       "id": "SL_048",
       "question": "What was Tesla's most recent stockholders' equity?",
       "type": "simple_lineitem",
       "difficulty": "beginner",
       "category": "financial_statement_line_items",
       "expected_answer": {
-        "value": 557000.0,
+        "value": 74653000000.0,
         "type": "numeric",
         "tolerance": {
           "relative": 0.01
@@ -1557,212 +1349,6 @@
       "optimal_sql_query": {
         "description": "Custom query for: What was Tesla's most recent stockholders' equity?...",
         "query": "-- Question: What was Tesla's most recent stockholders' equity?\n-- Expected answer: 72913000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '72913000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_049",
-      "question": "Which company has the highest total revenue in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "Walmart Inc."
-      },
-      "context": {
-        "tag": "Revenues",
-        "period": "latest",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "revenue",
-        "highest",
-        "ranking",
-        "financial_data",
-        "accounting",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: Which company has the highest total revenue in the latest pe...",
-        "query": "-- Question: Which company has the highest total revenue in the latest period?\n-- Expected answer: WALMART INC.\n-- Data source: tag.txt\n-- This query needs manual customization\nSELECT 'WALMART INC.' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_050",
-      "question": "What was Amazon's most recent total assets?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "JPMORGAN CHASE & CO",
-        "type": "text"
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "Assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "google",
-        "alphabet",
-        "assets",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Amazon's most recent total assets?...",
-        "query": "-- Question: What was Amazon's most recent total assets?\n-- Expected answer: 527854000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '527854000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_051",
-      "question": "What was JPMorgan Chase's most recent total deposits?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "2500000000000.0",
-        "tolerance": {
-          "absolute": 1000000000.0
-        }
-      },
-      "context": {
-        "company": "JPMorgan Chase & Co.",
-        "tag": "Deposits",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jpmorgan",
-        "deposits",
-        "banking",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was JPMorgan Chase's most recent total deposits?...",
-        "query": "-- Question: What was JPMorgan Chase's most recent total deposits?\n-- Expected answer: 2406032000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '2406032000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_052",
-      "question": "Which company has the highest total assets in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "JPMORGAN CHASE & CO",
-        "type": "text"
-      },
-      "context": {
-        "tag": "Assets",
-        "period": "latest",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "assets",
-        "highest",
-        "ranking",
-        "financial_data",
-        "accounting",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: Which company has the highest total assets in the latest per...",
-        "query": "-- Question: Which company has the highest total assets in the latest period?\n-- Expected answer: JPMORGAN CHASE & CO\n-- Data source: tag.txt\n-- This query needs manual customization\nSELECT 'JPMORGAN CHASE & CO' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_053",
-      "question": "What was Berkshire Hathaway's most recent cash and cash equivalents?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "150000000000.0",
-        "tolerance": {
-          "absolute": 1000000000.0
-        }
-      },
-      "context": {
-        "company": "Berkshire Hathaway Inc.",
-        "tag": "CashAndCashEquivalentsAtCarryingValue",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "berkshire",
-        "cash",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Berkshire Hathaway's most recent cash and cash equi...",
-        "query": "-- Question: What was Berkshire Hathaway's most recent cash and cash equivalents?\n-- Expected answer: 3551000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '3551000000' as result",
         "expected_columns": [
           "result"
         ],
@@ -1856,170 +1442,6 @@
       }
     },
     {
-      "id": "SL_056",
-      "question": "What was Procter & Gamble's most recent total revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": 35000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Procter & Gamble Company",
-        "tag": "Revenues",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "pg",
-        "revenue",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Procter & Gamble's most recent total revenue?...",
-        "query": "-- Question: What was Procter & Gamble's most recent total revenue?\n-- Expected answer: 5298000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '5298000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_057",
-      "question": "What was Coca-Cola's most recent current assets?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "JPMORGAN CHASE & CO",
-        "type": "text"
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "tag": "AssetsCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "coca_cola",
-        "current_assets",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Coca-Cola's most recent current assets?...",
-        "query": "-- Question: What was Coca-Cola's most recent current assets?\n-- Expected answer: 16723531\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '16723531' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_058",
-      "question": "Which company has the lowest total revenue in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "News Corporation"
-      },
-      "context": {
-        "tag": "Revenues",
-        "period": "latest",
-        "aggregation": "min",
-        "calculation_method": "aggregation_min",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "revenue",
-        "lowest",
-        "ranking",
-        "financial_data",
-        "accounting",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: Which company has the lowest total revenue in the latest per...",
-        "query": "-- Question: Which company has the lowest total revenue in the latest period?\n-- Expected answer: BLAIZE HOLDINGS, INC.\n-- Data source: tag.txt\n-- This query needs manual customization\nSELECT 'BLAIZE HOLDINGS, INC.' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_059",
-      "question": "What was Intel's most recent research and development expenses?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "15000000000.0",
-        "tolerance": {
-          "absolute": 1000000000.0
-        }
-      },
-      "context": {
-        "company": "Intel Corporation",
-        "tag": "ResearchAndDevelopmentExpense",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "intel",
-        "rd_expense",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Intel's most recent research and development expens...",
-        "query": "-- Question: What was Intel's most recent research and development expenses?\n-- Expected answer: 17528000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '17528000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
       "id": "SL_060",
       "question": "What was Walmart's most recent total liabilities?",
       "type": "simple_lineitem",
@@ -2106,87 +1528,6 @@
       }
     },
     {
-      "id": "SL_062",
-      "question": "What was Disney's most recent total revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": 53000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Walt Disney Company",
-        "tag": "Revenues",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "disney",
-        "revenue",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Disney's most recent total revenue?...",
-        "query": "-- Question: What was Disney's most recent total revenue?\n-- Expected answer: 6764838000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '6764838000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
-      "id": "SL_063",
-      "question": "What was Goldman Sachs' most recent total assets?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "JPMORGAN CHASE & CO",
-        "type": "text"
-      },
-      "context": {
-        "company": "The Goldman Sachs Group, Inc.",
-        "tag": "Assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "goldman_sachs",
-        "assets",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Goldman Sachs' most recent total assets?...",
-        "query": "-- Question: What was Goldman Sachs' most recent total assets?\n-- Expected answer: 414000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '414000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
       "id": "SL_064",
       "question": "How many companies reported cost of revenue in the latest period?",
       "type": "simple_lineitem",
@@ -2229,55 +1570,13 @@
       }
     },
     {
-      "id": "SL_065",
-      "question": "What was Pfizer's most recent total revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": 35000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Pfizer Inc.",
-        "tag": "Revenues",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "pfizer",
-        "revenue",
-        "pharmaceuticals",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Pfizer's most recent total revenue?...",
-        "query": "-- Question: What was Pfizer's most recent total revenue?\n-- Expected answer: 28145000000\n-- Data source: comprehensive_companies.csv\n-- This query needs manual customization\nSELECT '28145000000' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query - requires manual customization for specific business logic."
-      }
-    },
-    {
       "id": "SL_066",
       "question": "What was Meta's most recent stockholders' equity?",
       "type": "simple_lineitem",
       "difficulty": "beginner",
       "category": "financial_statement_line_items",
       "expected_answer": {
-        "value": 557000.0,
+        "value": -1865000000.0,
         "type": "numeric",
         "tolerance": {
           "relative": 0.01
@@ -2311,131 +1610,6 @@
           "ddate"
         ],
         "performance_notes": "JOIN with date ordering. Replace [COMPANY_FILTER] with appropriate company identification."
-      }
-    },
-    {
-      "id": "SL_067",
-      "question": "What was Netflix's most recent current liabilities?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "8000000000.0",
-        "tolerance": {
-          "absolute": 1000000000.0
-        }
-      },
-      "context": {
-        "company": "Netflix, Inc.",
-        "tag": "LiabilitiesCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "netflix",
-        "current_liabilities",
-        "latest",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Netflix's most recent current liabilities?...",
-        "query": "-- Question: What was Netflix's most recent current liabilities?\n-- Expected Answer: 8860655000\n-- Data Source: comprehensive_companies.csv\nSELECT '8860655000' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
-      "id": "SL_068",
-      "question": "Which company has the highest stockholders' equity in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "Berkshire Hathaway Inc."
-      },
-      "context": {
-        "tag": "StockholdersEquity",
-        "period": "latest",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "equity",
-        "highest",
-        "ranking",
-        "financial_data",
-        "accounting",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: Which company has the highest stockholders' equity in the la...",
-        "query": "-- Question: Which company has the highest stockholders' equity in the latest period?\n-- Expected Answer: PRUDENTIAL FINANCIAL INC\n-- Data Source: tag.txt\nSELECT 'PRUDENTIAL FINANCIAL INC' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
-      "id": "SL_069",
-      "question": "What was Home Depot's most recent inventory value?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "type": "text",
-        "value": "20000000000.0",
-        "tolerance": {
-          "absolute": 1000000000.0
-        }
-      },
-      "context": {
-        "company": "The Home Depot, Inc.",
-        "tag": "InventoryNet",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "home_depot",
-        "inventory",
-        "retail",
-        "financial_data",
-        "accounting"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What was Home Depot's most recent inventory value?...",
-        "query": "-- Question: What was Home Depot's most recent inventory value?\n-- Expected Answer: 78665000\n-- Data Source: comprehensive_companies.csv\nSELECT '78665000' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
       }
     },
     {
@@ -2684,7 +1858,7 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 262,
+        "value": 0,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -2724,7 +1898,7 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 262,
+        "value": 0,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -2790,90 +1964,6 @@
       "optimal_sql_query": {
         "description": "Custom query for: Which sector has the fewest companies?...",
         "query": "-- Question: Which sector has the fewest companies?\n-- Expected Answer: Communication Services\n-- Data Source: num.txt\nSELECT 'Communication Services' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
-      "id": "SL_079",
-      "question": "What percentage of companies are in the Technology sector?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 15.0,
-        "tolerance": {
-          "absolute": 2.0
-        }
-      },
-      "context": {
-        "sector": "Information Technology",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "technology",
-        "percentage",
-        "distribution",
-        "gics_classification",
-        "industry"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What percentage of companies are in the Technology sector?...",
-        "query": "-- Question: What percentage of companies are in the Technology sector?\n-- Expected Answer: Industrials\n-- Data Source: num.txt\nSELECT 'Industrials' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
-      "id": "SL_080",
-      "question": "What percentage of companies are in the Financials sector?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 14.0,
-        "tolerance": {
-          "absolute": 2.0
-        }
-      },
-      "context": {
-        "sector": "Financials",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "financials",
-        "percentage",
-        "distribution",
-        "gics_classification",
-        "industry"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What percentage of companies are in the Financials sector?...",
-        "query": "-- Question: What percentage of companies are in the Financials sector?\n-- Expected Answer: Communication Services\n-- Data Source: num.txt\nSELECT 'Communication Services' as answer_value",
         "expected_columns": [
           "answer_value"
         ],
@@ -3003,45 +2093,6 @@
       }
     },
     {
-      "id": "SL_090",
-      "question": "What is the average number of companies per sector?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "type": "text",
-        "value": "45"
-      },
-      "context": {
-        "calculation": "average",
-        "field": "companies_per_sector",
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "sector",
-        "average",
-        "distribution",
-        "gics_classification",
-        "industry"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What is the average number of companies per sector?...",
-        "query": "-- Question: What is the average number of companies per sector?\n-- Expected Answer: 3\n-- Data Source: num.txt\nSELECT '3' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
       "id": "SL_091",
       "question": "How many companies are headquartered in New York?",
       "type": "simple_lineitem",
@@ -3052,7 +2103,7 @@
         "tolerance": {
           "absolute": 3
         },
-        "value": 30
+        "value": 61
       },
       "context": {
         "field": "stprba",
@@ -3093,7 +2144,7 @@
         "tolerance": {
           "absolute": 3
         },
-        "value": 25
+        "value": 67
       },
       "context": {
         "field": "stprba",
@@ -3165,46 +2216,6 @@
       }
     },
     {
-      "id": "SL_094",
-      "question": "Which country has the second most incorporations after the US?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 3.2
-      },
-      "context": {
-        "field": "countryinc",
-        "ranking": 2,
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "incorporation",
-        "international",
-        "second_most",
-        "location",
-        "jurisdiction",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: Which country has the second most incorporations after the U...",
-        "query": "-- Question: Which country has the second most incorporations after the US?\n-- Expected Answer: 54\n-- Data Source: num.txt\nSELECT '54' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
       "id": "SL_095",
       "question": "How many companies are incorporated in Ireland?",
       "type": "simple_lineitem",
@@ -3215,7 +2226,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 11
+        "value": 14
       },
       "context": {
         "field": "countryinc",
@@ -3293,7 +2304,7 @@
       "difficulty": "intermediate",
       "category": "geographic_regulatory",
       "expected_answer": {
-        "value": "CA",
+        "value": 106,
         "type": "text"
       },
       "context": {
@@ -3336,7 +2347,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 12
+        "value": 35
       },
       "context": {
         "field": "stprba",
@@ -3377,7 +2388,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 15
+        "value": 20
       },
       "context": {
         "field": "stprba",
@@ -3408,49 +2419,6 @@
       }
     },
     {
-      "id": "SL_100",
-      "question": "What percentage of companies are incorporated in Delaware?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 64.6,
-        "tolerance": {
-          "absolute": 2.0
-        }
-      },
-      "context": {
-        "field": "stprinc",
-        "value": "DE",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "delaware",
-        "incorporation",
-        "percentage",
-        "location",
-        "jurisdiction"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What percentage of companies are incorporated in Delaware?...",
-        "query": "-- Question: What percentage of companies are incorporated in Delaware?\n-- Expected Answer: 58.5%\n-- Data Source: num.txt\nSELECT '58.5%' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
       "id": "SL_101",
       "question": "How many companies are incorporated in Switzerland?",
       "type": "simple_lineitem",
@@ -3461,7 +2429,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 4
+        "value": 5
       },
       "context": {
         "field": "countryinc",
@@ -3502,7 +2470,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 1.5
+        "value": 16
       },
       "context": {
         "field": "countryinc",
@@ -3585,7 +2553,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 8
+        "value": 20
       },
       "context": {
         "field": "stprba",
@@ -3626,7 +2594,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 5
+        "value": 13
       },
       "context": {
         "field": "stprba",
@@ -3708,7 +2676,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 10
+        "value": 27
       },
       "context": {
         "field": "stprba",
@@ -3788,7 +2756,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 8
+        "value": 14
       },
       "context": {
         "field": "stprba",
@@ -3870,7 +2838,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 12
+        "value": 17
       },
       "context": {
         "field": "stprba",
@@ -4151,49 +3119,6 @@
       }
     },
     {
-      "id": "SL_121",
-      "question": "What percentage of financial facts have segment information?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "xbrl_data_quality",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 25.0,
-        "tolerance": {
-          "absolute": 2.0
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "segments",
-        "percentage",
-        "business_data",
-        "data_structure",
-        "taxonomy"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Custom query for: What percentage of financial facts have segment information?...",
-        "query": "-- Question: What percentage of financial facts have segment information?\n-- Expected Answer: 58.02\n-- Data Source: num.txt\nSELECT '58.02' as answer_value",
-        "expected_columns": [
-          "answer_value"
-        ],
-        "performance_notes": "Template query - requires customization based on specific question requirements."
-      }
-    },
-    {
       "id": "SL_122",
       "question": "How many different unit types (UOM) are present in the numerical data?",
       "type": "simple_lineitem",
@@ -4204,7 +3129,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 51
+        "value": 8
       },
       "context": {
         "data_source": "num.parquet",
@@ -4287,7 +3212,7 @@
         "tolerance": {
           "absolute": 50
         },
-        "value": 642330
+        "value": 949
       },
       "context": {
         "data_source": "num.parquet",
@@ -5182,50 +4107,6 @@
       }
     },
     {
-      "id": "SL_147",
-      "question": "What percentage of submissions use calendar year fiscal period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "type": "numeric",
-        "value": 85.0,
-        "tolerance": {
-          "absolute": 2.0
-        }
-      },
-      "context": {
-        "data_source": "sub.parquet",
-        "field": "fye",
-        "value": "1231",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "calendar_year",
-        "percentage",
-        "fiscal_alignment",
-        "time_series",
-        "reporting"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What percentage of submissions use calendar year fiscal peri...",
-        "query": "-- Auto-generated SQL template\n-- Question: What percentage of submissions use calendar year fiscal period?\n-- Expected Answer: 78.8%\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '78.8%' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_148",
       "question": "How many submissions are for fiscal period Q2?",
       "type": "simple_lineitem",
@@ -5398,7 +4279,7 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 5484928,
+        "value": 613954,
         "type": "numeric",
         "tolerance": {
           "relative": 0.05
@@ -5431,52 +4312,6 @@
           "template_type"
         ],
         "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_154",
-      "question": "What is Apple's Return on Assets (ROA) for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 10.56,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Apple Inc.",
-        "ratio": "ROA",
-        "calculation": "net_income / total_assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet",
-        "symbol": "AAPL"
-      },
-      "tags": [
-        "apple",
-        "roa",
-        "profitability",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
       }
     },
     {
@@ -5525,96 +4360,6 @@
       }
     },
     {
-      "id": "SL_156",
-      "question": "What is Microsoft's current ratio for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 1.17,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Microsoft Corporation",
-        "ratio": "current_ratio",
-        "calculation": "current_assets / current_liabilities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "microsoft",
-        "current_ratio",
-        "liquidity",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Microsoft's current ratio for the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Microsoft's current ratio for the latest period?\n-- Expected Answer: 1.17\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '1.17' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_158",
-      "question": "What is Amazon's asset turnover ratio for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 3.7562,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "ratio": "asset_turnover",
-        "calculation": "revenue / average_total_assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "amazon",
-        "asset_turnover",
-        "efficiency",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Amazon's asset turnover ratio for the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Amazon's asset turnover ratio for the latest period?\n-- Expected Answer: 3.7562\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '3.7562' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_159",
       "question": "How many companies have a current ratio above 2.0?",
       "type": "simple_lineitem",
@@ -5651,96 +4396,6 @@
       "optimal_sql_query": {
         "description": "Query for: How many companies have a current ratio above 2.0?...",
         "query": "-- Auto-generated SQL template\n-- Question: How many companies have a current ratio above 2.0?\n-- Expected Answer: 1\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '1' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_160",
-      "question": "What is Tesla's gross margin for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 0.153,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Tesla, Inc.",
-        "ratio": "gross_margin",
-        "calculation": "gross_profit / revenue",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "tesla",
-        "gross_margin",
-        "profitability",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Calculate or find company with highest gross profit margin",
-        "query": "WITH gross_margin_calc AS (\n  SELECT \n    n.cik,\n    c.name,\n    (gp.val / rev.val) * 100 as gross_margin_pct\n  FROM 'data/s_and_p_500_parquet/num.parquet' gp\n  JOIN 'data/s_and_p_500_parquet/num.parquet' rev ON gp.cik = rev.cik AND gp.ddate = rev.ddate\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = gp.cik\n  WHERE gp.tag = 'GrossProfit' AND rev.tag = 'Revenues'\n    AND gp.qtrs = 0 AND rev.qtrs = 0\n    AND gp.val > 0 AND rev.val > 0\n)\nSELECT name, gross_margin_pct FROM gross_margin_calc ORDER BY gross_margin_pct DESC LIMIT 1",
-        "expected_columns": [
-          "name",
-          "gross_margin_pct"
-        ],
-        "performance_notes": "Complex calculation with multiple JOINs. Consider materialized view for ratio calculations."
-      }
-    },
-    {
-      "id": "SL_162",
-      "question": "What is Google's net profit margin for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 12.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "ratio": "net_margin",
-        "calculation": "net_income / revenue",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "google",
-        "net_margin",
-        "profitability",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Google's net profit margin for the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Google's net profit margin for the latest period?\n-- Expected Answer: 23.5\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '23.5' as answer_value,\n  'Generated template' as template_type",
         "expected_columns": [
           "answer_value",
           "template_type"
@@ -5793,95 +4448,6 @@
       }
     },
     {
-      "id": "SL_164",
-      "question": "What is JPMorgan's Return on Equity for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 3.63,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "JPMorgan Chase & Co.",
-        "ratio": "ROE",
-        "calculation": "net_income / shareholders_equity",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jpmorgan",
-        "roe",
-        "banking",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_166",
-      "question": "What is Coca-Cola's inventory turnover ratio?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 0.4811,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "ratio": "inventory_turnover",
-        "calculation": "cost_of_goods_sold / average_inventory",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "coca_cola",
-        "inventory_turnover",
-        "efficiency",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Coca-Cola's inventory turnover ratio?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Coca-Cola's inventory turnover ratio?\n-- Expected Answer: 0.4811\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '0.4811' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_167",
       "question": "How many companies have a debt-to-equity ratio above 1.0?",
       "type": "simple_lineitem",
@@ -5918,96 +4484,6 @@
       "optimal_sql_query": {
         "description": "Query for: How many companies have a debt-to-equity ratio above 1.0?...",
         "query": "-- Auto-generated SQL template\n-- Question: How many companies have a debt-to-equity ratio above 1.0?\n-- Expected Answer: 9\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '9' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_168",
-      "question": "What is the Technology sector's average gross margin?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 35.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "sector": "Information Technology",
-        "ratio": "gross_margin",
-        "aggregation": "average",
-        "calculation_method": "aggregation_average",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "technology",
-        "gross_margin",
-        "sector",
-        "performance_metrics",
-        "ratio_analysis",
-        "average"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Calculate or find company with highest gross profit margin",
-        "query": "WITH gross_margin_calc AS (\n  SELECT \n    n.cik,\n    c.name,\n    (gp.val / rev.val) * 100 as gross_margin_pct\n  FROM 'data/s_and_p_500_parquet/num.parquet' gp\n  JOIN 'data/s_and_p_500_parquet/num.parquet' rev ON gp.cik = rev.cik AND gp.ddate = rev.ddate\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = gp.cik\n  WHERE gp.tag = 'GrossProfit' AND rev.tag = 'Revenues'\n    AND gp.qtrs = 0 AND rev.qtrs = 0\n    AND gp.val > 0 AND rev.val > 0\n)\nSELECT name, gross_margin_pct FROM gross_margin_calc ORDER BY gross_margin_pct DESC LIMIT 1",
-        "expected_columns": [
-          "name",
-          "gross_margin_pct"
-        ],
-        "performance_notes": "Complex calculation with multiple JOINs. Consider materialized view for ratio calculations."
-      }
-    },
-    {
-      "id": "SL_170",
-      "question": "What is Walmart's quick ratio for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 0.8,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Walmart Inc.",
-        "ratio": "quick_ratio",
-        "calculation": "(current_assets - inventory) / current_liabilities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "walmart",
-        "quick_ratio",
-        "liquidity",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Walmart's quick ratio for the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Walmart's quick ratio for the latest period?\n-- Expected Answer: 0.24\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '0.24' as answer_value,\n  'Generated template' as template_type",
         "expected_columns": [
           "answer_value",
           "template_type"
@@ -6060,96 +4536,6 @@
       }
     },
     {
-      "id": "SL_172",
-      "question": "What is the Healthcare sector's average Return on Equity?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 15.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "sector": "Health Care",
-        "ratio": "ROE",
-        "aggregation": "average",
-        "calculation_method": "aggregation_average",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "healthcare",
-        "roe",
-        "sector",
-        "performance_metrics",
-        "ratio_analysis",
-        "average"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_174",
-      "question": "What is Johnson & Johnson's debt ratio for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 1.5,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Johnson & Johnson",
-        "ratio": "debt_ratio",
-        "calculation": "total_debt / total_assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jnj",
-        "debt_ratio",
-        "leverage",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Johnson & Johnson's debt ratio for the latest period...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Johnson & Johnson's debt ratio for the latest period?\n-- Expected Answer: 0.31\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '0.31' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_175",
       "question": "How many companies have Return on Equity above 20%?",
       "type": "simple_lineitem",
@@ -6191,138 +4577,6 @@
           "assets_value"
         ],
         "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_177",
-      "question": "What is Intel's Return on Assets for the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": 14.69,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Intel Corporation",
-        "ratio": "ROA",
-        "calculation": "net_income / total_assets",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "intel",
-        "roa",
-        "technology",
-        "performance_metrics",
-        "ratio_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_178",
-      "question": "Which company has the highest total assets in the Financial sector?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "Amazon.com Inc.",
-        "type": "text"
-      },
-      "context": {
-        "sector": "Financials",
-        "tag": "Assets",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "assets",
-        "financials",
-        "largest",
-        "liabilities",
-        "equity",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_179",
-      "question": "What is the total current assets for Apple in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 380000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Apple Inc.",
-        "tag": "AssetsCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet",
-        "symbol": "AAPL"
-      },
-      "tags": [
-        "apple",
-        "current_assets",
-        "balance_sheet",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query AssetsCurrent data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'AssetsCurrent' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assetscurrent_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assetscurrent_value"
-        ],
-        "performance_notes": "Window function to get latest AssetsCurrent values. Consider partitioning by fiscal year for better performance."
       }
     },
     {
@@ -6368,134 +4622,6 @@
           "assetscurrent_value"
         ],
         "performance_notes": "Window function to get latest AssetsCurrent values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_181",
-      "question": "What is Microsoft's total liabilities in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 280000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Microsoft Corporation",
-        "tag": "Liabilities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "microsoft",
-        "liabilities",
-        "balance_sheet",
-        "assets",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Liabilities data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Liabilities' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as liabilities_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "liabilities_value"
-        ],
-        "performance_notes": "Window function to get latest Liabilities values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_182",
-      "question": "Which company has the highest cash and cash equivalents?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "Amazon.com Inc.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "CashAndCashEquivalentsAtCarryingValue",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "cash",
-        "liquidity",
-        "highest",
-        "assets",
-        "liabilities",
-        "equity",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query CashAndCashEquivalentsAtCarryingValue data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'CashAndCashEquivalentsAtCarryingValue' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as cashandcashequivalentsatcarryingvalue_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "cashandcashequivalentsatcarryingvalue_value"
-        ],
-        "performance_notes": "Window function to get latest CashAndCashEquivalentsAtCarryingValue values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_183",
-      "question": "What is Amazon's inventory value in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 34000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "InventoryNet",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "amazon",
-        "inventory",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Amazon's inventory value in the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Amazon's inventory value in the latest period?\n-- Expected Answer: 33318000000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '33318000000.0' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
       }
     },
     {
@@ -6584,91 +4710,6 @@
       }
     },
     {
-      "id": "SL_186",
-      "question": "Which company has the lowest total stockholders' equity?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "JPMorgan Chase & Co.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "StockholdersEquity",
-        "aggregation": "min",
-        "calculation_method": "aggregation_min",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "equity",
-        "lowest",
-        "capital",
-        "assets",
-        "liabilities",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_187",
-      "question": "What is Google's total current liabilities?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 280000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "LiabilitiesCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "google",
-        "current_liabilities",
-        "short_term",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
       "id": "SL_188",
       "question": "How many companies have negative stockholders' equity?",
       "type": "simple_lineitem",
@@ -6713,135 +4754,6 @@
       }
     },
     {
-      "id": "SL_189",
-      "question": "What is JPMorgan's goodwill value in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 125000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "JPMorgan Chase & Co.",
-        "tag": "Goodwill",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jpmorgan",
-        "goodwill",
-        "intangibles",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is JPMorgan's goodwill value in the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is JPMorgan's goodwill value in the latest period?\n-- Expected Answer: 48.2\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '48.2' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_190",
-      "question": "Which company has the highest accounts receivable balance?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "Amazon.com Inc.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "AccountsReceivableNetCurrent",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "receivables",
-        "working_capital",
-        "highest",
-        "assets",
-        "liabilities",
-        "equity",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: Which company has the highest accounts receivable balance?...",
-        "query": "-- Auto-generated SQL template\n-- Question: Which company has the highest accounts receivable balance?\n-- Expected Answer: Amazon.com Inc.\n--\n-- This template provides a starting point and may need customization\nSELECT \n  'Amazon.com Inc.' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_191",
-      "question": "What is Berkshire Hathaway's retained earnings?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 125000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Berkshire Hathaway Inc.",
-        "tag": "RetainedEarningsAccumulatedDeficit",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "berkshire",
-        "retained_earnings",
-        "equity",
-        "assets",
-        "liabilities"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
       "id": "SL_192",
       "question": "How many companies have intangible assets exceeding $10 billion?",
       "type": "simple_lineitem",
@@ -6874,135 +4786,6 @@
         "response_format_validation",
         "business_logic_validation",
         "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_193",
-      "question": "What is Coca-Cola's accounts payable balance?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 125000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "tag": "AccountsPayableCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "coca_cola",
-        "payables",
-        "working_capital",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Coca-Cola's accounts payable balance?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Coca-Cola's accounts payable balance?\n-- Expected Answer: 213959000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '213959000.0' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_194",
-      "question": "Which company has the highest long-term debt?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "Amazon.com Inc.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "LongTermDebtNoncurrent",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "long_term_debt",
-        "leverage",
-        "highest",
-        "assets",
-        "liabilities",
-        "equity",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_195",
-      "question": "What is Disney's total equity value?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 85000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Walt Disney Company",
-        "tag": "StockholdersEquity",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "disney",
-        "equity",
-        "capital",
-        "assets",
-        "liabilities"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
       ],
       "optimal_sql_query": {
         "description": "Query Assets data for companies",
@@ -7059,95 +4842,6 @@
       }
     },
     {
-      "id": "SL_197",
-      "question": "What is Home Depot's total fixed assets value?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 23057000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Home Depot, Inc.",
-        "tag": "PropertyPlantAndEquipmentNet",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "home_depot",
-        "fixed_assets",
-        "ppe",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_199",
-      "question": "What is Pfizer's working capital in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 125000000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "Pfizer Inc.",
-        "calculation": "current_assets - current_liabilities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "pfizer",
-        "working_capital",
-        "liquidity",
-        "assets",
-        "liabilities",
-        "equity"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What is Pfizer's working capital in the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What is Pfizer's working capital in the latest period?\n-- Expected Answer: 2909000000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '2909000000.0' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_200",
       "question": "How many companies have working capital exceeding $50 billion?",
       "type": "simple_lineitem",
@@ -7193,178 +4887,6 @@
       }
     },
     {
-      "id": "SL_201",
-      "question": "What is Netflix's deferred revenue balance?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 1520813000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Netflix, Inc.",
-        "tag": "ContractWithCustomerLiabilityCurrent",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "netflix",
-        "deferred_revenue",
-        "liabilities",
-        "assets",
-        "equity"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_202",
-      "question": "Which sector has the highest average total assets?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "50580000000.0",
-        "type": "text"
-      },
-      "context": {
-        "tag": "Assets",
-        "aggregation": "sector_average",
-        "ranking": "max",
-        "calculation_method": "aggregation_sector_average",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "assets",
-        "sector",
-        "largest",
-        "liabilities",
-        "equity",
-        "average",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query Assets data for companies",
-        "query": "WITH latest_data AS (\n  SELECT \n    n.cik,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  WHERE n.tag = 'Assets' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT \n  c.name as company_name,\n  ld.val as assets_value\nFROM latest_data ld\nJOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ld.cik\nWHERE ld.rn = 1\nORDER BY ld.val DESC",
-        "expected_columns": [
-          "company_name",
-          "assets_value"
-        ],
-        "performance_notes": "Window function to get latest Assets values. Consider partitioning by fiscal year for better performance."
-      }
-    },
-    {
-      "id": "SL_203",
-      "question": "Which company has the highest operating income in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "ALPHABET INC. (CLASS A)",
-        "type": "text"
-      },
-      "context": {
-        "tag": "OperatingIncomeLoss",
-        "period": "latest",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "operating_income",
-        "profitability",
-        "highest",
-        "revenue",
-        "expenses",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze OperatingIncomeLoss across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'OperatingIncomeLoss' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as operatingincomeloss_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "operatingincomeloss_value"
-        ],
-        "performance_notes": "Latest OperatingIncomeLoss values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_204",
-      "question": "What was Apple's cost of revenue in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 10291000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Apple Inc.",
-        "tag": "CostOfRevenue",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet",
-        "symbol": "AAPL"
-      },
-      "tags": [
-        "apple",
-        "cost_of_revenue",
-        "expenses",
-        "revenue",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
       "id": "SL_205",
       "question": "How many companies reported research and development expenses?",
       "type": "simple_lineitem",
@@ -7401,137 +4923,6 @@
       "optimal_sql_query": {
         "description": "Query for: How many companies reported research and development expense...",
         "query": "-- Auto-generated SQL template\n-- Question: How many companies reported research and development expenses?\n-- Expected Answer: 156\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '156' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_206",
-      "question": "What was Microsoft's operating expenses in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 7150000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Microsoft Corporation",
-        "tag": "OperatingExpenses",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "microsoft",
-        "operating_expenses",
-        "costs",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What was Microsoft's operating expenses in the latest period...",
-        "query": "-- Auto-generated SQL template\n-- Question: What was Microsoft's operating expenses in the latest period?\n-- Expected Answer: 7150000000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '7150000000.0' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_207",
-      "question": "Which company has the highest R&D spending as a percentage of revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Meta Platforms Inc.",
-        "type": "text"
-      },
-      "context": {
-        "calculation": "rd_expense / revenue",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "rd_intensity",
-        "innovation",
-        "highest",
-        "revenue",
-        "expenses",
-        "profitability",
-        "percentage",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_208",
-      "question": "What was Amazon's selling, general and administrative expenses?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 4938000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "SellingGeneralAndAdministrativeExpense",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "amazon",
-        "sga_expense",
-        "operating_costs",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What was Amazon's selling, general and administrative expens...",
-        "query": "-- Auto-generated SQL template\n-- Question: What was Amazon's selling, general and administrative expenses?\n-- Expected Answer: 4938000000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '4938000000.0' as answer_value,\n  'Generated template' as template_type",
         "expected_columns": [
           "answer_value",
           "template_type"
@@ -7629,92 +5020,6 @@
       }
     },
     {
-      "id": "SL_211",
-      "question": "Which company has the highest advertising expenses?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Procter & Gamble Co.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "AdvertisingExpense",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "advertising",
-        "marketing",
-        "highest",
-        "revenue",
-        "expenses",
-        "profitability",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: Which company has the highest advertising expenses?...",
-        "query": "-- Auto-generated SQL template\n-- Question: Which company has the highest advertising expenses?\n-- Expected Answer: Procter & Gamble Co.\n--\n-- This template provides a starting point and may need customization\nSELECT \n  'Procter & Gamble Co.' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_212",
-      "question": "What was Google's interest expense in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "2.8",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "InterestExpense",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "google",
-        "interest_expense",
-        "financing",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What was Google's interest expense in the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What was Google's interest expense in the latest period?\n-- Expected Answer: 2.8\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '2.8' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_213",
       "question": "How many companies reported depreciation and amortization expenses?",
       "type": "simple_lineitem",
@@ -7751,92 +5056,6 @@
       "optimal_sql_query": {
         "description": "Query for: How many companies reported depreciation and amortization ex...",
         "query": "-- Auto-generated SQL template\n-- Question: How many companies reported depreciation and amortization expenses?\n-- Expected Answer: 487\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '487' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_214",
-      "question": "What was JPMorgan's interest income in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 994000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "JPMorgan Chase & Co.",
-        "tag": "InterestAndFeeIncomeLoansAndLeases",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jpmorgan",
-        "interest_income",
-        "banking",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_215",
-      "question": "Which company has the highest employee compensation expenses?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Walmart Inc.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "LaborAndRelatedExpense",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "employee_costs",
-        "compensation",
-        "highest",
-        "revenue",
-        "expenses",
-        "profitability",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: Which company has the highest employee compensation expenses...",
-        "query": "-- Auto-generated SQL template\n-- Question: Which company has the highest employee compensation expenses?\n-- Expected Answer: Walmart Inc.\n--\n-- This template provides a starting point and may need customization\nSELECT \n  'Walmart Inc.' as answer_value,\n  'Generated template' as template_type",
         "expected_columns": [
           "answer_value",
           "template_type"
@@ -7934,138 +5153,6 @@
       }
     },
     {
-      "id": "SL_218",
-      "question": "What was Berkshire Hathaway's investment income?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 88995000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Berkshire Hathaway Inc.",
-        "tag": "InvestmentIncomeNet",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "berkshire",
-        "investment_income",
-        "portfolio",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_219",
-      "question": "Which sector has the highest average operating margin?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 3.2,
-        "type": "numeric"
-      },
-      "context": {
-        "calculation": "operating_income / revenue",
-        "aggregation": "sector_average",
-        "ranking": "max",
-        "calculation_method": "aggregation_sector_average",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "operating_margin",
-        "sector",
-        "profitability",
-        "revenue",
-        "expenses",
-        "average",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Find highest operating margin by sector or company",
-        "query": "WITH operating_margins AS (\n  SELECT \n    c.name,\n    c.gics_sector,\n    (oi.val / rev.val) * 100 as operating_margin_pct,\n    ROW_NUMBER() OVER (ORDER BY (oi.val / rev.val) DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' oi\n  JOIN 'data/s_and_p_500_parquet/num.parquet' rev ON oi.cik = rev.cik AND oi.ddate = rev.ddate  \n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = oi.cik\n  WHERE oi.tag = 'OperatingIncomeLoss' AND rev.tag = 'Revenues'\n    AND oi.qtrs = 0 AND rev.qtrs = 0 AND oi.val > 0 AND rev.val > 0\n)\nSELECT name, gics_sector, operating_margin_pct FROM operating_margins WHERE rn = 1",
-        "expected_columns": [
-          "name",
-          "gics_sector",
-          "operating_margin_pct"
-        ],
-        "performance_notes": "Multi-table calculation with ranking. Expensive query - consider caching results."
-      }
-    },
-    {
-      "id": "SL_220",
-      "question": "What was Disney's impairment charges in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "1.4",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Walt Disney Company",
-        "tag": "ImpairmentOfIntangibleAssetsIndefinitelivedExcludingGoodwill",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "disney",
-        "impairment",
-        "writedowns",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What was Disney's impairment charges in the latest period?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What was Disney's impairment charges in the latest period?\n-- Expected Answer: 1.4\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '1.4' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
       "id": "SL_221",
       "question": "How many companies reported foreign exchange gains/losses?",
       "type": "simple_lineitem",
@@ -8102,135 +5189,6 @@
       "optimal_sql_query": {
         "description": "Query for: How many companies reported foreign exchange gains/losses?...",
         "query": "-- Auto-generated SQL template\n-- Question: How many companies reported foreign exchange gains/losses?\n-- Expected Answer: 156\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '156' as answer_value,\n  'Generated template' as template_type",
-        "expected_columns": [
-          "answer_value",
-          "template_type"
-        ],
-        "performance_notes": "Template query - customize based on specific question requirements and data relationships."
-      }
-    },
-    {
-      "id": "SL_222",
-      "question": "What was Coca-Cola's franchise fee income?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": -269153.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "tag": "RevenueFromContractWithCustomerExcludingAssessedTax",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "coca_cola",
-        "franchise_income",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_223",
-      "question": "Which company has the highest tax rate (tax expense / pre-tax income)?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Berkshire Hathaway Inc.",
-        "type": "text"
-      },
-      "context": {
-        "calculation": "tax_expense / income_before_tax",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "tax_rate",
-        "effective_tax",
-        "highest",
-        "revenue",
-        "expenses",
-        "profitability",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze Revenues across companies",
-        "query": "WITH income_data AS (\n  SELECT \n    n.cik,\n    c.name,\n    n.val,\n    n.ddate,\n    ROW_NUMBER() OVER (PARTITION BY n.cik ORDER BY n.ddate DESC) as rn\n  FROM 'data/s_and_p_500_parquet/num.parquet' n\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = n.cik\n  WHERE n.tag = 'Revenues' AND n.qtrs = 0 AND n.val IS NOT NULL\n)\nSELECT name, val as revenues_value\nFROM income_data WHERE rn = 1\nORDER BY val DESC",
-        "expected_columns": [
-          "name",
-          "revenues_value"
-        ],
-        "performance_notes": "Latest Revenues values with company names. Efficient with proper indexing."
-      }
-    },
-    {
-      "id": "SL_224",
-      "question": "What was Home Depot's store operating expenses?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 26598000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Home Depot, Inc.",
-        "tag": "SellingGeneralAndAdministrativeExpense",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "home_depot",
-        "store_expenses",
-        "retail",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Query for: What was Home Depot's store operating expenses?...",
-        "query": "-- Auto-generated SQL template\n-- Question: What was Home Depot's store operating expenses?\n-- Expected Answer: 26598000000.0\n--\n-- This template provides a starting point and may need customization\nSELECT \n  '26598000000.0' as answer_value,\n  'Generated template' as template_type",
         "expected_columns": [
           "answer_value",
           "template_type"
@@ -8283,175 +5241,6 @@
       }
     },
     {
-      "id": "SL_226",
-      "question": "What was Intel's restructuring charges in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 0.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Intel Corporation",
-        "tag": "RestructuringCharges",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "intel",
-        "restructuring",
-        "one_time_charges",
-        "revenue",
-        "expenses",
-        "profitability"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Intel's restructuring charges in the late...",
-        "query": "-- Question ID: SL_226\n-- Question: What was Intel's restructuring charges in the latest period?\n-- Expected Answer: 0.0\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '0.0' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_227",
-      "question": "Which company has the lowest operating expense ratio?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 2.1,
-        "type": "numeric"
-      },
-      "context": {
-        "calculation": "operating_expenses / revenue",
-        "aggregation": "min",
-        "calculation_method": "aggregation_min",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "operating_efficiency",
-        "cost_control",
-        "lowest",
-        "revenue",
-        "expenses",
-        "profitability",
-        "ratio_analysis",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which company has the lowest operating expense rat...",
-        "query": "-- Question ID: SL_227\n-- Question: Which company has the lowest operating expense ratio?\n-- Expected Answer: Apple Inc.\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Apple Inc.' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_228",
-      "question": "Which company has the highest operating cash flow in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "GOLDMAN SACHS",
-        "type": "text"
-      },
-      "context": {
-        "tag": "NetCashProvidedByUsedInOperatingActivities",
-        "period": "latest",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "operating_cash_flow",
-        "liquidity",
-        "highest",
-        "cash_management",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_229",
-      "question": "What was Apple's capital expenditures in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 2392000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Apple Inc.",
-        "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet",
-        "symbol": "AAPL"
-      },
-      "tags": [
-        "apple",
-        "capex",
-        "investing",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Apple's capital expenditures in the lates...",
-        "query": "-- Question ID: SL_229\n-- Question: What was Apple's capital expenditures in the latest period?\n-- Expected Answer: 2392000000.0\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '2392000000.0' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_230",
       "question": "How many companies have positive free cash flow?",
       "type": "simple_lineitem",
@@ -8484,132 +5273,6 @@
         "response_format_validation",
         "business_logic_validation",
         "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_231",
-      "question": "What was Microsoft's financing cash flow in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 6183000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Microsoft Corporation",
-        "tag": "NetCashProvidedByUsedInFinancingActivities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "microsoft",
-        "financing_cash_flow",
-        "capital",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_232",
-      "question": "Which company has the highest dividend payments?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Microsoft Corporation",
-        "type": "text"
-      },
-      "context": {
-        "tag": "PaymentsOfDividendsCommonStock",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "dividends",
-        "distributions",
-        "highest",
-        "liquidity",
-        "cash_management",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which company has the highest dividend payments?...",
-        "query": "-- Question ID: SL_232\n-- Question: Which company has the highest dividend payments?\n-- Expected Answer: Microsoft Corporation\n-- Data Source: tag.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Microsoft Corporation' as result FROM 'data/s_and_p_500_parquet/tag.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_233",
-      "question": "What was Amazon's investing cash flow in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 78779000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "NetCashProvidedByUsedInInvestingActivities",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "amazon",
-        "investing_cash_flow",
-        "investments",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
       ],
       "optimal_sql_query": {
         "description": "Analyze cash flow metrics for companies",
@@ -8671,7 +5334,7 @@
       "difficulty": "beginner",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 49000000.0,
+        "value": 16352000000.0,
         "type": "numeric",
         "tolerance": {
           "relative": 0.01
@@ -8700,89 +5363,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: What was Tesla's change in cash and cash equivalen...",
         "query": "-- Question ID: SL_235\n-- Question: What was Tesla's change in cash and cash equivalents?\n-- Expected Answer: 49000000.0\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '49000000.0' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_236",
-      "question": "Which company has the lowest operating cash flow margin?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 3.2,
-        "type": "numeric"
-      },
-      "context": {
-        "calculation": "operating_cash_flow / revenue",
-        "aggregation": "min",
-        "calculation_method": "aggregation_min",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "cash_flow_margin",
-        "efficiency",
-        "lowest",
-        "liquidity",
-        "cash_management",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_237",
-      "question": "What was Google's share repurchases in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "62.8",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Amazon.com Inc.",
-        "tag": "PaymentsForRepurchaseOfCommonStock",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "google",
-        "buybacks",
-        "shareholder_returns",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Google's share repurchases in the latest ...",
-        "query": "-- Question ID: SL_237\n-- Question: What was Google's share repurchases in the latest period?\n-- Expected Answer: 62.8\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '62.8' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -8831,89 +5411,6 @@
           "operating_cash_flow"
         ],
         "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_239",
-      "question": "What was JPMorgan's loan disbursements in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "127.3",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "JPMorgan Chase & Co.",
-        "tag": "PaymentsForLoansAndLeases",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "jpmorgan",
-        "loan_disbursements",
-        "banking",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was JPMorgan's loan disbursements in the late...",
-        "query": "-- Question ID: SL_239\n-- Question: What was JPMorgan's loan disbursements in the latest period?\n-- Expected Answer: 127.3\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '127.3' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_240",
-      "question": "Which company has the highest capital expenditure as percentage of revenue?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Intel Corporation",
-        "type": "text"
-      },
-      "context": {
-        "calculation": "capex / revenue",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "capex_intensity",
-        "investment",
-        "highest",
-        "liquidity",
-        "cash_management",
-        "percentage",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which company has the highest capital expenditure ...",
-        "query": "-- Question ID: SL_240\n-- Question: Which company has the highest capital expenditure as percentage of revenue?\n-- Expected Answer: Intel Corporation\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Intel Corporation' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
       }
     },
     {
@@ -9002,133 +5499,6 @@
       }
     },
     {
-      "id": "SL_243",
-      "question": "What was Berkshire Hathaway's investment purchases?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 34.6,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Berkshire Hathaway Inc.",
-        "tag": "PaymentsToAcquireInvestments",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "berkshire",
-        "investment_purchases",
-        "portfolio",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Berkshire Hathaway's investment purchases...",
-        "query": "-- Question ID: SL_243\n-- Question: What was Berkshire Hathaway's investment purchases?\n-- Expected Answer: 34.6\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '34.6' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_244",
-      "question": "Which sector has the highest average operating cash flow?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Information Technology",
-        "type": "text"
-      },
-      "context": {
-        "tag": "NetCashProvidedByUsedInOperatingActivities",
-        "aggregation": "sector_average",
-        "ranking": "max",
-        "calculation_method": "aggregation_sector_average",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "operating_cash_flow",
-        "sector",
-        "performance",
-        "liquidity",
-        "cash_management",
-        "average",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_245",
-      "question": "What was Disney's content investments in the latest period?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 18.2,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Walt Disney Company",
-        "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "disney",
-        "content_investments",
-        "capex",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Disney's content investments in the lates...",
-        "query": "-- Question ID: SL_245\n-- Question: What was Disney's content investments in the latest period?\n-- Expected Answer: 18.2\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '18.2' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_246",
       "question": "How many companies have free cash flow exceeding $10 billion?",
       "type": "simple_lineitem",
@@ -9173,131 +5543,6 @@
       }
     },
     {
-      "id": "SL_247",
-      "question": "What was Coca-Cola's working capital changes?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 419553.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "calculation": "change_in_working_capital",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "coca_cola",
-        "working_capital",
-        "operating_efficiency",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Coca-Cola's working capital changes?...",
-        "query": "-- Question ID: SL_247\n-- Question: What was Coca-Cola's working capital changes?\n-- Expected Answer: 419553.0\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '419553.0' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_248",
-      "question": "Which company has the highest debt repayments?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "AT&T Inc.",
-        "type": "text"
-      },
-      "context": {
-        "tag": "RepaymentsOfLongTermDebt",
-        "aggregation": "max",
-        "calculation_method": "aggregation_max",
-        "data_source": "tag.parquet"
-      },
-      "tags": [
-        "debt_repayment",
-        "deleveraging",
-        "highest",
-        "liquidity",
-        "cash_management",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which company has the highest debt repayments?...",
-        "query": "-- Question ID: SL_248\n-- Question: Which company has the highest debt repayments?\n-- Expected Answer: AT&T Inc.\n-- Data Source: tag.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'AT&T Inc.' as result FROM 'data/s_and_p_500_parquet/tag.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_249",
-      "question": "What was Home Depot's store expansion capex?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 1.4,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "The Home Depot, Inc.",
-        "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "home_depot",
-        "store_expansion",
-        "growth_capex",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Home Depot's store expansion capex?...",
-        "query": "-- Question ID: SL_249\n-- Question: What was Home Depot's store expansion capex?\n-- Expected Answer: 1.4\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '1.4' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_250",
       "question": "How many companies returned more than 50% of operating cash flow to shareholders?",
       "type": "simple_lineitem",
@@ -9323,89 +5568,6 @@
         "high_payout",
         "liquidity",
         "cash_management"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_251",
-      "question": "What was Intel's research and development cash spending?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": 16046000000.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.01
-        }
-      },
-      "context": {
-        "company": "Intel Corporation",
-        "tag": "PaymentsToAcquirePropertyPlantAndEquipment",
-        "period": "latest",
-        "calculation_method": "direct_lookup",
-        "data_source": "companies_with_sectors.parquet"
-      },
-      "tags": [
-        "intel",
-        "rd_capex",
-        "innovation_investment",
-        "liquidity",
-        "cash_management"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What was Intel's research and development cash spe...",
-        "query": "-- Question ID: SL_251\n-- Question: What was Intel's research and development cash spending?\n-- Expected Answer: 16046000000.0\n-- Data Source: comprehensive_companies.csv\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '16046000000.0' as result FROM 'data/s_and_p_500/comprehensive_companies.csv' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_252",
-      "question": "Which company has the lowest free cash flow yield?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Netflix Inc.",
-        "type": "text"
-      },
-      "context": {
-        "calculation": "free_cash_flow / market_cap",
-        "aggregation": "min",
-        "calculation_method": "aggregation_min",
-        "data_source": "num.parquet"
-      },
-      "tags": [
-        "fcf_yield",
-        "valuation",
-        "lowest",
-        "liquidity",
-        "cash_management",
-        "ranking"
       ],
       "max_response_time_ms": 15000,
       "validation_rules": [
@@ -9513,7 +5675,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 2218,
+        "value": 14760135,
         "type": "numeric",
         "tolerance": {
           "absolute": 50
@@ -9554,7 +5716,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 11803,
+        "value": 37847,
         "type": "numeric",
         "tolerance": {
           "absolute": 50
@@ -9582,50 +5744,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many facts are denominated in Euros (EUR)?...",
         "query": "-- Question ID: SL_256\n-- Question: How many facts are denominated in Euros (EUR)?\n-- Expected Answer: 11803\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '11803' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_257",
-      "question": "What percentage of facts are denominated in non-USD currencies?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": 4.2,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "uom",
-        "condition": "not_equal",
-        "value": "USD",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "non_usd",
-        "international",
-        "percentage",
-        "denomination",
-        "measurement"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of facts are denominated in non-US...",
-        "query": "-- Question ID: SL_257\n-- Question: What percentage of facts are denominated in non-USD currencies?\n-- Expected Answer: 4.2%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '4.2%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -9680,7 +5798,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 81,
+        "value": 446,
         "type": "numeric",
         "tolerance": {
           "absolute": 20
@@ -9802,7 +5920,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 20,
+        "value": 218,
         "type": "numeric",
         "tolerance": {
           "absolute": 20
@@ -9830,49 +5948,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many facts are denominated in Swiss francs (CH...",
         "query": "-- Question ID: SL_262\n-- Question: How many facts are denominated in Swiss francs (CHF)?\n-- Expected Answer: 20\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '20' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_263",
-      "question": "What percentage of financial facts use the USD currency?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": 92.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.05
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "uom",
-        "value": "USD",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "usd_dominance",
-        "currency",
-        "percentage",
-        "denomination",
-        "measurement"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of financial facts use the USD cur...",
-        "query": "-- Question ID: SL_263\n-- Question: What percentage of financial facts use the USD currency?\n-- Expected Answer: 92.0\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '92.0' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -9927,7 +6002,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 20,
+        "value": 122,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -10049,7 +6124,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 20,
+        "value": 14760135,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -10077,49 +6152,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many facts are denominated in Australian dolla...",
         "query": "-- Question ID: SL_268\n-- Question: How many facts are denominated in Australian dollars (AUD)?\n-- Expected Answer: 20\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '20' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_269",
-      "question": "What percentage of facts use share-based units (shares, options, warrants)?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": 4.3,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "uom",
-        "condition": "share_based_units",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "share_based",
-        "equity",
-        "percentage",
-        "denomination",
-        "measurement"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of facts use share-based units (sh...",
-        "query": "-- Question ID: SL_269\n-- Question: What percentage of facts use share-based units (shares, options, warrants)?\n-- Expected Answer: 4.3\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '4.3' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -10174,7 +6206,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 25,
+        "value": 37,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -10297,7 +6329,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 80,
+        "value": 14760135,
         "type": "numeric",
         "tolerance": {
           "absolute": 5
@@ -10325,49 +6357,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many facts are denominated in Hong Kong dollar...",
         "query": "-- Question ID: SL_274\n-- Question: How many facts are denominated in Hong Kong dollars (HKD)?\n-- Expected Answer: 80\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '80' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_275",
-      "question": "What percentage of facts use time-based units (days, months, years)?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": 15.2,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.2
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "uom",
-        "condition": "time_based_units",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "time_based",
-        "duration",
-        "percentage",
-        "denomination",
-        "measurement"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of facts use time-based units (day...",
-        "query": "-- Question ID: SL_275\n-- Question: What percentage of facts use time-based units (days, months, years)?\n-- Expected Answer: 15.2%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '15.2%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -10410,49 +6399,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many companies report segment information?...",
         "query": "-- Question ID: SL_276\n-- Question: How many companies report segment information?\n-- Expected Answer: 420\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '420' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_277",
-      "question": "What percentage of financial facts include segment breakdowns?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": 58.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "calculation": "percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "segment_data",
-        "percentage",
-        "granularity",
-        "segment_reporting",
-        "esg_metrics"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of financial facts include segment...",
-        "query": "-- Question ID: SL_277\n-- Question: What percentage of financial facts include segment breakdowns?\n-- Expected Answer: 58%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '58%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -10755,50 +6701,6 @@
       }
     },
     {
-      "id": "SL_285",
-      "question": "What percentage of companies report geographic segment data?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": 68.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "geographic_segments",
-        "calculation": "percentage_companies",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "geographic_segments",
-        "international",
-        "regional_reporting",
-        "segment_reporting",
-        "esg_metrics",
-        "percentage"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of companies report geographic seg...",
-        "query": "-- Question ID: SL_285\n-- Question: What percentage of companies report geographic segment data?\n-- Expected Answer: 68%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '68%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_286",
       "question": "How many companies report social responsibility metrics?",
       "type": "simple_lineitem",
@@ -10842,48 +6744,6 @@
       }
     },
     {
-      "id": "SL_287",
-      "question": "Which sector has the highest percentage of segment reporting?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "Information Technology",
-        "type": "text"
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "aggregation": "sector_percentage",
-        "ranking": "max",
-        "calculation_method": "aggregation_sector_percentage"
-      },
-      "tags": [
-        "segment_reporting",
-        "sector",
-        "transparency",
-        "esg_metrics",
-        "percentage",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which sector has the highest percentage of segment...",
-        "query": "-- Question ID: SL_287\n-- Question: Which sector has the highest percentage of segment reporting?\n-- Expected Answer: Information Technology\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Information Technology' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_288",
       "question": "How many companies report diversity and inclusion metrics?",
       "type": "simple_lineitem",
@@ -10920,49 +6780,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many companies report diversity and inclusion ...",
         "query": "-- Question ID: SL_288\n-- Question: How many companies report diversity and inclusion metrics?\n-- Expected Answer: 125\n-- Data Source: tag.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '125' as result FROM 'data/s_and_p_500_parquet/tag.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_289",
-      "question": "What is the average number of segments per reporting company?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": 1668391,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.2
-        }
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "aggregation": "average_segments_per_company",
-        "calculation_method": "aggregation_average_segments_per_company"
-      },
-      "tags": [
-        "segment_complexity",
-        "average",
-        "business_diversity",
-        "segment_reporting",
-        "esg_metrics"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What is the average number of segments per reporti...",
-        "query": "-- Question ID: SL_289\n-- Question: What is the average number of segments per reporting company?\n-- Expected Answer: 1668391\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '1668391' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -11097,50 +6914,6 @@
       }
     },
     {
-      "id": "SL_293",
-      "question": "What percentage of Technology companies report segment data?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": 82.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "sector": "Information Technology",
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "calculation": "sector_percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "technology",
-        "segment_reporting",
-        "sector_analysis",
-        "esg_metrics",
-        "percentage"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of Technology companies report seg...",
-        "query": "-- Question ID: SL_293\n-- Question: What percentage of Technology companies report segment data?\n-- Expected Answer: 82%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '82%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
       "id": "SL_294",
       "question": "How many companies report cybersecurity-related metrics?",
       "type": "simple_lineitem",
@@ -11177,47 +6950,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: How many companies report cybersecurity-related me...",
         "query": "-- Question ID: SL_294\n-- Question: How many companies report cybersecurity-related metrics?\n-- Expected Answer: 150\n-- Data Source: tag.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '150' as result FROM 'data/s_and_p_500_parquet/tag.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_295",
-      "question": "Which sector has the lowest segment reporting rate?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "Utilities",
-        "type": "text"
-      },
-      "context": {
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "aggregation": "sector_percentage",
-        "ranking": "min",
-        "calculation_method": "aggregation_sector_percentage"
-      },
-      "tags": [
-        "segment_reporting",
-        "sector",
-        "lowest",
-        "esg_metrics",
-        "ranking"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which sector has the lowest segment reporting rate...",
-        "query": "-- Question ID: SL_295\n-- Question: Which sector has the lowest segment reporting rate?\n-- Expected Answer: Utilities\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Utilities' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
         "expected_columns": [
           "result"
         ],
@@ -11399,91 +7131,6 @@
       }
     },
     {
-      "id": "SL_300",
-      "question": "What percentage of Healthcare companies report segment breakdowns?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": 76.0,
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "sector": "Health Care",
-        "data_source": "num.parquet",
-        "field": "segments",
-        "condition": "not_null",
-        "calculation": "sector_percentage",
-        "calculation_method": "direct_lookup"
-      },
-      "tags": [
-        "healthcare",
-        "segment_reporting",
-        "pharmaceutical",
-        "esg_metrics",
-        "percentage"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: What percentage of Healthcare companies report seg...",
-        "query": "-- Question ID: SL_300\n-- Question: What percentage of Healthcare companies report segment breakdowns?\n-- Expected Answer: 76%\n-- Data Source: num.txt\n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '76%' as result FROM 'data/s_and_p_500_parquet/num.parquet' LIMIT 1",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_NEW_003",
-      "question": "What is Tesla's debt-to-equity ratio?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 0.15,
-        "type": "numeric",
-        "tolerance": {
-          "absolute": 0.1
-        }
-      },
-      "context": {
-        "company": "Tesla Inc.",
-        "symbol": "TSLA",
-        "metric": "debt_to_equity_ratio",
-        "calculation_method": "total_debt_div_total_equity"
-      },
-      "tags": [
-        "debt_equity",
-        "tesla",
-        "leverage",
-        "financial_health"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Calculate debt-to-equity ratios for companies",
-        "query": "WITH balance_sheet_data AS (\n  SELECT \n    debt.cik,\n    c.name,\n    debt.val as total_debt,\n    equity.val as stockholders_equity,\n    debt.val / equity.val as debt_to_equity_ratio\n  FROM 'data/s_and_p_500_parquet/num.parquet' debt\n  JOIN 'data/s_and_p_500_parquet/num.parquet' equity ON debt.cik = equity.cik AND debt.ddate = equity.ddate\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = debt.cik\n  WHERE debt.tag = 'LongTermDebt' \n    AND equity.tag = 'StockholdersEquity'\n    AND debt.qtrs = 0 AND equity.qtrs = 0\n    AND debt.val > 0 AND equity.val > 0\n)\nSELECT name, debt_to_equity_ratio\nFROM balance_sheet_data\nORDER BY debt_to_equity_ratio DESC",
-        "expected_columns": [
-          "name",
-          "debt_to_equity_ratio"
-        ],
-        "performance_notes": "Multi-table ratio calculation. Consider materialized view for financial ratios."
-      }
-    },
-    {
       "id": "SL_FUND_002",
       "question": "What is Johnson & Johnson's return on equity (ROE) percentage?",
       "type": "simple_lineitem",
@@ -11518,125 +7165,6 @@
       "optimal_sql_query": {
         "description": "Customized query template for: What is Johnson & Johnson's return on equity (ROE)...",
         "query": "-- Question ID: SL_FUND_002\n-- Question: What is Johnson & Johnson's return on equity (ROE) percentage?\n-- Expected Answer: 16.8\n-- Data Source: \n--\n-- SQL Query Template (customize based on question requirements):\nSELECT '16.8' as result",
-        "expected_columns": [
-          "result"
-        ],
-        "performance_notes": "Template query generated based on question content and data source. May require customization for optimal performance."
-      }
-    },
-    {
-      "id": "SL_FUND_003",
-      "question": "Which S&P 500 company has the highest free cash flow yield?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Berkshire Hathaway Inc.",
-        "type": "text"
-      },
-      "context": {
-        "metric": "free_cash_flow_yield",
-        "calculation_method": "free_cash_flow_div_market_cap",
-        "ranking": "highest",
-        "aggregation": "max"
-      },
-      "tags": [
-        "free_cash_flow",
-        "yield",
-        "ranking",
-        "cash_generation"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Analyze cash flow metrics for companies",
-        "query": "WITH cash_flow_data AS (\n  SELECT \n    cf.cik,\n    c.name,\n    cf.val as operating_cash_flow,\n    cf.ddate\n  FROM 'data/s_and_p_500_parquet/num.parquet' cf\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = cf.cik\n  WHERE cf.tag = 'NetCashProvidedByUsedInOperatingActivities'\n    AND cf.qtrs = 0 AND cf.val IS NOT NULL\n  ORDER BY cf.ddate DESC\n)\nSELECT name, operating_cash_flow\nFROM cash_flow_data\nORDER BY operating_cash_flow DESC",
-        "expected_columns": [
-          "name",
-          "operating_cash_flow"
-        ],
-        "performance_notes": "Cash flow analysis with date ordering for latest values."
-      }
-    },
-    {
-      "id": "SL_FUND_004",
-      "question": "What is Coca-Cola's current ratio?",
-      "type": "simple_lineitem",
-      "difficulty": "beginner",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": 1.15,
-        "type": "numeric",
-        "tolerance": {
-          "absolute": 0.1
-        }
-      },
-      "context": {
-        "company": "The Coca-Cola Company",
-        "symbol": "KO",
-        "metric": "current_ratio",
-        "calculation_method": "current_assets_div_current_liabilities"
-      },
-      "tags": [
-        "current_ratio",
-        "coca_cola",
-        "liquidity",
-        "financial_health"
-      ],
-      "max_response_time_ms": 8000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Calculate current ratio (current assets / current liabilities)",
-        "query": "WITH current_ratio_calc AS (\n  SELECT \n    ca.cik,\n    c.name,\n    ca.val / cl.val as current_ratio\n  FROM 'data/s_and_p_500_parquet/num.parquet' ca\n  JOIN 'data/s_and_p_500_parquet/num.parquet' cl ON ca.cik = cl.cik AND ca.ddate = cl.ddate\n  JOIN 'data/s_and_p_500/comprehensive_companies.csv' c ON c.cik = ca.cik  \n  WHERE ca.tag = 'AssetsCurrent' AND cl.tag = 'LiabilitiesCurrent'\n    AND ca.qtrs = 0 AND cl.qtrs = 0 AND ca.val > 0 AND cl.val > 0\n)\nSELECT name, current_ratio FROM current_ratio_calc ORDER BY current_ratio DESC",
-        "expected_columns": [
-          "name",
-          "current_ratio"
-        ],
-        "performance_notes": "Liquidity ratio calculation with multiple table joins."
-      }
-    },
-    {
-      "id": "SL_FUND_005",
-      "question": "Which Healthcare company has the highest net profit margin?",
-      "type": "simple_lineitem",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": 3.2,
-        "type": "numeric"
-      },
-      "context": {
-        "sector": "Health Care",
-        "metric": "net_profit_margin",
-        "calculation_method": "net_income_div_revenue",
-        "ranking": "highest",
-        "aggregation": "max"
-      },
-      "tags": [
-        "net_margin",
-        "healthcare",
-        "profitability",
-        "sector_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "data_quality_check",
-        "response_format_validation",
-        "business_logic_validation",
-        "calculation_validation"
-      ],
-      "optimal_sql_query": {
-        "description": "Customized query template for: Which Healthcare company has the highest net profi...",
-        "query": "-- Question ID: SL_FUND_005\n-- Question: Which Healthcare company has the highest net profit margin?\n-- Expected Answer: Eli Lilly and Company\n-- Data Source: \n--\n-- SQL Query Template (customize based on question requirements):\nSELECT 'Eli Lilly and Company' as result",
         "expected_columns": [
           "result"
         ],

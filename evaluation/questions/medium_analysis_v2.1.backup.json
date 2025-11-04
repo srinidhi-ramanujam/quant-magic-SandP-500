@@ -1,9 +1,9 @@
 {
   "metadata": {
-    "version": "3.0",
+    "version": "2.1",
     "name": "Medium Complexity Analysis Questions - Expanded",
     "description": "Comprehensive multi-step analysis covering all 12 S&P 500 categories with medium complexity questions",
-    "total_questions": 68,
+    "total_questions": 50,
     "target_pass_rate": 0.8,
     "estimated_runtime_minutes": 150,
     "question_type": "medium_analysis",
@@ -25,17 +25,17 @@
       {
         "name": "sector_industry_analysis",
         "description": "Multi-step strategic sector analysis and industry benchmarking for investment decisions",
-        "count": 7
+        "count": 5
       },
       {
         "name": "corporate_identity_metadata",
         "description": "Multi-step company identification and corporate structure analysis",
-        "count": 1
+        "count": 4
       },
       {
         "name": "geographic_regulatory",
         "description": "Multi-step geographic exposure analysis and regulatory impact assessment",
-        "count": 5
+        "count": 4
       },
       {
         "name": "temporal_filing_patterns",
@@ -45,69 +45,54 @@
       {
         "name": "xbrl_data_quality",
         "description": "Multi-step financial reporting standards and data integrity validation",
-        "count": 0
+        "count": 4
       },
       {
         "name": "financial_ratios_performance",
         "description": "Multi-step key performance ratios and profitability analysis for investment evaluation",
-        "count": 5
+        "count": 4
       },
       {
         "name": "balance_sheet_analysis",
         "description": "Multi-step balance sheet strength, liquidity, and capital structure assessment",
-        "count": 8
+        "count": 4
       },
       {
         "name": "income_statement_analysis",
         "description": "Multi-step revenue quality, margin analysis, and earnings sustainability evaluation",
-        "count": 7
+        "count": 4
       },
       {
         "name": "cash_flow_analysis",
         "description": "Multi-step cash generation, working capital management, and capital allocation efficiency",
-        "count": 7
+        "count": 4
       },
       {
         "name": "currency_units",
         "description": "Multi-step multi-currency exposure and foreign exchange risk analysis",
-        "count": 2
+        "count": 4
       },
       {
         "name": "business_segments_esg",
         "description": "Multi-step business segment performance and esg factor integration for sustainable investing",
-        "count": 2
+        "count": 4
       },
       {
         "name": "financial_statement_line_items",
         "description": "Multi-step core financial statement metrics and cross-statement relationships",
-        "count": 2
+        "count": 4
       }
     ],
     "difficulty_distribution": {
-      "intermediate": 50
+      "intermediate": 15,
+      "advanced": 0
     },
     "analysis_types": {
       "comparative_analysis": 3,
       "statistical_analysis": 2,
       "trend_analysis": 1,
       "ranking_analysis": 1
-    },
-    "last_updated": "2025-11-03",
-    "active_questions": 50,
-    "disabled_questions": 18,
-    "validation_date": "2025-11-03",
-    "validation_status": "Phase 1-3 Complete (Data availability, Complexity, CFO relevance validated). Answer verification pending.",
-    "validation_notes": [
-      "Phase 1-3 validation complete (Nov 3, 2025)",
-      "54% retention rate from original 50 questions (27 passed validation)",
-      "7 additional questions saved via company alias fixes (34 total kept)",
-      "18 questions disabled (5 memory issues, 3 complexity, 3 low relevance, 5 companies not found, 2 data issues)",
-      "18 high-quality replacement questions added",
-      "All 52 active questions meet data availability, complexity, CFO relevance, and framework fit criteria",
-      "Answer verification pending - user will handle separately",
-      "Company aliases expanded from 120 to 161 entries",
-      "Validation methodology documented and reusable for other tiers"
-    ]
+    }
   },
   "questions": [
     {
@@ -195,8 +180,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_003",
@@ -229,8 +213,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_004",
@@ -289,10 +272,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too simple for medium tier, move to simple tier",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_006",
@@ -329,8 +309,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_007",
@@ -365,10 +344,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Data availability issue - requires external market capitalization data",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_008",
@@ -492,10 +468,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - filing pattern analysis has limited business value",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_012",
@@ -528,10 +501,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - XBRL data completeness analysis has limited business value",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_013",
@@ -560,10 +530,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - taxonomy extension usage has limited business value",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_014",
@@ -599,8 +566,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_015",
@@ -829,10 +795,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too simple for medium tier, move to simple tier",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_021",
@@ -980,8 +943,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_025",
@@ -1074,10 +1036,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Data availability issue - correlation analysis may be memory-intensive",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_028",
@@ -1147,10 +1106,7 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too complex for medium tier, move to complex tier or simplify",
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 20000
     },
     {
       "id": "MA_030",
@@ -1562,10 +1518,7 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Coca-Cola Co. not found in database",
-      "disabled_date": "2025-11-03"
+      ]
     },
     {
       "id": "MA_041",
@@ -1802,10 +1755,7 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - LVMH, Herm\u00e8s, Est\u00e9e Lauder not found in database (European companies)",
-      "disabled_date": "2025-11-03"
+      ]
     },
     {
       "id": "MA_047",
@@ -1846,10 +1796,7 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - General Electric Co. not found in database",
-      "disabled_date": "2025-11-03"
+      ]
     },
     {
       "id": "MA_048",
@@ -1928,10 +1875,7 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Walt Disney Co. not found in database",
-      "disabled_date": "2025-11-03"
+      ]
     },
     {
       "id": "MA_050",
@@ -1963,615 +1907,6 @@
         "automotive_transformation",
         "business_model_shift",
         "segment_analysis"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Stellantis N.V. not found in database (recently formed/European company)",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_002_NEW",
-      "replaces": "MA_002",
-      "reason": "Memory-intensive correlation analysis",
-      "question": "Calculate the median Return on Assets (ROA) for Technology companies and compare it to the sector-wide 25th and 75th percentile values. What is the interquartile range, and which companies fall outside the typical performance band?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "statistical_analysis",
-        "tolerance": {
-          "absolute": 0.02
-        }
-      },
-      "context": {
-        "analysis_type": "percentile_analysis",
-        "sector": "Information Technology",
-        "metric": "return_on_assets",
-        "statistical_measures": [
-          "median",
-          "p25",
-          "p75",
-          "iqr"
-        ]
-      },
-      "tags": [
-        "roa",
-        "percentile_analysis",
-        "outlier_detection"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_003_NEW",
-      "replaces": "MA_003",
-      "reason": "Memory-intensive sector-wide ratio calculations",
-      "question": "For the Energy sector, calculate the average debt-to-equity ratio and identify the top 3 companies with the lowest leverage. What percentage of sector companies have debt-to-equity ratios below 1.0?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "numeric",
-        "tolerance": {
-          "absolute": 0.1
-        }
-      },
-      "context": {
-        "analysis_type": "leverage_analysis",
-        "sector": "Energy",
-        "metric": "debt_to_equity_ratio",
-        "ranking": "top_3_lowest"
-      },
-      "tags": [
-        "leverage",
-        "debt_equity",
-        "sector_analysis"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_005_NEW",
-      "replaces": "MA_005",
-      "reason": "Too simple for medium tier",
-      "question": "Analyze Return on Assets volatility across sectors by calculating both the standard deviation and coefficient of variation. Which sector demonstrates the most consistent ROA performance when adjusted for its average ROA level?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "volatility_with_normalization",
-        "metric": "return_on_assets",
-        "statistical_measures": [
-          "std_dev",
-          "coefficient_of_variation"
-        ],
-        "comparison_method": "risk_adjusted_consistency"
-      },
-      "tags": [
-        "roa_consistency",
-        "coefficient_of_variation",
-        "risk_adjustment"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_006_NEW",
-      "replaces": "MA_006",
-      "reason": "Memory-intensive correlation analysis",
-      "question": "Compare the median ROE for companies with above-median total assets versus below-median total assets within the Technology sector. Is there a meaningful performance difference based on company size?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text",
-        "tolerance": {
-          "absolute": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "size_segmentation_performance",
-        "sector": "Information Technology",
-        "size_metric": "total_assets",
-        "performance_metric": "return_on_equity"
-      },
-      "tags": [
-        "company_size",
-        "roe_analysis",
-        "segment_comparison"
-      ],
-      "max_response_time_ms": 15000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_007_NEW",
-      "replaces": "MA_007",
-      "reason": "Market cap dependency (external data)",
-      "question": "Analyze asset growth trends for companies incorporated in Delaware versus other states. Calculate the average year-over-year total assets growth rate for each group. Which incorporation jurisdiction shows stronger asset growth?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "corporate_identity_metadata",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.1
-        }
-      },
-      "context": {
-        "analysis_type": "incorporation_state_growth_comparison",
-        "grouping_variable": "state_of_incorporation",
-        "metric": "total_assets_growth_rate",
-        "comparison_groups": [
-          "Delaware",
-          "Other States"
-        ]
-      },
-      "tags": [
-        "delaware_incorporation",
-        "asset_growth",
-        "geographic_analysis"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_011_NEW",
-      "replaces": "MA_011",
-      "reason": "Low CFO relevance (filing patterns)",
-      "question": "Analyze revenue seasonality patterns by comparing Q4 revenue to full-year average quarterly revenue across sectors. Which sectors show the strongest Q4 seasonal effect (holiday/year-end boost)?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "quarterly_seasonality_analysis",
-        "metric": "revenue",
-        "time_period": "Q4_vs_average",
-        "comparison_level": "sector"
-      },
-      "tags": [
-        "seasonality",
-        "q4_effect",
-        "revenue_patterns"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_012_NEW",
-      "replaces": "MA_012",
-      "reason": "Low CFO relevance (XBRL data completeness)",
-      "question": "Analyze the relationship between operating margin stability and revenue predictability. Calculate the coefficient of variation for both metrics across sectors. Which sector demonstrates the most stable operational performance?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "operational_stability_analysis",
-        "metrics": [
-          "operating_margin",
-          "revenue"
-        ],
-        "statistical_measure": "coefficient_of_variation",
-        "comparison_level": "sector"
-      },
-      "tags": [
-        "margin_stability",
-        "revenue_predictability",
-        "operational_performance"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_013_NEW",
-      "replaces": "MA_013",
-      "reason": "Low CFO relevance (taxonomy extensions)",
-      "question": "Identify companies with improving asset efficiency by calculating year-over-year changes in asset turnover ratios. Which Technology companies show the strongest improvement trajectory in converting assets to revenue?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "asset_efficiency_trends",
-        "sector": "Information Technology",
-        "metric": "asset_turnover_ratio",
-        "time_comparison": "year_over_year_improvement"
-      },
-      "tags": [
-        "asset_turnover",
-        "efficiency_improvement",
-        "trend_analysis"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_014_NEW",
-      "replaces": "MA_014",
-      "reason": "Memory-intensive DuPont analysis",
-      "question": "Calculate the profit margin and asset turnover components of ROE for the top 5 Financials companies by total assets. Which component contributes more to sector profitability: pricing power (margins) or efficiency (turnover)?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "simplified_roe_decomposition",
-        "sector": "Financials",
-        "roe_components": [
-          "profit_margin",
-          "asset_turnover"
-        ],
-        "company_filter": "top_5_by_total_assets",
-        "comparison_method": "component_variance_analysis"
-      },
-      "tags": [
-        "roe_components",
-        "profit_margin",
-        "asset_turnover"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_020_NEW",
-      "replaces": "MA_020",
-      "reason": "Too simple for medium tier",
-      "question": "Analyze accounts receivable quality by comparing Days Sales Outstanding (DSO) across sectors and identifying companies with deteriorating collection efficiency. Which sector has the longest average collection period, and what percentage of companies show year-over-year DSO deterioration?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "balance_sheet_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "working_capital_quality_assessment",
-        "metric": "days_sales_outstanding",
-        "comparison_level": "sector",
-        "trend_analysis": "year_over_year_deterioration"
-      },
-      "tags": [
-        "dso",
-        "accounts_receivable",
-        "collection_efficiency"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_024_NEW",
-      "replaces": "MA_024",
-      "reason": "Memory-intensive correlation analysis",
-      "question": "Compare revenue concentration by analyzing the percentage of companies with international revenue disclosures across sectors. Which sector has the highest proportion of internationally diversified companies?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "international_diversification_assessment",
-        "metric": "international_revenue_presence",
-        "comparison_level": "sector",
-        "classification": "diversified_vs_domestic"
-      },
-      "tags": [
-        "international_revenue",
-        "geographic_diversification",
-        "sector_comparison"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_027_NEW",
-      "replaces": "MA_027",
-      "reason": "Memory-intensive correlation analysis",
-      "question": "Analyze sustainability of profit margins by comparing companies with above-average R&D intensity to those with below-average R&D intensity within the Healthcare sector. Which group maintains higher and more stable operating margins?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "rd_investment_margin_analysis",
-        "sector": "Health Care",
-        "segmentation": "rd_intensity_high_vs_low",
-        "performance_metrics": [
-          "operating_margin",
-          "margin_stability"
-        ]
-      },
-      "tags": [
-        "rd_investment",
-        "margin_sustainability",
-        "healthcare_sector"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_029_NEW",
-      "replaces": "MA_029",
-      "reason": "Too complex for medium tier",
-      "question": "Analyze the predictive relationship between current quarter free cash flow margin and next quarter revenue growth. Calculate the median FCF margin for companies that subsequently achieved above-median revenue growth versus those that didn't. Is strong cash generation associated with future growth?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "leading_indicator_analysis",
-        "predictor_metric": "free_cash_flow_margin",
-        "target_metric": "revenue_growth",
-        "time_lag": "one_quarter",
-        "segmentation": "high_vs_low_subsequent_growth"
-      },
-      "tags": [
-        "fcf_margin",
-        "revenue_growth",
-        "leading_indicators"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_040_NEW",
-      "replaces": "MA_040",
-      "reason": "Companies not in database (Coca-Cola)",
-      "question": "Assess the foreign exchange exposure of multinational Consumer Staples companies by analyzing the relationship between reported currency impacts and revenue volatility. Which companies demonstrate the most effective natural hedging through balanced geographic portfolios?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "natural_hedging_effectiveness",
-        "sector": "Consumer Staples",
-        "fx_factors": [
-          "currency_impact_disclosure",
-          "revenue_volatility"
-        ],
-        "assessment": "geographic_balance_score"
-      },
-      "tags": [
-        "foreign_exchange",
-        "natural_hedging",
-        "consumer_staples"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_046_NEW",
-      "replaces": "MA_046",
-      "reason": "Companies not in database (LVMH, Herm\u00e8s, Est\u00e9e Lauder)",
-      "question": "Analyze pricing power sustainability of premium Consumer Discretionary companies by examining gross margin trends and brand investment intensity (SG&A as % of revenue). Which companies maintain the strongest combination of high margins and sustained brand investment?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "premium_brand_positioning_analysis",
-        "sector": "Consumer Discretionary",
-        "pricing_indicators": [
-          "gross_margin_trends",
-          "sga_intensity"
-        ],
-        "assessment": "margin_and_investment_sustainability"
-      },
-      "tags": [
-        "pricing_power",
-        "brand_investment",
-        "premium_positioning"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_047_NEW",
-      "replaces": "MA_047",
-      "reason": "Companies not in database (General Electric)",
-      "question": "Compare capital allocation priorities of major Industrial sector companies by analyzing cash flow distribution between organic growth (capex), shareholder returns (dividends + buybacks), and debt reduction. Which companies show the most balanced allocation supporting long-term value creation?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "capital_allocation_balance",
-        "sector": "Industrials",
-        "allocation_categories": [
-          "capex",
-          "shareholder_returns",
-          "debt_reduction"
-        ],
-        "assessment": "balanced_growth_and_returns"
-      },
-      "tags": [
-        "capital_allocation",
-        "cash_flow_distribution",
-        "industrials"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_049_NEW",
-      "replaces": "MA_049",
-      "reason": "Companies not in database (Walt Disney)",
-      "question": "Analyze earnings seasonality patterns for Communication Services companies by calculating the ratio of Q4 earnings to full-year earnings. Which companies show the most pronounced seasonal concentration, and how does this impact full-year earnings predictability?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "earnings_seasonality_concentration",
-        "sector": "Communication Services",
-        "seasonality_metric": "q4_to_annual_earnings_ratio",
-        "assessment": "seasonal_concentration_vs_predictability"
-      },
-      "tags": [
-        "earnings_seasonality",
-        "q4_concentration",
-        "communication_services"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_050_NEW",
-      "replaces": "MA_050",
-      "reason": "Companies not in database (Stellantis)",
-      "question": "Evaluate the financial sustainability of Consumer Discretionary automotive companies' transition investments by analyzing free cash flow generation relative to capital expenditure intensity. Which companies maintain positive FCF while investing in future technologies?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "investment_sustainability_assessment",
-        "sector": "Consumer Discretionary",
-        "subsector": "automotive",
-        "metrics": [
-          "free_cash_flow",
-          "capex_intensity"
-        ],
-        "assessment": "fcf_positive_with_growth_investment"
-      },
-      "tags": [
-        "free_cash_flow",
-        "capex_intensity",
-        "automotive_transition"
       ],
       "max_response_time_ms": 20000,
       "validation_rules": [
