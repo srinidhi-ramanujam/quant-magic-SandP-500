@@ -4,7 +4,7 @@ Tests for SQL generation from entities and templates.
 
 import pytest
 from src.sql_generator import SQLGenerator
-from src.models import ExtractedEntities
+from src.models import ExtractedEntities, LLMResponse
 from src.telemetry import create_request_context
 
 
@@ -105,3 +105,89 @@ def test_invalid_entity_handling():
     # Should return None or handle gracefully
     # (In Phase 0, we expect None for unmatched patterns)
     assert sql is None
+def test_generate_custom_sql_helper(monkeypatch):
+    """Custom SQL helper consumes Azure client response and records telemetry."""
+
+    mock_response = LLMResponse(
+        success=True,
+        generated_sql="SELECT 1 FROM num LIMIT 1",
+        explanation="demo",
+        confidence=0.8,
+        processing_time_ms=120,
+        token_usage={"prompt_tokens": 10, "completion_tokens": 5},
+        model_version="gpt-test",
+    )
+
+    class DummyAzureClient:
+        def __init__(self):
+            self.config = type("cfg", (), {"deployment_name": "gpt-test"})
+
+        def generate_sql(self, request):  # noqa: D401
+            return mock_response
+
+        def is_available(self):
+            return True
+
+    import src.azure_client as azure_module
+
+    monkeypatch.setattr(
+        azure_module,
+        "AzureOpenAIClient",
+        lambda: DummyAzureClient(),
+        raising=False,
+    )
+
+    generator = SQLGenerator(use_llm=True)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.5)
+
+    result = generator._generate_custom_sql(entities, "Generate revenue query", context)
+
+    assert result is not None
+    assert result.generation_method == "llm_custom"
+    stages = [call["stage"] for call in context.metadata.get("llm_calls", [])]
+    assert "custom_sql" in stages
+
+
+def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
+    """Custom SQL helper rejects responses that fail validation."""
+
+    mock_response = LLMResponse(
+        success=True,
+        generated_sql="DELETE FROM companies",
+        explanation="demo",
+        confidence=0.8,
+        processing_time_ms=80,
+        token_usage={"prompt_tokens": 8, "completion_tokens": 4},
+        model_version="gpt-test",
+    )
+
+    class DummyAzureClient:
+        def __init__(self):
+            self.config = type("cfg", (), {"deployment_name": "gpt-test"})
+
+        def generate_sql(self, request):  # noqa: D401
+            return mock_response
+
+        def is_available(self):
+            return True
+
+    import src.azure_client as azure_module
+
+    monkeypatch.setattr(
+        azure_module,
+        "AzureOpenAIClient",
+        lambda: DummyAzureClient(),
+        raising=False,
+    )
+
+    generator = SQLGenerator(use_llm=True)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.4)
+
+    result = generator._generate_custom_sql(
+        entities, "Generate revenue query", context
+    )
+
+    assert result is None
+    assert context.metadata.get("llm_calls") is None

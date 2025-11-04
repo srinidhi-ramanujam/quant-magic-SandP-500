@@ -214,44 +214,51 @@ class IntelligenceLoader:
         params = {}
         question_lower = question.lower()
 
-        # Template-specific extraction logic
-        if template.template_id == "sector_count":
-            # Extract sector name
+        # Template-specific extraction logic driven by required parameters
+        if "sector" in template.parameters:
             # Patterns: "Technology sector", "in Technology", "Healthcare sector"
             sector_patterns = [
-                r"(in|from) (the )?([\w\s]+) (sector|industry)",
-                r"([\w\s]+) (sector|industry)",
+                r"(?:in|from)\s+(?:the\s+)?([\w\s&\-]+?)\s+(?:sector|industry)",
+                r"([\w\s&\-]+?)\s+(?:sector|industry)",
             ]
 
             for pattern in sector_patterns:
                 match = re.search(pattern, question_lower)
                 if match:
-                    # Get the sector name (group 3 or 1 depending on pattern)
-                    sector = (
-                        match.group(3) if len(match.groups()) >= 3 else match.group(1)
-                    )
+                    sector = match.group(1)
                     params["sector"] = sector.strip()
                     break
 
-        elif template.template_id in ["company_cik", "company_sector"]:
-            # Extract company name
-            # Remove common words and extract likely company name
-            # Patterns: "What is Apple's CIK", "Apple Inc's CIK", "What sector is Microsoft in"
-
-            # Remove question words and punctuation
+        if "company" in template.parameters:
+            # Remove helper words and punctuation to isolate company tokens
             cleaned = re.sub(
-                r"(what|is|are|the|sector|cik|'s|does|belong|to|in)", "", question_lower
+                r"(what|which|is|are|the|sector|cik|ticker|symbol|'s|does|belong|to|in)",
+                "",
+                question_lower,
             )
-            # Remove punctuation
-            cleaned = re.sub(r"[?!.,;:]", "", cleaned)
-            cleaned = cleaned.strip()
+            cleaned = re.sub(r"[?!.,;:]", " ", cleaned)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
-            # Take the remaining text as company name (first significant word/phrase)
-            words = cleaned.split()
-            if words:
-                # Capitalize for better matching
-                company = " ".join(words[:3])  # Take first 3 words max
+            if cleaned:
+                words = cleaned.split()
+                company = " ".join(words[:3])
                 params["company"] = company.strip()
+
+        if "metric" in template.parameters:
+            metric_match = re.search(
+                r"(revenue|revenues|net income|income|earnings|asset|liabilit[y|ies]|debt|cash)",
+                question_lower,
+            )
+            if metric_match:
+                params["metric"] = metric_match.group(1)
+
+        if "time_period" in template.parameters:
+            period_match = re.search(
+                r"(201\d|202\d|last year|previous quarter|current quarter|past (\d+) years)",
+                question_lower,
+            )
+            if period_match:
+                params["time_period"] = period_match.group(0)
 
         self.logger.debug(f"Extracted parameters: {params}")
         return params

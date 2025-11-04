@@ -519,6 +519,32 @@ quant-magic-SandP-500/
 
 ---
 
+## Parallel UI & Codespaces Roadmap
+
+These tracks run alongside Phase 2 backend work so the product can demo via a browser from GitHub Codespaces.
+
+### 1. Codespaces & Devcontainer Enablement
+- Add `.devcontainer/devcontainer.json` using `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature.
+- Preinstall Python dependencies (`pip install -r requirements.txt`) and prep for future `npm install`.
+- Forward ports 8000 (FastAPI) and 5173 (Vite), enable public URLs, and document DuckDB parquet handling plus required Azure secrets via Codespaces settings.
+
+### 2. FastAPI Service Layer
+- Introduce `src/services/query_service.py` (wraps entity extraction, SQL generation, execution, telemetry).
+- Stand up `src/api/app.py` exposing `POST /query` returning structured answers, SQL, and metadata; include graceful fallbacks when Azure creds are absent.
+- Add pytest coverage using `TestClient` for happy path, validation errors, and failure handling.
+
+### 3. Frontend Scaffold (React + HTMX)
+- Create `frontend/` via Vite (React + TypeScript); configure Tailwind/PostCSS and load HTMX for progressive enhancement.
+- Implement initial query form + results shell calling FastAPI; keep composition extensible for future charts/visuals.
+- Establish fetch client conventions and state management (start lightweight hooks, evaluate React Query later).
+
+### 4. Tooling & Documentation
+- Provide shared commands (Makefile or tasks) for `pytest -m "not integration"`, `uvicorn src.api.app:app --reload`, and `npm run dev`.
+- Update onboarding docs (`README.md`, AGENTS.md if needed) with Codespaces setup, env vars, and run instructions.
+- Capture open questions (parquet distribution, streaming updates) for next iteration before implementation.
+
+---
+
 **Status**: Phase 1 Complete (100/104 tests passing)  
 **Next**: Phase 2 - Custom SQL + Validation + Coverage  
 **Goal**: 86+/171 simple questions (50%+)  

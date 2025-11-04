@@ -269,6 +269,17 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ---
 
+## Parallel UI & Codespaces Roadmap
+
+| Track | Scope |
+| --- | --- |
+| Codespaces Enablement | Build `.devcontainer/devcontainer.json` on `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature, preinstall Python deps, prep future `npm install`, forward ports 8000 (FastAPI) + 5173 (Vite), document DuckDB parquet availability and Codespaces secrets for Azure credentials. |
+| FastAPI Service Layer | Extract CLI orchestration into a reusable query service, expose `POST /query` via FastAPI (`src/api/app.py`), return structured answer/SQL/metadata, and mirror CLI fallbacks when Azure creds are absent; cover with pytest `TestClient`. |
+| React + HTMX Frontend | Scaffold `frontend/` with Vite (React + TypeScript), configure Tailwind/PostCSS and load HTMX for progressive enhancement, deliver query form + results shell hitting the FastAPI endpoint while leaving extension points for charts. |
+| Tooling & Docs | Add shared run scripts/tasks for API (`uvicorn src.api.app:app --reload`), tests (`pytest -m "not integration"`), and UI (`npm run dev`); update onboarding docs with Codespaces instructions and open questions (parquet distribution, streaming updates) before implementation. |
+
+---
+
 ## Contributing
 
 ### Working Agreements

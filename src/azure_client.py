@@ -585,33 +585,9 @@ Please provide:
     
     def _prepare_schema_context(self) -> str:
         """Prepare database schema context for SQL generation."""
-        return """
-TABLE: num (Financial Facts)
-- adsh: Filing identifier
-- cik: Company identifier (10-digit zero-padded)
-- tag: XBRL tag (e.g., 'Revenues', 'NetIncomeLoss', 'Assets')
-- value: Numerical value
-- ddate: Data date
-- qtrs: Number of quarters (0=annual, 1=Q1, etc.)
+        from src.schema_docs import schema_for_prompt
 
-TABLE: companies_with_sectors (S&P 500 Companies)
-- cik: Company identifier (10-digit zero-padded)
-- name: Company name
-- gics_sector: GICS sector classification
-
-TABLE: sub (Submission Metadata)
-- adsh: Filing identifier
-- cik: Company identifier
-- period: Reporting period (YYYYMMDD)
-- form: Filing form type (10-K, 10-Q)
-
-TABLE: tag (XBRL Tag Definitions)
-- tag: XBRL tag name
-- version: Tag version
-- custom: Whether custom tag (Y/N)
-- abstract: Whether abstract tag (Y/N)
-- datatype: Data type
-"""
+        return schema_for_prompt()
     
     def _prepare_constraints(self) -> str:
         """Prepare SQL generation constraints."""
@@ -680,4 +656,3 @@ def get_azure_client(config: Optional[LLMConfig] = None) -> AzureOpenAIClient:
         AzureOpenAIClient instance
     """
     return AzureOpenAIClient(config=config)
-
