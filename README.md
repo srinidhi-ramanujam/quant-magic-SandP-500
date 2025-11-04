@@ -14,7 +14,7 @@ python -m src.cli --interactive
 # Single question
 python -m src.cli "How many companies are in Technology?"
 
-# Run tests (100/104 passing)
+# Run tests (118 passing / 2 skipped / 2 xfailed)
 python -m pytest tests/ -v
 ```
 
@@ -29,11 +29,12 @@ python -m pytest tests/ -v
 - **Test suite**: 55 tests passing (100%)
 
 ### ✅ Phase 1: AI Integration (COMPLETE)
-- **Azure OpenAI**: GPT-5 integration with retry logic
-- **LLM Entity Extraction**: 13/13 tests passing
-- **Hybrid Template Selection**: Deterministic + LLM routing
-- **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series)
-- **Test suite**: 100/104 tests passing (96.2%)
+- **LLM-first pipeline**: GPT-5 drives entity extraction and template selection when credentials are present; the system auto-falls back to deterministic mode with clear telemetry when Azure is unavailable.
+- **Azure OpenAI**: GPT-5 integration with retry logic and dynamic circuit-breaker fallback
+- **LLM Entity Extraction**: 13/13 tests passing (integration tests skipped unless `ENABLE_AZURE_INTEGRATION_TESTS=true`)
+- **Hybrid Template Selection**: Deterministic fast path + LLM confirmation/fallback
+- **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series) with automated schema validation
+- **Test suite**: 118 tests passing, 2 skipped (integration gated), 2 xpassed
 
 ### 🚀 Next: Phase 2 - SQL Generation & Coverage
 - Custom SQL generation for non-template questions

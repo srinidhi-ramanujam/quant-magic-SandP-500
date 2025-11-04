@@ -3,7 +3,7 @@
 **Product**: AI-powered financial analytics via natural language  
 **Approach**: Incremental delivery with clear exit criteria  
 **Current Phase**: Phase 1 Complete → Phase 2 Starting  
-**Test Status**: 100/104 passing (96.2%)
+**Test Status**: 118 passed / 2 skipped / 2 xfailed
 
 ---
 
@@ -11,10 +11,10 @@
 
 ### What's Working ✅
 - **Phase 0**: PoC with 10/10 questions correct
-- **Phase 1**: Azure OpenAI + LLM entity extraction + hybrid template selection
-- **Data**: 15.5M+ facts, 589 companies, 27 SQL templates
-- **Tests**: 100/104 passing (13 LLM tests, 16 hybrid tests, 11 POC tests)
-- **CLI**: Interactive REPL + single-shot modes
+- **Phase 1**: LLM-first entity extraction & template selection with deterministic fallback when Azure is unavailable
+- **Data**: 15.5M+ facts, 589 companies, 27 SQL templates (schema-aligned)
+- **Tests**: 118 passing (integration marked/skipped), full template execution harness, Phase 0 PoC suite fast again
+- **CLI**: Interactive REPL + single-shot modes now default to LLM paths when credentials exist
 
 ### What's Next 🚀
 - **Phase 2**: Custom SQL generation + validation + coverage expansion
