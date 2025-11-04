@@ -100,6 +100,15 @@ def test_company_sector_join():
     qe.close()
 
 
+def test_pre_table_registered():
+    """Ensure the presentation linkbase view is available."""
+    qe = QueryEngine()
+    result = qe.execute("SELECT COUNT(*) AS cnt FROM pre")
+    assert len(result) == 1
+    assert result.iloc[0]["cnt"] >= 0
+    qe.close()
+
+
 if __name__ == "__main__":
     # Run tests
     pytest.main([__file__, "-v"])

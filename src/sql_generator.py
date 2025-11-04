@@ -25,22 +25,26 @@ from src.prompts import get_template_selection_prompt
 class SQLGenerator:
     """Generate SQL queries using templates and extracted entities."""
 
-    def __init__(self):
+    def __init__(self, use_llm: bool = True):
         """Initialize SQL generator with optional LLM template selection."""
         self.logger = get_logger()
         self.config = get_config()
         self.intelligence = get_intelligence_loader(use_phase_0_only=False)
+        self.use_llm = bool(use_llm)
         
-        # Initialize Azure OpenAI client for template selection if enabled
         self.azure_client = None
-        if self.config.template_selection_use_llm:
+        if self.use_llm:
             try:
                 from src.azure_client import AzureOpenAIClient
-                self.azure_client = AzureOpenAIClient()
+                client = AzureOpenAIClient()
+                if not client.is_available():
+                    raise RuntimeError("Azure OpenAI client not available")
+                self.azure_client = client
                 self.logger.info("SQLGenerator initialized with LLM template selection")
             except Exception as e:
                 self.logger.error(f"Failed to initialize Azure OpenAI client: {e}")
                 self.logger.warning("Falling back to deterministic template selection only")
+                self.use_llm = False
         else:
             self.logger.info("SQLGenerator initialized (deterministic template selection only)")
 
@@ -68,7 +72,7 @@ class SQLGenerator:
             intelligence_match = self.intelligence.match_pattern(question)
             
             # Step 2: Decision logic based on LLM availability and confidence
-            if not self.azure_client or not self.config.template_selection_use_llm:
+            if not self.azure_client or not self.use_llm:
                 # LLM disabled or unavailable - use deterministic only
                 if intelligence_match.template:
                     context.add_metadata("template_selection_method", "deterministic_only")
@@ -548,9 +552,9 @@ class SQLGenerator:
 _generator: Optional[SQLGenerator] = None
 
 
-def get_sql_generator() -> SQLGenerator:
+def get_sql_generator(force_refresh: bool = False) -> SQLGenerator:
     """Get the global SQL generator instance."""
     global _generator
-    if _generator is None:
+    if _generator is None or force_refresh:
         _generator = SQLGenerator()
     return _generator

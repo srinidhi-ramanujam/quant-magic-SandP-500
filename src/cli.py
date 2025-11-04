@@ -12,6 +12,7 @@ import json
 import argparse
 
 from src.query_engine import QueryEngine
+from src.config import get_config
 from src.entity_extractor import get_entity_extractor
 from src.sql_generator import get_sql_generator
 from src.response_formatter import get_response_formatter
@@ -35,9 +36,10 @@ class FinancialCLI:
         setup_logging()
         self.logger = get_logger()
 
-        # Initialize components
+        # Load configuration and initialize components
+        self.config = get_config()
         self.query_engine = QueryEngine()
-        self.entity_extractor = get_entity_extractor()
+        self.entity_extractor = get_entity_extractor(force_refresh=True)
         self.sql_generator = get_sql_generator()
         self.response_formatter = get_response_formatter()
 
@@ -245,7 +247,7 @@ class FinancialCLI:
         from src.entity_extractor import EntityExtractor
         
         # Create entity extractor with specified mode
-        extractor = EntityExtractor(use_llm=use_llm)
+        extractor = EntityExtractor(use_llm=use_llm, config=self.config)
         context = create_request_context(question)
         
         print(f"\n🔬 Testing Entity Extraction ({'LLM mode' if use_llm else 'Deterministic mode'})")

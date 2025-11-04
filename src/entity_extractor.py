@@ -16,7 +16,7 @@ from src.telemetry import get_logger, RequestContext, log_component_timing
 from src.xbrl_mapper import get_xbrl_mapper
 from src.azure_client import AzureOpenAIClient
 from src.prompts import get_entity_extraction_prompt
-from src.config import get_config
+from src.config import get_config, Config
 
 
 # Known sectors (GICS classification)
@@ -127,21 +127,24 @@ COUNTRIES = {
 class EntityExtractor:
     """Extract entities from questions using LLM-assisted extraction (Stage 1)."""
 
-    def __init__(self, use_llm: bool = False):
+    def __init__(self, use_llm: bool = True, config: Optional[Config] = None):
         """
         Initialize entity extractor.
         
         Args:
-            use_llm: Whether to use LLM for extraction (default False for backwards compatibility)
+            use_llm: Whether to use LLM for extraction.
+            config: Optional Config instance (primarily for testing)
         """
         self.logger = get_logger()
-        self.config = get_config()
-        self.use_llm = use_llm
+        self.config = config or get_config()
+        self.use_llm = bool(use_llm)
         
         # Initialize Azure OpenAI client if LLM is enabled
         if self.use_llm:
             try:
                 self.azure_client = AzureOpenAIClient()
+                if not self.azure_client.is_available():
+                    raise RuntimeError("Azure OpenAI client not available")
                 self.logger.info("EntityExtractor initialized (LLM mode)")
             except Exception as e:
                 self.logger.error(f"Failed to initialize Azure OpenAI client: {e}")
@@ -729,9 +732,10 @@ class EntityExtractor:
 _extractor: EntityExtractor = None
 
 
-def get_entity_extractor() -> EntityExtractor:
+def get_entity_extractor(force_refresh: bool = False) -> EntityExtractor:
     """Get the global entity extractor instance."""
     global _extractor
-    if _extractor is None:
-        _extractor = EntityExtractor()
+    if _extractor is None or force_refresh:
+        _extractor = EntityExtractor(config=get_config())
+
     return _extractor

@@ -10,8 +10,9 @@ from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (always prefer repo .env)
+PROJECT_ROOT = Path(__file__).parent.parent
+load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=True)
 
 
 class Config(BaseModel):
@@ -76,10 +77,6 @@ class Config(BaseModel):
     )
 
     # Stage 2: Template Selection Settings
-    template_selection_use_llm: bool = Field(
-        default=False,
-        description="Use LLM for template selection (vs deterministic only)"
-    )
     template_selection_fast_path_threshold: float = Field(
         default=0.8,
         ge=0.0,

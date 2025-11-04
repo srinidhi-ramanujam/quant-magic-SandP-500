@@ -10,6 +10,11 @@ from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 import pandas as pd
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Ensure .env values are available even when models are imported standalone
+load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
 
 class QueryRequest(BaseModel):
