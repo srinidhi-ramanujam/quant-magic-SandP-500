@@ -270,22 +270,43 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ## Contributing
 
-### Code Standards
-- Test-driven development (write tests first)
-- Keep functions < 50 lines
-- Maintain 100% test pass rate
-- Use Pydantic for all data contracts
+### Working Agreements
+- Do not add persistent Markdown or throwaway scripts; clean up exploration artifacts before finishing a task.
+- Ask for clarification before starting work that feels ambiguous and stay within the agreed design or plan.
+- Avoid new dependencies unless the team grants explicit approval.
+- Ship in small, meaningful iterations with a clear exit criterion (e.g., targeted pytest run, CLI demo, evaluation harness).
 
-### Workflow
-```bash
-# 1. Write test
-# 2. Implement feature
-# 3. Run tests
-python -m pytest tests/ -v
-# 4. Format code
-python -m black src/ tests/
-# 5. Commit
-```
+### Code Standards
+- Follow test-driven development, keep functions under ~50 lines, and keep all suites green.
+- Use Python 3.11+, four-space indentation, and Black (line length 88) across touched modules.
+- Maintain type hints and Pydantic models; prefer `snake_case` for modules/functions, `PascalCase` for classes, and upper snake for constants.
+
+### Project Layout
+- `src/`: pipeline core (`azure_client.py`, `entity_extractor.py`, `sql_generator.py`, `cli.py`, etc.).
+- `tests/`: mirrors application modules with unit suites and marked integration tests.
+- `data/`: DuckDB inputs under `data/parquet/`; evaluation prompts in `evaluation/questions/`.
+- `pipeline/` & `scripts/`: automation helpers and ETL jobs; additional docs in `docs/` and `PLAN.md`.
+
+### Key Commands
+- Environment setup: `python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`.
+- Interactive CLI: `python -m src.cli --interactive`.
+- Single-shot debug query: `python -m src.cli "How many companies are in Technology?" --debug`.
+- Full test suite: `python -m pytest tests/ -v`; target modules via `python -m pytest tests/test_sql_generator_hybrid.py -v`.
+- Formatting pass: `python -m black src/ tests/`.
+
+### Testing Guidelines
+- Keep pytest as the single source of truth; mirror module structure and name tests `test_*`.
+- Mark slow/external coverage with `@pytest.mark.integration`; use `python -m pytest -m "not integration"` for fast verification.
+- Preserve or raise the current 100/104 baseline and store shared DuckDB fixtures in `tests/fixtures/`.
+
+### Commit & PR Expectations
+- Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise present-tense summaries under 72 characters.
+- Document scope, verification commands (`pytest ...`, CLI demos), and link roadmap items or issues.
+- Include screenshots or CLI transcripts when behavior changes, and ensure no secrets land in git.
+
+### Security & Configuration
+- Required environment variables: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME` (plus optional embeddings deployment).
+- Store secrets in local env files or shell profiles and validate setup with `python -m src.cli --test-entity-extraction --use-llm`.
 
 ---
 
