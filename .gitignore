@@ -57,3 +57,16 @@ data/tmp/
 # Environment
 .env
 .env.local
+
+# Backup files
+*.bak
+*.backup
+*.backup.*
+*_backup.*
+
+# Validation reports
+evaluation/validation_reports/*.txt
+evaluation/validation_reports/*.csv
+
+# Tools output
+tools/output/
