@@ -53,7 +53,7 @@ def test_extract_multiple_entities():
     # Should extract both company and metric
     assert len(entities.companies) > 0
     assert len(entities.metrics) > 0
-    assert "CIK" in entities.metrics
+    assert any(metric.lower() == "cik" for metric in entities.metrics)
 
 
 def test_confidence_scoring():

@@ -60,8 +60,9 @@ class QueryEngine:
         # Core tables
         tables = {
             "num": "num.parquet",  # Financial metrics
-            "sub": "sub.parquet",  # Submissions
+            "sub": "sub.parquet",  # Submissions / metadata
             "tag": "tag.parquet",  # XBRL tags
+            "pre": "pre.parquet",  # Presentation linkbase
             "companies": "companies_with_sectors.parquet",  # Company info
         }
 

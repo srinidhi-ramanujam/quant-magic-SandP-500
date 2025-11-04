@@ -12,6 +12,7 @@ import json
 import argparse
 
 from src.query_engine import QueryEngine
+from src.config import get_config
 from src.entity_extractor import get_entity_extractor
 from src.sql_generator import get_sql_generator
 from src.response_formatter import get_response_formatter
@@ -35,9 +36,10 @@ class FinancialCLI:
         setup_logging()
         self.logger = get_logger()
 
-        # Initialize components
+        # Load configuration and initialize components
+        self.config = get_config()
         self.query_engine = QueryEngine()
-        self.entity_extractor = get_entity_extractor()
+        self.entity_extractor = get_entity_extractor(force_refresh=True)
         self.sql_generator = get_sql_generator()
         self.response_formatter = get_response_formatter()
 
@@ -237,35 +239,41 @@ class FinancialCLI:
     def test_entity_extraction(self, question: str, use_llm: bool = False):
         """
         Test entity extraction on a question (Stage 1 testing).
-        
+
         Args:
             question: Natural language question
             use_llm: Whether to use LLM-assisted extraction
         """
         from src.entity_extractor import EntityExtractor
-        
+
         # Create entity extractor with specified mode
-        extractor = EntityExtractor(use_llm=use_llm)
+        extractor = EntityExtractor(use_llm=use_llm, config=self.config)
         context = create_request_context(question)
-        
-        print(f"\n🔬 Testing Entity Extraction ({'LLM mode' if use_llm else 'Deterministic mode'})")
+
+        print(
+            f"\n🔬 Testing Entity Extraction ({'LLM mode' if use_llm else 'Deterministic mode'})"
+        )
         print(f"❓ Question: {question}\n")
-        
+
         try:
             # Extract entities
             entities = extractor.extract(question, context)
-            
+
             # Display results
             print("✅ Extraction Results:")
-            print(f"  Companies: {entities.companies if entities.companies else '(none)'}")
+            print(
+                f"  Companies: {entities.companies if entities.companies else '(none)'}"
+            )
             print(f"  Metrics: {entities.metrics if entities.metrics else '(none)'}")
             print(f"  Sectors: {entities.sectors if entities.sectors else '(none)'}")
-            print(f"  Time Periods: {entities.time_periods if entities.time_periods else '(none)'}")
+            print(
+                f"  Time Periods: {entities.time_periods if entities.time_periods else '(none)'}"
+            )
             print(f"  Question Type: {entities.question_type}")
             print(f"  Confidence: {entities.confidence:.2%}")
-            
+
             # Show telemetry if LLM was used
-            llm_calls = context.metadata.get('llm_calls', [])
+            llm_calls = context.metadata.get("llm_calls", [])
             if use_llm and llm_calls:
                 print(f"\n📊 LLM Call Stats:")
                 for i, call in enumerate(llm_calls, 1):
@@ -274,13 +282,13 @@ class FinancialCLI:
                     print(f"    - Success: {call.get('success', False)}")
                     print(f"    - Latency: {call.get('latency_ms', 0)}ms")
                     print(f"    - Tokens: {call.get('tokens', {})}")
-            
+
             # Show timing
             total_time = sum(context.component_timings.values())
             print(f"\n⏱️  Total Time: {total_time:.4f}s")
-            
+
             return entities
-            
+
         except Exception as e:
             print(f"\n❌ Error: {e}")
             self.logger.error(f"Entity extraction test failed: {e}", exc_info=True)
@@ -352,11 +360,13 @@ Examples:
         if args.test_entity_extraction:
             if not args.question:
                 print("❌ Error: Please provide a question to test entity extraction")
-                print("Example: python -m src.cli \"What is Apple's CIK?\" --test-entity-extraction --use-llm")
+                print(
+                    'Example: python -m src.cli "What is Apple\'s CIK?" --test-entity-extraction --use-llm'
+                )
                 sys.exit(1)
             cli.test_entity_extraction(args.question, use_llm=args.use_llm)
             sys.exit(0)
-        
+
         # Interactive mode
         if args.interactive or not args.question:
             cli.run_interactive(debug_mode=args.debug)

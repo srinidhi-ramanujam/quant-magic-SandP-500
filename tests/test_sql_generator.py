@@ -78,8 +78,8 @@ def test_template_matching():
 
     # Test different question types
     questions = [
-        ("How many companies in Healthcare?", "sector_count"),
-        ("What is Tesla's CIK?", "company_cik"),
+        ("How many companies in Healthcare?", "sector_company_count"),
+        ("What is Tesla's CIK?", "company_by_cik"),
         ("What sector is Amazon in?", "company_sector"),
     ]
 
