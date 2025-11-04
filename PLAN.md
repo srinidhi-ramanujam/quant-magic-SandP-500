@@ -90,6 +90,11 @@
   - Profitability time series (2): net margin, operating margin
 - ✅ Flexible regex patterns for natural language matching
 - ✅ All templates validated against real questions
+- ✅ Template SQL aligned with DuckDB schema and covered by automated execution tests
+
+#### 5. Operational Readiness ✅
+- ✅ LLM entity extraction and template selection default to Azure GPT-5 when credentials are present
+- ✅ Safe fallback to deterministic paths when Azure access is unavailable
 
 ### Exit Criteria
 - ✅ Azure OpenAI integrated with GPT-5

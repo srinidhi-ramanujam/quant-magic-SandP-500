@@ -24,7 +24,11 @@ TEMPLATE_CASES = {
     "companies_revenue_above_threshold": {"threshold": "10000000000"},
     "latest_current_ratio": {"company": "Apple"},
     "latest_debt_to_equity": {"company": "Apple"},
-    "revenue_yoy_growth": {"company": "Apple", "start_year": "2020", "end_year": "2024"},
+    "revenue_yoy_growth": {
+        "company": "Apple",
+        "start_year": "2020",
+        "end_year": "2024",
+    },
     "revenue_trend_multi_year": {"company": "Apple", "start_year": "2019"},
     "quarterly_revenue_trend": {"company": "Apple", "start_date": "2020-01-01"},
     "roe_trend_multi_year": {"company": "Apple", "start_year": "2019"},

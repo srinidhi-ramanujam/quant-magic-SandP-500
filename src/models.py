@@ -390,7 +390,9 @@ class LLMAnalysisResponse(BaseModel):
 
     analysis_success: bool = Field(..., description="Whether analysis was completed")
     recommended_approach: str = Field(..., description="Recommended query approach")
-    suggested_sql: Optional[str] = Field(None, description="Suggested SQL implementation")
+    suggested_sql: Optional[str] = Field(
+        None, description="Suggested SQL implementation"
+    )
     reasoning: str = Field(..., description="Detailed reasoning for the approach")
 
     # Classification results
@@ -491,9 +493,7 @@ class LLMEntityResponse(BaseModel):
         le=1.0,
         description="LLM's confidence in extraction quality (0-1)",
     )
-    reasoning: str = Field(
-        ..., description="LLM's reasoning for extraction decisions"
-    )
+    reasoning: str = Field(..., description="LLM's reasoning for extraction decisions")
 
     # Processing metadata
     processing_time_ms: int = Field(
@@ -517,7 +517,14 @@ class LLMEntityResponse(BaseModel):
     @classmethod
     def validate_question_type(cls, v: str) -> str:
         """Validate question type is one of allowed values."""
-        allowed_types = ["lookup", "count", "list", "comparison", "calculation", "trend"]
+        allowed_types = [
+            "lookup",
+            "count",
+            "list",
+            "comparison",
+            "calculation",
+            "trend",
+        ]
         if v.lower() not in allowed_types:
             raise ValueError(
                 f"Question type must be one of: {', '.join(allowed_types)}"
@@ -550,9 +557,7 @@ class LLMTemplateSelectionRequest(BaseModel):
     """Request for LLM-assisted template selection."""
 
     question: str = Field(..., min_length=1, description="Natural language question")
-    entities: Dict[str, Any] = Field(
-        ..., description="Extracted entities from Stage 1"
-    )
+    entities: Dict[str, Any] = Field(..., description="Extracted entities from Stage 1")
     candidate_templates: List[Dict[str, Any]] = Field(
         default_factory=list,
         description="List of candidate templates from deterministic matching",
