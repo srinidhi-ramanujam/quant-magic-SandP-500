@@ -536,6 +536,7 @@ These tracks run alongside Phase 2 backend work so the product can demo via a br
 ### 3. Frontend Scaffold (React + HTMX)
 - Create `frontend/` via Vite (React + TypeScript); configure Tailwind/PostCSS and load HTMX for progressive enhancement.
 - Implement initial query form + results shell calling FastAPI; keep composition extensible for future charts/visuals.
+- Skip authentication for first release; rely on Codespaces share links while leaving hooks for future auth layers.
 - Establish fetch client conventions and state management (start lightweight hooks, evaluate React Query later).
 
 ### 4. Tooling & Documentation
