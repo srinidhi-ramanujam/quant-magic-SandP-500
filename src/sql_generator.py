@@ -5,6 +5,7 @@ Phase 0: Deterministic template matching (3 patterns)
 Phase 1: Hybrid template selection (deterministic + LLM-assisted)
 """
 
+import re
 from typing import Optional, List, Dict, Tuple
 import json
 import time
@@ -13,6 +14,7 @@ from src.models import (
     IntelligenceMatch,
     GeneratedSQL,
     QueryTemplate,
+    LLMRequest,
     LLMTemplateSelectionRequest,
     LLMTemplateSelectionResponse,
 )
@@ -20,6 +22,10 @@ from src.intelligence_loader import get_intelligence_loader
 from src.telemetry import get_logger, RequestContext, log_component_timing
 from src.config import get_config
 from src.prompts import get_template_selection_prompt
+from src import schema_docs
+from src.entity_extractor import normalize_company_name
+from src.query_engine import quick_query
+from src.query_engine import QueryEngine
 
 
 class SQLGenerator:
@@ -31,6 +37,9 @@ class SQLGenerator:
         self.config = get_config()
         self.intelligence = get_intelligence_loader(use_phase_0_only=False)
         self.use_llm = bool(use_llm)
+        self._company_lookup_cache: Dict[str, str] = {}
+        self._company_name_index: Optional[Dict[str, str]] = None
+        self._company_token_index: Optional[Dict[str, List[str]]] = None
 
         # Initialize Azure OpenAI client for template selection if enabled
         self.azure_client = None
@@ -77,65 +86,54 @@ class SQLGenerator:
             # Step 1: Deterministic matching
             intelligence_match = self.intelligence.match_pattern(question)
 
-            # Step 2: Decision logic based on LLM availability and confidence
+            # Step 2: If LLM path unavailable, stay deterministic
             if not self.azure_client or not self.use_llm:
-                # LLM disabled or unavailable - use deterministic only
                 if intelligence_match.template:
                     context.add_metadata(
                         "template_selection_method", "deterministic_only"
                     )
                     return self._generate_from_template(intelligence_match, entities)
-                else:
-                    self.logger.warning("No template matched, LLM disabled")
-                    return None
+
+                self.logger.warning("No template matched and LLM unavailable")
+                return None
 
             # Step 3: Hybrid logic with LLM
-            if (
-                intelligence_match.match_confidence
-                >= self.config.template_selection_fast_path_threshold
-            ):
+            confidence = intelligence_match.match_confidence
+            fast_threshold = self.config.template_selection_fast_path_threshold
+            llm_threshold = self.config.template_selection_llm_threshold
+
+            if confidence >= fast_threshold and intelligence_match.template is not None:
                 # HIGH CONFIDENCE: Fast path, skip LLM
                 self.logger.info(
-                    f"Fast path (confidence={intelligence_match.match_confidence:.2f}): "
-                    f"template={intelligence_match.template.template_id if intelligence_match.template else 'None'}"
+                    "Fast path (confidence=%.2f): template=%s",
+                    confidence,
+                    intelligence_match.template.template_id,
                 )
                 context.add_metadata("template_selection_method", "fast_path")
+                return self._generate_from_template(intelligence_match, entities)
 
-                if intelligence_match.template:
-                    return self._generate_from_template(intelligence_match, entities)
-                else:
-                    return None
-
-            elif (
-                intelligence_match.match_confidence
-                >= self.config.template_selection_llm_threshold
-            ):
-                # MEDIUM CONFIDENCE: LLM confirmation with single candidate
-                self.logger.info(
-                    f"LLM confirmation path (confidence={intelligence_match.match_confidence:.2f})"
-                )
+            if confidence >= llm_threshold and intelligence_match.template is not None:
+                # MEDIUM CONFIDENCE: Ask LLM to confirm chosen template
+                self.logger.info("LLM confirmation path (confidence=%.2f)", confidence)
                 context.add_metadata("template_selection_method", "llm_confirmation")
-                candidates = (
-                    [intelligence_match.template] if intelligence_match.template else []
-                )
-
+                candidates: List[QueryTemplate] = [intelligence_match.template]
             else:
-                # LOW CONFIDENCE: LLM selection from all templates
-                self.logger.info(
-                    f"LLM fallback path (confidence={intelligence_match.match_confidence:.2f})"
-                )
+                # LOW CONFIDENCE: Provide full template catalog to LLM
+                self.logger.info("LLM fallback path (confidence=%.2f)", confidence)
                 context.add_metadata("template_selection_method", "llm_fallback")
                 candidates = self.intelligence.get_all_templates()
 
-            # Step 4: Call LLM for template selection
+            # Step 4: Call LLM for template selection or custom SQL recommendation
             result = self._select_template_with_llm(
                 question, entities, candidates, context
             )
 
             if result is None:
-                # LLM recommends custom SQL generation
                 self.logger.info("LLM recommends custom SQL generation")
                 context.add_metadata("llm_recommendation", "custom_sql")
+                custom_sql = self._generate_custom_sql(entities, question, context)
+                if custom_sql:
+                    return custom_sql
                 return None
 
             template, parameter_mapping = result
@@ -177,6 +175,8 @@ class SQLGenerator:
             if missing_params:
                 self.logger.error(f"Still missing parameters: {missing_params}")
                 return None
+
+        params = self._apply_entity_overrides(params, entities, template)
 
         # Populate template with parameters
         try:
@@ -262,6 +262,134 @@ class SQLGenerator:
                     break
 
         return params
+
+    def _apply_entity_overrides(
+        self,
+        params: Dict[str, str],
+        entities: ExtractedEntities,
+        template: QueryTemplate,
+    ) -> Dict[str, str]:
+        """
+        Use extracted entities to normalize or override populated parameters.
+
+        Ensures canonical values (e.g., company names) flow into the SQL template.
+        """
+        if not template.parameters or entities is None:
+            return params
+
+        updated = params.copy()
+
+        if "company" in template.parameters and entities.companies:
+            raw_company = next((c for c in entities.companies if c), "")
+            canonical_company = normalize_company_name(raw_company)
+            if canonical_company:
+                canonical_company = self._canonicalize_company_from_dataset(
+                    canonical_company
+                )
+                current_company = updated.get("company", "")
+                current_normalized = (
+                    normalize_company_name(current_company) if current_company else ""
+                )
+                if not current_company or canonical_company != current_normalized:
+                    updated["company"] = canonical_company
+
+        if "sector" in template.parameters and entities.sectors:
+            canonical_sector = next((s for s in entities.sectors if s), "")
+            if canonical_sector:
+                current_sector = updated.get("sector", "")
+                if (
+                    not current_sector
+                    or canonical_sector.lower() not in current_sector.lower()
+                ):
+                    updated["sector"] = canonical_sector
+
+        if "metric" in template.parameters and entities.metrics:
+            canonical_metric = next((m for m in entities.metrics if m), "")
+            if canonical_metric:
+                updated["metric"] = canonical_metric
+
+        if "time_period" in template.parameters and entities.time_periods:
+            canonical_period = next((t for t in entities.time_periods if t), "")
+            if canonical_period:
+                current_period = updated.get("time_period", "")
+                if (
+                    not current_period
+                    or canonical_period.lower() not in current_period.lower()
+                ):
+                    updated["time_period"] = canonical_period
+
+        return updated
+
+    @staticmethod
+    def _standardize_company_key(value: str) -> str:
+        """Generate a normalized key for comparing company names."""
+        return re.sub(r"[^A-Z0-9]", "", value.upper())
+
+    @staticmethod
+    def _first_token(value: str) -> str:
+        """Return the first alphanumeric token for a company name."""
+        tokens = re.findall(r"[A-Z0-9]+", value.upper())
+        return tokens[0] if tokens else ""
+
+    def _ensure_company_indexes(self) -> None:
+        """Load company name indexes from the dataset if not already populated."""
+        if self._company_name_index is not None:
+            return
+
+        try:
+            df = quick_query(
+                "SELECT DISTINCT name FROM companies WHERE name IS NOT NULL"
+            )
+            names = df["name"].astype(str).tolist()
+            name_index: Dict[str, str] = {}
+            token_index: Dict[str, List[str]] = {}
+
+            for name in names:
+                standardized = self._standardize_company_key(name)
+                if standardized and standardized not in name_index:
+                    name_index[standardized] = name
+
+                first_token = self._first_token(name)
+                if first_token:
+                    token_index.setdefault(first_token, []).append(name)
+
+            # Prefer shortest name for token collisions to reduce noise
+            token_index = {
+                token: sorted(options, key=len)
+                for token, options in token_index.items()
+            }
+
+            self._company_name_index = name_index
+            self._company_token_index = token_index
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("Unable to load company name index: %s", exc)
+            self._company_name_index = {}
+            self._company_token_index = {}
+
+    def _canonicalize_company_from_dataset(self, company: str) -> str:
+        """Snap company value to the canonical spelling used in the companies table."""
+        cached = self._company_lookup_cache.get(company)
+        if cached:
+            return cached
+
+        self._ensure_company_indexes()
+
+        resolved = company
+        if self._company_name_index:
+            key = self._standardize_company_key(company)
+            if key in self._company_name_index:
+                resolved = self._company_name_index[key]
+            else:
+                token = self._first_token(company)
+                candidates = []
+                if self._company_token_index and token:
+                    candidates = self._company_token_index.get(token, [])
+
+                if candidates:
+                    resolved = candidates[0]
+
+        self._company_lookup_cache[company] = resolved
+        return resolved
 
     def _select_template_with_llm(
         self,
@@ -429,6 +557,12 @@ class SQLGenerator:
         self.logger.error(
             f"LLM template selection failed after {max_retries} attempts: {last_error}"
         )
+        self.use_llm = False
+        self.azure_client = None
+        self.logger.warning(
+            "Disabling LLM template selection after repeated failures; "
+            "falling back to deterministic matching"
+        )
 
         # Fallback to deterministic if available
         if candidate_templates and len(candidate_templates) > 0:
@@ -525,6 +659,8 @@ class SQLGenerator:
                 )
                 return None
 
+        params = self._apply_entity_overrides(params, entities, template)
+
         # Populate template with parameters
         try:
             sql = template.sql_template
@@ -547,6 +683,62 @@ class SQLGenerator:
 
         except Exception as e:
             self.logger.error(f"Failed to generate SQL from LLM template: {e}")
+            return None
+
+    def _generate_custom_sql(
+        self,
+        entities: ExtractedEntities,
+        question: str,
+        context: RequestContext,
+    ) -> Optional[GeneratedSQL]:
+        """Fallback path that asks the LLM to write SQL from scratch."""
+
+        if not self.azure_client or not self.use_llm:
+            self.logger.debug("Custom SQL generation skipped (LLM unavailable)")
+            return None
+
+        try:
+            entity_payload = entities.model_dump()
+            llm_request = LLMRequest(
+                query=question,
+                context={
+                    "entities": entity_payload,
+                    "schema": schema_docs.schema_for_prompt(),
+                },
+            )
+
+            response = self.azure_client.generate_sql(llm_request)
+
+            if not response.success or not response.generated_sql:
+                self.logger.warning(
+                    "Custom SQL generation failed: %s", response.explanation
+                )
+                return None
+
+            if not self.validate_sql(response.generated_sql):
+                self.logger.warning("Generated SQL failed validation checks")
+                return None
+
+            llm_calls = context.metadata.setdefault("llm_calls", [])
+            llm_calls.append(
+                {
+                    "stage": "custom_sql",
+                    "tokens": response.token_usage,
+                    "latency_ms": response.processing_time_ms,
+                    "success": response.success,
+                }
+            )
+
+            return GeneratedSQL(
+                sql=response.generated_sql,
+                parameters={},
+                template_id=None,
+                generation_method="llm_custom",
+                confidence=response.confidence,
+            )
+
+        except Exception as exc:  # noqa: BLE001
+            self.logger.error(f"Unexpected error generating custom SQL: {exc}")
             return None
 
     def validate_sql(self, sql: str) -> bool:

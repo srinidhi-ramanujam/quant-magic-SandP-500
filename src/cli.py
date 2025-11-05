@@ -7,30 +7,22 @@ For Phase 0, supports:
 - Debug mode flag
 """
 
-import sys
-import json
 import argparse
+import json
+import sys
 
-from src.query_engine import QueryEngine
 from src.config import get_config
-from src.entity_extractor import get_entity_extractor
-from src.sql_generator import get_sql_generator
-from src.response_formatter import get_response_formatter
-from src.models import QueryResult, FormattedResponse
-from src.telemetry import (
-    setup_logging,
-    get_logger,
-    create_request_context,
-    log_component_timing,
-    log_error,
-    generate_telemetry_report,
-)
+from src.models import FormattedResponse
+from src.services import QueryService
+from src.telemetry import create_request_context, get_logger, setup_logging
+
+from src.llm_guard import LLMAvailabilityError, ensure_llm_available
 
 
 class FinancialCLI:
     """Command-line interface for financial queries."""
 
-    def __init__(self):
+    def __init__(self, allow_offline: bool = False):
         """Initialize CLI with all components."""
         # Setup logging first
         setup_logging()
@@ -38,10 +30,16 @@ class FinancialCLI:
 
         # Load configuration and initialize components
         self.config = get_config()
-        self.query_engine = QueryEngine()
-        self.entity_extractor = get_entity_extractor(force_refresh=True)
-        self.sql_generator = get_sql_generator()
-        self.response_formatter = get_response_formatter()
+
+        if not allow_offline:
+            try:
+                ensure_llm_available("Financial CLI startup")
+            except LLMAvailabilityError as exc:
+                raise RuntimeError(
+                    f"{exc}\nRe-run with --allow-offline to use deterministic mode."
+                ) from exc
+
+        self.query_service = QueryService(config=self.config)
 
         self.logger.info("FinancialCLI initialized successfully")
 
@@ -58,71 +56,13 @@ class FinancialCLI:
         Returns:
             FormattedResponse with answer and metadata
         """
-        # Create request context for telemetry
-        context = create_request_context(question)
-
-        try:
-            # Step 1: Extract entities
-            entities = self.entity_extractor.extract(question, context)
-            self.logger.info(
-                f"[{context.request_id}] Extracted: companies={entities.companies}, "
-                f"sectors={entities.sectors}, metrics={entities.metrics}"
-            )
-
-            # Step 2: Generate SQL
-            generated_sql = self.sql_generator.generate(entities, question, context)
-
-            if not generated_sql:
-                raise ValueError("Could not generate SQL query for the question")
-
-            self.logger.info(
-                f"[{context.request_id}] Generated SQL: {generated_sql.sql[:100]}..."
-            )
-
-            # Step 3: Execute query
-            with log_component_timing(context, "query_execution"):
-                result_df = self.query_engine.execute(generated_sql.sql)
-
-                query_result = QueryResult(
-                    data=result_df,
-                    row_count=len(result_df),
-                    columns=list(result_df.columns),
-                    execution_time_seconds=context.component_timings.get(
-                        "query_execution", 0.0
-                    ),
-                    sql_executed=generated_sql.sql,
-                )
-
-            self.logger.info(
-                f"[{context.request_id}] Query returned {query_result.row_count} rows"
-            )
-
-            # Step 4: Format response
-            response = self.response_formatter.format(
-                query_result, entities, context, debug_mode=debug_mode
-            )
-
-            # Generate telemetry report
-            _ = generate_telemetry_report(context, success=True)
-
-            return response
-
-        except Exception as e:
-            # Log error and return error response
-            log_error(context, e)
-
-            # Generate telemetry report for failure
-            _ = generate_telemetry_report(context, success=False, error=str(e))
-
-            # Return formatted error response
-            return self.response_formatter.format_error(
-                e, context, debug_mode=debug_mode
-            )
+        result = self.query_service.run(question, debug_mode=debug_mode)
+        return result.response
 
     def close(self):
         """Close database connections."""
-        if self.query_engine:
-            self.query_engine.close()
+        if self.query_service:
+            self.query_service.close()
         self.logger.info("FinancialCLI closed")
 
     def run_interactive(self, debug_mode: bool = False):
@@ -349,11 +289,16 @@ Examples:
         action="store_true",
         help="Use LLM-assisted entity extraction (for --test-entity-extraction)",
     )
+    parser.add_argument(
+        "--allow-offline",
+        action="store_true",
+        help="Bypass Azure OpenAI availability checks and run in deterministic mode",
+    )
 
     args = parser.parse_args()
 
     # Initialize CLI
-    cli = FinancialCLI()
+    cli = FinancialCLI(allow_offline=args.allow_offline)
 
     try:
         # Test entity extraction mode (Stage 1)

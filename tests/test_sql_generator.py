@@ -4,8 +4,10 @@ Tests for SQL generation from entities and templates.
 
 import pytest
 from src.sql_generator import SQLGenerator
-from src.models import ExtractedEntities
+from src.models import ExtractedEntities, LLMResponse
 from src.telemetry import create_request_context
+from src.query_engine import QueryEngine
+from src.entity_extractor import normalize_company_name
 
 
 def test_sector_count_template():
@@ -105,3 +107,306 @@ def test_invalid_entity_handling():
     # Should return None or handle gracefully
     # (In Phase 0, we expect None for unmatched patterns)
     assert sql is None
+
+
+def test_generate_custom_sql_helper(monkeypatch):
+    """Custom SQL helper consumes Azure client response and records telemetry."""
+
+    mock_response = LLMResponse(
+        success=True,
+        generated_sql="SELECT 1 FROM num LIMIT 1",
+        explanation="demo",
+        confidence=0.8,
+        processing_time_ms=120,
+        token_usage={"prompt_tokens": 10, "completion_tokens": 5},
+        model_version="gpt-test",
+    )
+
+    class DummyAzureClient:
+        def __init__(self):
+            self.config = type("cfg", (), {"deployment_name": "gpt-test"})
+
+        def generate_sql(self, request):  # noqa: D401
+            return mock_response
+
+        def is_available(self):
+            return True
+
+    import src.azure_client as azure_module
+
+    monkeypatch.setattr(
+        azure_module,
+        "AzureOpenAIClient",
+        lambda: DummyAzureClient(),
+        raising=False,
+    )
+
+    generator = SQLGenerator(use_llm=True)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.5)
+
+    result = generator._generate_custom_sql(entities, "Generate revenue query", context)
+
+    assert result is not None
+    assert result.generation_method == "llm_custom"
+    stages = [call["stage"] for call in context.metadata.get("llm_calls", [])]
+    assert "custom_sql" in stages
+
+
+def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
+    """Custom SQL helper rejects responses that fail validation."""
+
+    mock_response = LLMResponse(
+        success=True,
+        generated_sql="DELETE FROM companies",
+        explanation="demo",
+        confidence=0.8,
+        processing_time_ms=80,
+        token_usage={"prompt_tokens": 8, "completion_tokens": 4},
+        model_version="gpt-test",
+    )
+
+    class DummyAzureClient:
+        def __init__(self):
+            self.config = type("cfg", (), {"deployment_name": "gpt-test"})
+
+        def generate_sql(self, request):  # noqa: D401
+            return mock_response
+
+        def is_available(self):
+            return True
+
+    import src.azure_client as azure_module
+
+    monkeypatch.setattr(
+        azure_module,
+        "AzureOpenAIClient",
+        lambda: DummyAzureClient(),
+        raising=False,
+    )
+
+    generator = SQLGenerator(use_llm=True)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.4)
+
+    result = generator._generate_custom_sql(entities, "Generate revenue query", context)
+
+    assert result is None
+    assert context.metadata.get("llm_calls") is None
+
+
+@pytest.mark.parametrize(
+    "company_input",
+    [
+        "Apple Inc",
+        "Microsoft Corporation",
+        "Alphabet Inc",
+        "Amazon.com",
+        "Tesla Motors",
+    ],
+)
+def test_company_cik_lookup_returns_row(company_input):
+    """Ensure company CIK template resolves canonical company names."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(
+        companies=[company_input],
+        metrics=["CIK"],
+        question_type="lookup",
+        confidence=0.9,
+    )
+    question = f"What is {company_input}'s CIK?"
+
+    canonical_name = normalize_company_name(company_input)
+    tokens = canonical_name.replace(",", "").split()
+    search_token = tokens[0] if tokens else canonical_name
+
+    qe = QueryEngine()
+    try:
+        expected_df = qe.execute(
+            f"""
+            SELECT name, cik
+            FROM companies
+            WHERE name LIKE '%{search_token}%'
+            ORDER BY LENGTH(name)
+            LIMIT 1
+            """
+        )
+    finally:
+        qe.close()
+
+    assert not expected_df.empty
+    expected_cik = expected_df.iloc[0]["cik"]
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "company_by_cik"
+    assert expected_cik not in ("", None)
+
+    qe_result = QueryEngine()
+    try:
+        df = qe_result.execute(result.sql)
+    finally:
+        qe_result.close()
+
+    assert not df.empty
+    assert expected_cik in df["cik"].astype(str).tolist()
+
+
+@pytest.mark.parametrize(
+    "company_input",
+    ["Apple Inc", "JPMorgan Chase", "Abbott Labs", "Chevron", "Walmart"],
+)
+def test_company_sector_lookup_matches_expected(company_input):
+    """Verify sector template returns data for flagship companies."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(
+        companies=[company_input],
+        metrics=["Sector"],
+        question_type="lookup",
+        confidence=0.8,
+    )
+    question = f"What sector is {company_input} in?"
+
+    canonical_name = normalize_company_name(company_input)
+    tokens = canonical_name.replace(",", "").split()
+    search_token = tokens[0] if tokens else canonical_name
+
+    qe = QueryEngine()
+    try:
+        expected_df = qe.execute(
+            f"""
+            SELECT name, gics_sector
+            FROM companies
+            WHERE name LIKE '%{search_token}%'
+            ORDER BY LENGTH(name)
+            LIMIT 1
+            """
+        )
+    finally:
+        qe.close()
+
+    assert not expected_df.empty
+    expected_sector = expected_df.iloc[0]["gics_sector"]
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "company_sector"
+
+    qe_result = QueryEngine()
+    try:
+        df = qe_result.execute(result.sql)
+    finally:
+        qe_result.close()
+
+    assert not df.empty
+    assert expected_sector in df["gics_sector"].astype(str).tolist()
+
+
+@pytest.mark.parametrize(
+    "company_input",
+    [
+        "Apple Inc",
+        "Microsoft Corporation",
+        "Alphabet Inc",
+    ],
+)
+def test_latest_revenue_template_returns_value(company_input):
+    """Regression coverage for latest revenue template on key companies."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(
+        companies=[company_input],
+        metrics=["Revenue"],
+        question_type="lookup",
+        confidence=0.85,
+    )
+    question = f"What is the latest revenue for {company_input}?"
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "latest_revenue"
+    assert "Revenues" in result.sql or "SalesRevenueNet" in result.sql
+
+    qe = QueryEngine()
+    try:
+        df = qe.execute(result.sql)
+    finally:
+        qe.close()
+
+    assert list(df.columns) == [
+        "revenue",
+        "period_end_date",
+        "fiscal_year",
+        "fiscal_period",
+    ]
+
+
+def test_company_name_by_cik_template():
+    """Template returns company name for an exact CIK lookup."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.9)
+    question = "Which company has CIK 0000066740?"
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "company_name_by_cik"
+
+    qe = QueryEngine()
+    try:
+        df = qe.execute(result.sql)
+    finally:
+        qe.close()
+
+    assert not df.empty
+    assert df.iloc[0]["name"] == "3M CO"
+
+
+def test_most_common_currency_template():
+    """Template identifies most frequently used currency in num table."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.9)
+    question = "What currency is used most frequently in the numerical data?"
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "most_common_currency"
+
+    qe = QueryEngine()
+    try:
+        df = qe.execute(result.sql)
+    finally:
+        qe.close()
+
+    assert not df.empty
+    assert df.iloc[0]["currency"] == "USD"
+
+
+def test_fact_count_with_footnotes_template():
+    """Template counts numeric facts that have footnotes."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+    entities = ExtractedEntities(confidence=0.9)
+    question = "How many financial facts have footnotes?"
+
+    result = generator.generate(entities, question, context)
+
+    assert result is not None
+    assert result.template_id == "fact_count_with_footnotes"
+
+    qe = QueryEngine()
+    try:
+        df = qe.execute(result.sql)
+    finally:
+        qe.close()
+
+    assert not df.empty
+    assert df.iloc[0]["fact_count"] > 0

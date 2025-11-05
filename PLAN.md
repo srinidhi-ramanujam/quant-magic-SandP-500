@@ -3,7 +3,7 @@
 **Product**: AI-powered financial analytics via natural language  
 **Approach**: Incremental delivery with clear exit criteria  
 **Current Phase**: Phase 1 Complete → Phase 2 Starting  
-**Test Status**: 100/104 passing (96.2%)
+**Test Status**: 118 passed / 2 skipped / 2 xfailed
 
 ---
 
@@ -11,10 +11,10 @@
 
 ### What's Working ✅
 - **Phase 0**: PoC with 10/10 questions correct
-- **Phase 1**: Azure OpenAI + LLM entity extraction + hybrid template selection
-- **Data**: 15.5M+ facts, 589 companies, 27 SQL templates
-- **Tests**: 100/104 passing (13 LLM tests, 16 hybrid tests, 11 POC tests)
-- **CLI**: Interactive REPL + single-shot modes
+- **Phase 1**: LLM-first entity extraction & template selection with deterministic fallback when Azure is unavailable
+- **Data**: 15.5M+ facts, 589 companies, 27 SQL templates (schema-aligned)
+- **Tests**: 118 passing (integration marked/skipped), full template execution harness, Phase 0 PoC suite fast again
+- **CLI**: Interactive REPL + single-shot modes now default to LLM paths when credentials exist
 
 ### What's Next 🚀
 - **Phase 2**: Custom SQL generation + validation + coverage expansion
@@ -513,9 +513,40 @@ quant-magic-SandP-500/
    - Write 10 tests
 
 5. [ ] **Phase 2C: Coverage Expansion**
+- Audit simple-tier templates for schema compatibility (replace stprinc/companies_with_sectors usage, ensure DuckDB column names match)
+- Add deterministic/custom templates for missing simple-tier patterns (currency usage, footnote counts, CIK lookups, latest filing dates, etc.)
+- Refresh simple-tier evaluation answers/tolerances once SQL alignment is complete
+
    - Run evaluation (171 simple questions)
    - Fix issues iteratively
    - Achieve 86+ passing (50%+)
+
+---
+
+## Parallel UI & Codespaces Roadmap
+
+These tracks run alongside Phase 2 backend work so the product can demo via a browser from GitHub Codespaces.
+
+### 1. Codespaces & Devcontainer Enablement
+- Add `.devcontainer/devcontainer.json` using `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature.
+- Preinstall Python dependencies (`pip install -r requirements.txt`) and prep for future `npm install`.
+- Forward ports 8000 (FastAPI) and 5173 (Vite), enable public URLs, and document DuckDB parquet handling plus required Azure secrets via Codespaces settings.
+
+### 2. FastAPI Service Layer
+- Introduce `src/services/query_service.py` (wraps entity extraction, SQL generation, execution, telemetry).
+- Stand up `src/api/app.py` exposing `POST /query` returning structured answers, SQL, and metadata; include graceful fallbacks when Azure creds are absent.
+- Add pytest coverage using `TestClient` for happy path, validation errors, and failure handling.
+
+### 3. Frontend Scaffold (React + HTMX)
+- Create `frontend/` via Vite (React + TypeScript); configure Tailwind/PostCSS and load HTMX for progressive enhancement.
+- Implement initial query form + results shell calling FastAPI; keep composition extensible for future charts/visuals.
+- Skip authentication for first release; rely on Codespaces share links while leaving hooks for future auth layers.
+- Establish fetch client conventions and state management (start lightweight hooks, evaluate React Query later).
+
+### 4. Tooling & Documentation
+- Provide shared commands (Makefile or tasks) for `pytest -m "not integration"`, `uvicorn src.api.app:app --reload`, and `npm run dev`.
+- Update onboarding docs (`README.md`, AGENTS.md if needed) with Codespaces setup, env vars, and run instructions.
+- Capture open questions (parquet distribution, streaming updates) for next iteration before implementation.
 
 ---
 

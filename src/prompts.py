@@ -17,13 +17,14 @@ from typing import List, Dict, Optional, Any
 # STAGE 1: ENTITY EXTRACTION PROMPTS
 # ==============================================================================
 
+
 def get_entity_extraction_prompt(question: str) -> str:
     """
     Generate prompt for LLM-assisted entity extraction.
-    
+
     Args:
         question: User's natural language question
-        
+
     Returns:
         Structured prompt for entity extraction
     """
@@ -197,7 +198,7 @@ RESPONSE FORMAT:
 Return ONLY a valid JSON object with the exact structure shown above. Do not include any other text, explanation, or markdown formatting.
 
 JSON Response:"""
-    
+
     return prompt
 
 
@@ -278,35 +279,38 @@ SECTOR_NORMALIZATIONS = {
 
 # Placeholder functions for future stages (will be implemented in respective tasks)
 
+
 def get_template_selection_prompt(
-    question: str, 
-    entities: Dict[str, Any],
-    candidate_templates: List[Dict[str, Any]]
+    question: str, entities: Dict[str, Any], candidate_templates: List[Dict[str, Any]]
 ) -> str:
     """
     Generate prompt for LLM-assisted template selection (Stage 2).
-    
+
     Args:
         question: User's natural language question
         entities: Extracted entities from Stage 1
         candidate_templates: List of candidate templates from deterministic matching
-        
+
     Returns:
         Prompt for template selection
     """
     # Format candidate templates for the prompt
     templates_desc = []
     for i, template in enumerate(candidate_templates, 1):
-        templates_desc.append(f"""
+        templates_desc.append(
+            f"""
 Template {i}: {template.get('template_id', 'unknown')}
 - Name: {template.get('name', 'N/A')}
 - Description: {template.get('description', 'N/A')}
 - Parameters: {', '.join(template.get('parameters', []))}
 - SQL: {template.get('sql_template', 'N/A')[:100]}...
-""")
-    
-    templates_text = "\n".join(templates_desc) if templates_desc else "No candidate templates found"
-    
+"""
+        )
+
+    templates_text = (
+        "\n".join(templates_desc) if templates_desc else "No candidate templates found"
+    )
+
     prompt = f"""You are a financial data analyst assistant helping to select the best SQL template for a user's question.
 
 USER QUESTION: "{question}"
@@ -392,22 +396,19 @@ Fields:
 - parameter_mapping: How to fill template parameters from entities (empty if custom SQL)
 
 JSON Response:"""
-    
+
     return prompt
 
 
 def get_sql_template_population_prompt(
-    template: Dict[str, Any],
-    entities: Dict[str, Any]
+    template: Dict[str, Any], entities: Dict[str, Any]
 ) -> str:
     """Generate prompt for Stage 3: SQL Generation (template-based) (TODO: Implement in Stage 3)."""
     raise NotImplementedError("Stage 3: SQL Generation - to be implemented")
 
 
 def get_sql_custom_generation_prompt(
-    question: str,
-    entities: Dict[str, Any],
-    schema: str
+    question: str, entities: Dict[str, Any], schema: str
 ) -> str:
     """Generate prompt for Stage 3: SQL Generation (custom SQL) (TODO: Implement in Stage 3)."""
     raise NotImplementedError("Stage 3: SQL Generation - to be implemented")
@@ -419,10 +420,7 @@ def get_sql_syntax_validation_prompt(sql: str) -> str:
 
 
 def get_sql_semantic_validation_prompt(
-    sql: str,
-    question: str,
-    entities: Dict[str, Any]
+    sql: str, question: str, entities: Dict[str, Any]
 ) -> str:
     """Generate prompt for Stage 4: SQL Validation Pass 2 (semantics) (TODO: Implement in Stage 4)."""
     raise NotImplementedError("Stage 4: SQL Validation - to be implemented")
-

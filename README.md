@@ -14,9 +14,20 @@ python -m src.cli --interactive
 # Single question
 python -m src.cli "How many companies are in Technology?"
 
-# Run tests (100/104 passing)
+# Run tests (118 passing / 2 skipped / 2 xfailed)
 python -m pytest tests/ -v
 ```
+
+---
+
+## GitHub Codespaces
+
+1. Create a Codespace from this repo (`Code → Codespaces → Create codespace on master`) or open the shared link.<br>Make sure the repository-level Codespaces setting is enabled.
+2. On first boot the devcontainer provisions Python 3.11 and Node 20, creates `.venv`, and installs `requirements.txt`. When the terminal is ready, activate the environment: `source .venv/bin/activate`.
+3. Fill in Secrets under `Codespaces → Codespaces secrets` (or add a `.env` file) using the keys in `.env.example` so Azure OpenAI calls work inside the container.
+4. Run backend routines as usual (e.g., `python -m pytest -m "not integration"` or `python -m src.cli "How many companies are in Technology?"`). Future FastAPI/React services will auto-forward on ports `8000` and `5173` for browser demos.
+5. Launch the FastAPI layer with `uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000` (task shortcut: “run api”).
+6. Start the React UI from `frontend/` with `npm run dev -- --host 0.0.0.0 --port 5173` (task shortcut: “run ui”). Codespaces will expose a public link you can share.
 
 ---
 
@@ -29,11 +40,12 @@ python -m pytest tests/ -v
 - **Test suite**: 55 tests passing (100%)
 
 ### ✅ Phase 1: AI Integration (COMPLETE)
-- **Azure OpenAI**: GPT-5 integration with retry logic
-- **LLM Entity Extraction**: 13/13 tests passing
-- **Hybrid Template Selection**: Deterministic + LLM routing
-- **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series)
-- **Test suite**: 100/104 tests passing (96.2%)
+- **LLM-first pipeline**: GPT-5 drives entity extraction and template selection when credentials are present; the system auto-falls back to deterministic mode with clear telemetry when Azure is unavailable.
+- **Azure OpenAI**: GPT-5 integration with retry logic and dynamic circuit-breaker fallback
+- **LLM Entity Extraction**: 13/13 tests passing (integration tests skipped unless `ENABLE_AZURE_INTEGRATION_TESTS=true`)
+- **Hybrid Template Selection**: Deterministic fast path + LLM confirmation/fallback
+- **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series) with automated schema validation
+- **Test suite**: 118 tests passing, 2 skipped (integration gated), 2 xpassed
 
 ### 🚀 Next: Phase 2 - SQL Generation & Coverage
 - Custom SQL generation for non-template questions
@@ -194,7 +206,22 @@ python -m pytest tests/ -v
 python -m pytest tests/test_entity_extractor_llm.py -v
 
 # Integration tests (require Azure OpenAI)
-python -m pytest tests/ -v -m integration
+ENABLE_AZURE_INTEGRATION_TESTS=true python -m pytest -m integration
+```
+
+### Frontend Commands
+
+```bash
+cd frontend
+
+# Install dependencies (happens automatically inside Codespaces)
+npm install
+
+# Start the Vite dev server with port forwarding
+npm run dev -- --host 0.0.0.0 --port 5173
+
+# Build & type-check the UI
+npm run build
 ```
 
 ### Test Status
@@ -268,6 +295,17 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ---
 
+## Parallel UI & Codespaces Roadmap
+
+| Track | Scope |
+| --- | --- |
+| Codespaces Enablement | Build `.devcontainer/devcontainer.json` on `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature, preinstall Python deps, prep future `npm install`, forward ports 8000 (FastAPI) + 5173 (Vite), document DuckDB parquet availability and Codespaces secrets for Azure credentials. |
+| FastAPI Service Layer | Extract CLI orchestration into a reusable query service, expose `POST /query` via FastAPI (`src/api/app.py`), return structured answer/SQL/metadata, and mirror CLI fallbacks when Azure creds are absent; cover with pytest `TestClient`. |
+| React + HTMX Frontend | Scaffold `frontend/` with Vite (React + TypeScript), configure Tailwind/PostCSS and load HTMX for progressive enhancement, deliver a no-auth query form + results shell hitting the FastAPI endpoint while leaving extension points for charts. |
+| Tooling & Docs | Add shared run scripts/tasks for API (`uvicorn src.api.app:app --reload`), tests (`pytest -m "not integration"`), and UI (`npm run dev`); update onboarding docs with Codespaces instructions and open questions (parquet distribution, streaming updates) before implementation. |
+
+---
+
 ## Contributing
 
 ### Working Agreements
@@ -307,6 +345,7 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 ### Security & Configuration
 - Required environment variables: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_NAME` (plus optional embeddings deployment).
 - Store secrets in local env files or shell profiles and validate setup with `python -m src.cli --test-entity-extraction --use-llm`.
+- When Azure credentials are present, entity extraction and template selection use GPT-5 automatically; if credentials or network access are missing, the system logs a warning and falls back to deterministic templates without failing requests.
 
 ---
 
