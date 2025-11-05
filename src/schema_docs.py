@@ -151,7 +151,9 @@ def render_table_spec(table: TableSpec) -> str:
     )
     pk = ", ".join(table.primary_keys) if table.primary_keys else "n/a"
     sample_filters = (
-        "\n".join(f"    - `{filter_example}`" for filter_example in table.sample_filters)
+        "\n".join(
+            f"    - `{filter_example}`" for filter_example in table.sample_filters
+        )
         if table.sample_filters
         else ""
     )

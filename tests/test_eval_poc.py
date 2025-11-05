@@ -155,7 +155,9 @@ def test_poc_10_questions(cli):
     assert (
         pass_rate >= 0.90
     ), f"PoC pass rate {pass_rate:.1%} is below 90% threshold (passed {passed}/10)"
-    assert avg_time < 10.0, f"Average response time {avg_time:.3f}s exceeds 10s threshold"
+    assert (
+        avg_time < 10.0
+    ), f"Average response time {avg_time:.3f}s exceeds 10s threshold"
 
 
 # Individual test cases for better granularity

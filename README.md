@@ -26,6 +26,8 @@ python -m pytest tests/ -v
 2. On first boot the devcontainer provisions Python 3.11 and Node 20, creates `.venv`, and installs `requirements.txt`. When the terminal is ready, activate the environment: `source .venv/bin/activate`.
 3. Fill in Secrets under `Codespaces → Codespaces secrets` (or add a `.env` file) using the keys in `.env.example` so Azure OpenAI calls work inside the container.
 4. Run backend routines as usual (e.g., `python -m pytest -m "not integration"` or `python -m src.cli "How many companies are in Technology?"`). Future FastAPI/React services will auto-forward on ports `8000` and `5173` for browser demos.
+5. Launch the FastAPI layer with `uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000` (task shortcut: “run api”).
+6. Start the React UI from `frontend/` with `npm run dev -- --host 0.0.0.0 --port 5173` (task shortcut: “run ui”). Codespaces will expose a public link you can share.
 
 ---
 
@@ -205,6 +207,21 @@ python -m pytest tests/test_entity_extractor_llm.py -v
 
 # Integration tests (require Azure OpenAI)
 ENABLE_AZURE_INTEGRATION_TESTS=true python -m pytest -m integration
+```
+
+### Frontend Commands
+
+```bash
+cd frontend
+
+# Install dependencies (happens automatically inside Codespaces)
+npm install
+
+# Start the Vite dev server with port forwarding
+npm run dev -- --host 0.0.0.0 --port 5173
+
+# Build & type-check the UI
+npm run build
 ```
 
 ### Test Status
