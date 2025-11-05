@@ -513,6 +513,10 @@ quant-magic-SandP-500/
    - Write 10 tests
 
 5. [ ] **Phase 2C: Coverage Expansion**
+- Audit simple-tier templates for schema compatibility (replace stprinc/companies_with_sectors usage, ensure DuckDB column names match)
+- Add deterministic/custom templates for missing simple-tier patterns (currency usage, footnote counts, CIK lookups, latest filing dates, etc.)
+- Refresh simple-tier evaluation answers/tolerances once SQL alignment is complete
+
    - Run evaluation (171 simple questions)
    - Fix issues iteratively
    - Achieve 86+ passing (50%+)

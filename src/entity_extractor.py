@@ -63,6 +63,20 @@ KNOWN_METRICS = {
     "gics",
 }
 
+COMPANY_SUFFIXES = [
+    " corporation",
+    " corp.",
+    " corp",
+    " incorporated",
+    " inc.",
+    " inc",
+    " company",
+    " co.",
+    " co",
+    ", inc.",
+    ", inc",
+]
+
 # Company name aliases (loaded once)
 _COMPANY_ALIASES: Dict[str, str] = {}
 _ALIASES_LOADED = False
@@ -78,11 +92,25 @@ def _load_company_aliases() -> Dict[str, str]:
     try:
         alias_file = Path(__file__).parent.parent / "data" / "company_name_aliases.csv"
         if alias_file.exists():
-            df = pd.read_csv(alias_file)
-            # Create dict: alias (lowercase) -> official_name
-            _COMPANY_ALIASES = {
-                row["alias"].lower(): row["official_name"] for _, row in df.iterrows()
-            }
+            aliases: Dict[str, str] = {}
+            with alias_file.open() as handle:
+                header_skipped = False
+                for line in handle:
+                    if not header_skipped:
+                        header_skipped = True
+                        continue
+                    row = line.strip()
+                    if not row:
+                        continue
+                    parts = [part.strip() for part in row.split(",")]
+                    if len(parts) < 3:
+                        continue
+                    alias = parts[0].lower()
+                    official_name = ",".join(parts[1:-1]).strip()
+                    if alias:
+                        aliases[alias] = official_name
+
+            _COMPANY_ALIASES = aliases
         _ALIASES_LOADED = True
     except Exception as e:
         # Fallback to empty dict if loading fails
@@ -90,6 +118,69 @@ def _load_company_aliases() -> Dict[str, str]:
         _ALIASES_LOADED = True
 
     return _COMPANY_ALIASES
+
+
+def get_company_alias_map() -> Dict[str, str]:
+    """Expose company alias mapping for other modules."""
+    return _load_company_aliases()
+
+
+def normalize_company_name(company_name: str) -> str:
+    """Normalize company names to canonical aliases (uppercase)."""
+    if not company_name:
+        return ""
+
+    aliases = _load_company_aliases()
+    candidate = company_name.lower().strip()
+    candidate = candidate.replace("’", "'")
+    variants = {
+        candidate,
+        candidate.replace(".", ""),
+        candidate.replace(",", ""),
+        candidate.replace(".", " "),
+    }
+
+    for variant in list(variants):
+        if variant in aliases:
+            return aliases[variant]
+
+    for suffix in COMPANY_SUFFIXES:
+        if candidate.endswith(suffix):
+            base = candidate[: -len(suffix)].strip()
+            if base in aliases:
+                return aliases[base]
+            variants.add(base)
+            variants.add(base.replace(".", ""))
+            variants.add(base.replace(",", ""))
+            variants.add(base.replace(".", " "))
+
+    for variant in variants:
+        if variant in aliases:
+            return aliases[variant]
+
+    tokenized = re.sub(r"[^a-z0-9]+", " ", candidate).strip()
+    if tokenized in aliases:
+        return aliases[tokenized]
+
+    tokens = tokenized.split()
+    if tokens:
+        first_token = tokens[0]
+        if first_token in aliases:
+            return aliases[first_token]
+
+    cleaned = re.sub(r"[',.]", "", company_name).strip()
+    # Replace trailing CORPORATION/COMPANY with CORP/CO if present
+    replacements = {
+        " CORPORATION": " CORP",
+        " COMPANY": " CO",
+    }
+    upper_cleaned = cleaned.upper()
+    for old, new in replacements.items():
+        if upper_cleaned.endswith(old):
+            upper_cleaned = upper_cleaned[: -len(old)] + new
+            break
+
+    return upper_cleaned
 
 
 # Question type indicators
@@ -540,7 +631,14 @@ class EntityExtractor:
                 # Capitalize first letter for standardization
                 companies.append(company.capitalize())
 
-        return list(set(companies))  # Remove duplicates
+        aliases = _load_company_aliases()
+        normalized: List[str] = []
+        for company_name in companies:
+            canonical = normalize_company_name(company_name)
+            if canonical and canonical not in normalized:
+                normalized.append(canonical)
+
+        return normalized
 
     def _extract_metrics(self, question_lower: str) -> List[str]:
         """Extract financial metrics from question."""
