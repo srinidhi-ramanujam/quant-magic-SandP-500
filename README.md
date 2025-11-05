@@ -20,6 +20,15 @@ python -m pytest tests/ -v
 
 ---
 
+## GitHub Codespaces
+
+1. Create a Codespace from this repo (`Code → Codespaces → Create codespace on master`) or open the shared link.<br>Make sure the repository-level Codespaces setting is enabled.
+2. On first boot the devcontainer provisions Python 3.11 and Node 20, creates `.venv`, and installs `requirements.txt`. When the terminal is ready, activate the environment: `source .venv/bin/activate`.
+3. Fill in Secrets under `Codespaces → Codespaces secrets` (or add a `.env` file) using the keys in `.env.example` so Azure OpenAI calls work inside the container.
+4. Run backend routines as usual (e.g., `python -m pytest -m "not integration"` or `python -m src.cli "How many companies are in Technology?"`). Future FastAPI/React services will auto-forward on ports `8000` and `5173` for browser demos.
+
+---
+
 ## Current Status - November 4, 2025
 
 ### ✅ Phase 0: Foundation (COMPLETE)
