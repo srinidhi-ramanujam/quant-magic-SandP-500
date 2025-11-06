@@ -406,6 +406,11 @@ class IntelligenceLoader:
             if unit:
                 params["unit"] = unit
 
+        if "threshold" in template.parameters and "threshold" not in params:
+            threshold_match = re.search(r"(\d+(?:\.\d+)?)\s*%?", question_lower)
+            if threshold_match:
+                params["threshold"] = threshold_match.group(1)
+
         if "rank" in template.parameters and "rank" not in params:
             ordinal_map = {
                 "first": 1,

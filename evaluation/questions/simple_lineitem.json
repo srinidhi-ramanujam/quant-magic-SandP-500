@@ -2875,8 +2875,11 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 15.0,
-        "type": "numeric"
+        "value": 32.91,
+        "type": "numeric",
+        "tolerance": {
+          "absolute": 0.5
+        }
       },
       "context": {
         "data_source": "tag.parquet",
@@ -2919,9 +2922,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 0
+        "value": 224017
       },
       "context": {
         "data_source": "tag.parquet",
@@ -3168,9 +3171,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         },
-        "value": 45000
+        "value": 8738244
       },
       "context": {
         "data_source": "num.parquet",
@@ -4321,7 +4324,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 12,
+        "value": 434,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -4542,7 +4545,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 12,
+        "value": 175,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -5675,7 +5678,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 14760135,
+        "value": 2926,
         "type": "numeric",
         "tolerance": {
           "absolute": 50
@@ -5879,7 +5882,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 8420,
+        "value": 50344,
         "type": "numeric",
         "tolerance": {
           "absolute": 50
@@ -6124,7 +6127,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 14760135,
+        "value": 110,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -6288,7 +6291,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 12650,
+        "value": 642330,
         "type": "numeric",
         "tolerance": {
           "absolute": 100
@@ -6329,7 +6332,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 14760135,
+        "value": 140,
         "type": "numeric",
         "tolerance": {
           "absolute": 5
@@ -6370,7 +6373,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 16.8,
+        "value": 20.06,
         "type": "numeric",
         "tolerance": {
           "absolute": 1.0

@@ -112,7 +112,33 @@ class ResponseFormatter:
         if isinstance(data, pd.DataFrame):
             if data.empty:
                 return "No results found."
-            count = int(data.iloc[0].iloc[0])  # First row, first column
+
+            row = data.iloc[0]
+            numeric_columns = [
+                col for col in row.index if pd.api.types.is_numeric_dtype(data[col])
+            ]
+
+            if numeric_columns:
+                count_value = row[numeric_columns[0]]
+            else:
+                count_value = row.iloc[0]
+
+            try:
+                count = int(count_value)
+            except (ValueError, TypeError):
+                try:
+                    count = int(float(count_value))
+                except (ValueError, TypeError):
+                    count = 0
+
+            # Include category/label context when available
+            label_value = None
+            for label_col in row.index:
+                if label_col not in numeric_columns:
+                    label_candidate = row[label_col]
+                    if isinstance(label_candidate, str) and label_candidate.strip():
+                        label_value = label_candidate.strip()
+                        break
         elif isinstance(data, list) and data:
             count = data[0].get("count", 0) if isinstance(data[0], dict) else 0
         else:
@@ -122,6 +148,8 @@ class ResponseFormatter:
         if entities.sectors:
             sector = entities.sectors[0]
             return f"There are {count} companies in the {sector} sector."
+        if label_value:
+            return f"{label_value} has {count} matching records."
         else:
             return f"Count: {count}"
 
