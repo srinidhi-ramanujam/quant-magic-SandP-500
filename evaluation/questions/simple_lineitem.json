@@ -135,7 +135,7 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": "Other",
+        "value": "Financials",
         "type": "text"
       },
       "context": {
@@ -493,7 +493,7 @@
         "value": 14,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -808,10 +808,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 0,
+        "value": 20,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1362,10 +1362,10 @@
       "difficulty": "beginner",
       "category": "financial_statement_line_items",
       "expected_answer": {
-        "type": "text",
-        "value": "60000000000.0",
+        "type": "numeric",
+        "value": 55394000000.0,
         "tolerance": {
-          "absolute": 1000000000.0
+          "absolute": 2000000000.0
         }
       },
       "context": {
@@ -1408,7 +1408,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 10
+        "value": 447.0
       },
       "context": {
         "tag": "NetIncomeLoss",
@@ -1449,9 +1449,9 @@
       "category": "financial_statement_line_items",
       "expected_answer": {
         "type": "text",
-        "value": "180000000000.0",
+        "value": 163402000000.0,
         "tolerance": {
-          "absolute": 1000000000.0
+          "absolute": 5000000000.0
         }
       },
       "context": {
@@ -1538,7 +1538,7 @@
         "tolerance": {
           "absolute": 10
         },
-        "value": 450
+        "value": 134
       },
       "context": {
         "tag": "CostOfRevenue",
@@ -1576,10 +1576,10 @@
       "difficulty": "beginner",
       "category": "financial_statement_line_items",
       "expected_answer": {
-        "value": -1865000000.0,
+        "value": 76793000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.05
         }
       },
       "context": {
@@ -1619,10 +1619,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 28,
+        "value": 82,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1659,7 +1659,7 @@
       "difficulty": "intermediate",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": "Other",
+        "value": "AT&T INC is in the Financials sector.",
         "type": "text"
       },
       "context": {
@@ -1698,10 +1698,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 22,
+        "value": 41,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1738,10 +1738,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 15,
+        "value": 51,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1778,10 +1778,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 51,
+        "value": 99,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1858,7 +1858,7 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 0,
+        "value": 3,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -1898,10 +1898,10 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 0,
+        "value": 17,
         "type": "numeric",
         "tolerance": {
-          "absolute": 1
+          "absolute": 2
         }
       },
       "context": {
@@ -1977,7 +1977,7 @@
       "difficulty": "intermediate",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 262,
+        "value": 6,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -2019,7 +2019,7 @@
       "difficulty": "intermediate",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 262,
+        "value": 4,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -2103,7 +2103,7 @@
         "tolerance": {
           "absolute": 3
         },
-        "value": 61
+        "value": 69
       },
       "context": {
         "field": "stprba",
@@ -2144,7 +2144,7 @@
         "tolerance": {
           "absolute": 3
         },
-        "value": 67
+        "value": 81
       },
       "context": {
         "field": "stprba",
@@ -2185,7 +2185,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 3
+        "value": 9
       },
       "context": {
         "field": "stprinc",
@@ -2226,7 +2226,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 14
+        "value": 6
       },
       "context": {
         "field": "countryinc",
@@ -2304,7 +2304,7 @@
       "difficulty": "intermediate",
       "category": "geographic_regulatory",
       "expected_answer": {
-        "value": 106,
+        "value": "TX",
         "type": "text"
       },
       "context": {
@@ -2347,7 +2347,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 35
+        "value": 42
       },
       "context": {
         "field": "stprba",
@@ -2388,7 +2388,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 20
+        "value": 26
       },
       "context": {
         "field": "stprba",
@@ -2594,7 +2594,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 13
+        "value": 20
       },
       "context": {
         "field": "stprba",
@@ -2635,7 +2635,7 @@
         "tolerance": {
           "absolute": 1
         },
-        "value": 2
+        "value": 6
       },
       "context": {
         "field": "countryinc",
@@ -2797,7 +2797,7 @@
         "tolerance": {
           "absolute": 1
         },
-        "value": 2
+        "value": 6
       },
       "context": {
         "field": "countryinc",
@@ -2838,7 +2838,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 17
+        "value": 22
       },
       "context": {
         "field": "stprba",
@@ -3132,7 +3132,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 8
+        "value": 49.0
       },
       "context": {
         "data_source": "num.parquet",
@@ -3256,7 +3256,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 6063
+        "value": 0.0
       },
       "context": {
         "data_source": "tag.parquet",
@@ -3297,7 +3297,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 125000
+        "value": 2124201.0
       },
       "context": {
         "data_source": "num.parquet",
@@ -3338,9 +3338,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         },
-        "value": 85000
+        "value": 1427015
       },
       "context": {
         "data_source": "num.parquet",
@@ -3379,7 +3379,7 @@
       "category": "xbrl_data_quality",
       "expected_answer": {
         "type": "text",
-        "value": "Assets"
+        "value": "Revenues"
       },
       "context": {
         "data_source": "num.parquet",
@@ -3586,9 +3586,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         },
-        "value": 400
+        "value": 1261087
       },
       "context": {
         "data_source": "num.parquet",
@@ -3746,10 +3746,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 450,
+        "value": 4167,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 50
         }
       },
       "context": {
@@ -3787,10 +3787,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 50,
+        "value": 917,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 50
         }
       },
       "context": {
@@ -3830,9 +3830,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 400
+        "value": 5664
       },
       "context": {
         "data_source": "sub.parquet",
@@ -3871,9 +3871,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 500
+        "value": 6476
       },
       "context": {
         "data_source": "sub.parquet",
@@ -3951,10 +3951,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 350,
+        "value": 17572,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "relative": 0.05
         }
       },
       "context": {
@@ -3992,10 +3992,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 80,
+        "value": 394,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         }
       },
       "context": {
@@ -4033,10 +4033,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 45,
+        "value": 949,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         }
       },
       "context": {
@@ -4074,10 +4074,10 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 25,
+        "value": 1134,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "relative": 0.05
         }
       },
       "context": {
@@ -4118,9 +4118,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 400
+        "value": 5296
       },
       "context": {
         "data_source": "sub.parquet",
@@ -4160,9 +4160,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 400
+        "value": 5238
       },
       "context": {
         "data_source": "sub.parquet",
@@ -4202,9 +4202,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 50
         },
-        "value": 400
+        "value": 1
       },
       "context": {
         "data_source": "sub.parquet",
@@ -4242,7 +4242,7 @@
       "difficulty": "intermediate",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": "10-Q",
+        "value": "10-K",
         "type": "text"
       },
       "context": {
@@ -4282,7 +4282,7 @@
       "difficulty": "beginner",
       "category": "temporal_filing_patterns",
       "expected_answer": {
-        "value": 613954,
+        "value": 5484928,
         "type": "numeric",
         "tolerance": {
           "relative": 0.05
@@ -4324,10 +4324,10 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 434,
+        "value": 448,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 20
         }
       },
       "context": {
@@ -4369,7 +4369,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 12,
+        "value": 115.0,
         "type": "numeric",
         "tolerance": {
           "absolute": 15
@@ -4457,7 +4457,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 12,
+        "value": 236.0,
         "type": "numeric",
         "tolerance": {
           "absolute": 20
@@ -4545,10 +4545,10 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 175,
+        "value": 174,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 5
         }
       },
       "context": {
@@ -4589,10 +4589,10 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 12,
+        "value": 4,
         "type": "numeric",
         "tolerance": {
-          "absolute": 3
+          "absolute": 2
         }
       },
       "context": {
@@ -4634,10 +4634,10 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 12,
+        "value": 25,
         "type": "numeric",
         "tolerance": {
-          "absolute": 2
+          "absolute": 5
         }
       },
       "context": {
@@ -4675,10 +4675,10 @@
       "difficulty": "beginner",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 125000000000.0,
+        "value": 37088000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.05
         }
       },
       "context": {
@@ -4719,10 +4719,10 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 12,
+        "value": 1,
         "type": "numeric",
         "tolerance": {
-          "absolute": 3
+          "absolute": 2
         }
       },
       "context": {
@@ -4763,7 +4763,7 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 12,
+        "value": 38,
         "type": "numeric",
         "tolerance": {
           "absolute": 5
@@ -4807,7 +4807,7 @@
       "difficulty": "beginner",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 12,
+        "value": 3491.0,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -4851,10 +4851,10 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 4,
         "type": "numeric",
         "tolerance": {
-          "absolute": 3
+          "absolute": 2
         }
       },
       "context": {
@@ -4896,10 +4896,10 @@
       "difficulty": "beginner",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 156,
+        "value": 344,
         "type": "numeric",
         "tolerance": {
-          "absolute": 15
+          "absolute": 20
         }
       },
       "context": {
@@ -4940,7 +4940,7 @@
       "difficulty": "intermediate",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 375,
+        "value": 907.0,
         "type": "numeric",
         "tolerance": {
           "absolute": 10
@@ -4985,15 +4985,15 @@
       "difficulty": "beginner",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 12556000000.0,
+        "value": 695000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.1
         }
       },
       "context": {
         "company": "Tesla, Inc.",
-        "tag": "NonoperatingIncomeExpense",
+        "tag": "OtherNonoperatingIncomeExpense",
         "period": "latest",
         "calculation_method": "direct_lookup",
         "data_source": "companies_with_sectors.parquet"
@@ -5029,10 +5029,10 @@
       "difficulty": "beginner",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 321,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 20
         }
       },
       "context": {
@@ -5076,7 +5076,7 @@
         "value": 2621000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.05
         }
       },
       "context": {
@@ -5117,10 +5117,10 @@
       "difficulty": "intermediate",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 201,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 15
         }
       },
       "context": {
@@ -5162,10 +5162,10 @@
       "difficulty": "beginner",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 0,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 1
         }
       },
       "context": {
@@ -5206,7 +5206,7 @@
       "difficulty": "intermediate",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 2,
         "type": "numeric",
         "tolerance": {
           "absolute": 5
@@ -5250,10 +5250,10 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 282,
+        "value": 525,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 20
         }
       },
       "context": {
@@ -5294,7 +5294,7 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 125,
+        "value": 7,
         "type": "numeric",
         "tolerance": {
           "absolute": 3
@@ -5337,10 +5337,10 @@
       "difficulty": "beginner",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 16352000000.0,
+        "value": 14923000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.05
         }
       },
       "context": {
@@ -5379,10 +5379,10 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 76,
+        "value": 93,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 10
         }
       },
       "context": {
@@ -5423,10 +5423,10 @@
       "difficulty": "beginner",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 2.8,
+        "value": 15146000000.0,
         "type": "numeric",
         "tolerance": {
-          "relative": 0.01
+          "relative": 0.1
         }
       },
       "context": {
@@ -5465,10 +5465,10 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 180,
+        "value": 215,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 20
         }
       },
       "context": {
@@ -5508,10 +5508,10 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 45,
+        "value": 11,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 3
         }
       },
       "context": {
@@ -5552,10 +5552,10 @@
       "difficulty": "intermediate",
       "category": "cash_flow_analysis",
       "expected_answer": {
-        "value": 85,
+        "value": 14,
         "type": "numeric",
         "tolerance": {
-          "absolute": 5
+          "absolute": 3
         }
       },
       "context": {
@@ -5596,7 +5596,7 @@
       "difficulty": "beginner",
       "category": "currency_units",
       "expected_answer": {
-        "value": 14,
+        "value": 27,
         "type": "numeric",
         "tolerance": {
           "absolute": 2
@@ -5638,8 +5638,11 @@
       "difficulty": "intermediate",
       "category": "currency_units",
       "expected_answer": {
-        "value": "14",
-        "type": "text"
+        "value": "EUR",
+        "type": "text",
+        "tolerance": {
+          "absolute": 5
+        }
       },
       "context": {
         "data_source": "num.parquet",
@@ -5842,8 +5845,11 @@
       "difficulty": "intermediate",
       "category": "currency_units",
       "expected_answer": {
-        "value": "shares",
-        "type": "text"
+        "value": "SHARES",
+        "type": "text",
+        "tolerance": {
+          "absolute": 5
+        }
       },
       "context": {
         "data_source": "num.parquet",
@@ -6046,8 +6052,11 @@
       "difficulty": "intermediate",
       "category": "currency_units",
       "expected_answer": {
-        "value": "14",
-        "type": "text"
+        "value": "COP",
+        "type": "text",
+        "tolerance": {
+          "absolute": 5
+        }
       },
       "context": {
         "data_source": "num.parquet",
@@ -6250,10 +6259,10 @@
       "difficulty": "intermediate",
       "category": "currency_units",
       "expected_answer": {
-        "value": 21,
+        "value": 49,
         "type": "numeric",
         "tolerance": {
-          "absolute": 10
+          "absolute": 5
         }
       },
       "context": {

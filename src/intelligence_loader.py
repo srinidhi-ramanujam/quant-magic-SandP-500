@@ -406,28 +406,54 @@ class IntelligenceLoader:
             if unit:
                 params["unit"] = unit
 
+        if "fye" in template.parameters and "fye" not in params:
+            fye_match = re.search(r"\b(\d{4})\b", question_lower)
+            if fye_match:
+                params["fye"] = fye_match.group(1)
+
+        if "fiscal_year" in template.parameters and "fiscal_year" not in params:
+            fiscal_match = re.search(r"\b(20\d{2})\b", question_lower)
+            if fiscal_match:
+                params["fiscal_year"] = fiscal_match.group(1)
+
         if "threshold" in template.parameters and "threshold" not in params:
             threshold_match = re.search(r"(\d+(?:\.\d+)?)\s*%?", question_lower)
             if threshold_match:
-                params["threshold"] = threshold_match.group(1)
+                threshold_value = threshold_match.group(1)
+
+                scale = 1.0
+                if "trillion" in question_lower:
+                    scale = 1_000_000_000_000.0
+                elif "billion" in question_lower:
+                    scale = 1_000_000_000.0
+                elif "million" in question_lower:
+                    scale = 1_000_000.0
+
+                try:
+                    params["threshold"] = str(float(threshold_value) * scale)
+                except ValueError:
+                    params["threshold"] = threshold_value
 
         if "rank" in template.parameters and "rank" not in params:
             ordinal_map = {
-                "first": 1,
-                "1st": 1,
-                "one": 1,
-                "most": 1,
                 "second": 2,
                 "2nd": 2,
                 "two": 2,
                 "third": 3,
                 "3rd": 3,
                 "three": 3,
+                "first": 1,
+                "1st": 1,
+                "one": 1,
+                "most": 1,
             }
             for token, value in ordinal_map.items():
                 if token in question_lower:
                     params["rank"] = str(value)
                     break
+
+        if "rank" in template.parameters and "rank" not in params:
+            params["rank"] = "1"
 
         if "cik" in template.parameters and "cik" not in params:
             cik_match = re.search(r"\b\d{10}\b", question_lower)

@@ -72,7 +72,7 @@ def test_roe_threshold_extraction():
 
     assert match.template is not None
     assert match.template.template_id == "companies_return_on_equity_above_threshold"
-    assert match.matched_parameters.get("threshold") == "20"
+    assert match.matched_parameters.get("threshold") == "20.0"
 
 
 def test_company_roe_template_selected():
