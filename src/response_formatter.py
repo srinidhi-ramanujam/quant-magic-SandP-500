@@ -68,6 +68,8 @@ class ResponseFormatter:
             "row_count": query_result.row_count,
             "timestamp": datetime.now().isoformat(),
         }
+        if context.metadata:
+            metadata.update(context.metadata)
 
         # Build debug info if requested
         debug_info = None
@@ -85,6 +87,8 @@ class ResponseFormatter:
                 "execution_time": query_result.execution_time_seconds,
                 "component_timings": context.component_timings,
             }
+            if context.metadata:
+                debug_info["metadata"] = context.metadata
 
         response = FormattedResponse(
             answer=answer,
