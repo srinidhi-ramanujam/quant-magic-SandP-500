@@ -806,3 +806,810 @@ Candidate bindings: ""coreg""
 
 LINE 1: ... 1), latest_ni AS (SELECT val as ni, ddate FROM num WHERE cik = (SELECT cik FROM company_cik) AND tag = 'NetIncomeLoss...
                                                                      ^","{""value"": 16.8, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1.0}}",1,0.000,,None,0.0012,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many S&P 500 companies are in the Information Technology sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%information technology%'),There are 165 companies in the Information Technology sector.,"{""value"": 165, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.950,template,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1496, 'completion_tokens': 229}, 'latency_ms': 12693, 'success': True}]",12.7143,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which sector has the most companies in our S&P 500 dataset?,,,An error occurred while processing your question: invalid literal for int() with base 10: 'Financials',"{""value"": ""Other"", ""type"": ""text""}",1,0.000,,None,12.2739,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Delaware?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('DE'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('DE'))
+  )
+",Count: 346,"{""value"": 349, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",3,0.950,template,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1490, 'completion_tokens': 416}, 'latency_ms': 7559, 'success': True}]",7.5921,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What currency is used most frequently in the numerical data?,most_common_currency,"SELECT UPPER(TRIM(uom)) AS currency, COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL GROUP BY 1 ORDER BY fact_count DESC LIMIT 1",currency: USD | fact_count: 14760135,"{""value"": ""USD"", ""type"": ""text""}",5,0.650,template,None,25.1911,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many financial facts have footnotes?,fact_count_with_footnotes,SELECT COUNT(*) AS fact_count FROM num WHERE footnote IS NOT NULL AND TRIM(CAST(footnote AS VARCHAR)) <> '',Count: 33959,"{""value"": 33959, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.05}}",5,0.700,template,None,0.0134,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has CIK 0000066740?,company_name_by_cik,SELECT name FROM companies WHERE cik = '0000066740' LIMIT 1,3M CO's CIK is unknown.,"{""value"": ""3M CO"", ""type"": ""text""}",5,0.650,template,None,0.0017,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Health Care sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%health care%'),There are 80 companies in the Health Care sector.,"{""value"": 80, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.950,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the most recent filing date in the dataset?,latest_filing_date,SELECT MAX(filed) AS latest_filing_date FROM sub,latest_filing_date: 2025-06-30 00:00:00,"{""value"": ""2025-06-30 00:00:00"", ""type"": ""text""}",5,0.650,template,None,0.0040,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies filed 10-K forms?,company_count_by_form,SELECT COUNT(DISTINCT cik) AS company_count FROM sub WHERE UPPER(form) = UPPER('10-K'),Count: 563,"{""value"": 563, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",5,0.700,template,None,0.0020,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which state has the most company headquarters?,state_with_most_headquarters,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT l.headquarters_state AS state, COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND l.headquarters_state IS NOT NULL
+GROUP BY l.headquarters_state
+ORDER BY count DESC
+LIMIT 1",state: CA | count: 123,"{""value"": ""CA"", ""type"": ""text""}",5,0.650,template,None,0.0077,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different fiscal year ends are represented?,distinct_fiscal_year_count,SELECT COUNT(DISTINCT fye) AS fiscal_year_end_count FROM sub WHERE fye IS NOT NULL,Count: 14,"{""value"": 14, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",5,0.700,template,None,0.0014,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Amazon's GICS sector?,company_sector,"SELECT name, gics_sector FROM companies WHERE UPPER(name) LIKE UPPER('%AMAZON COM INC%') LIMIT 1",AMAZON COM INC is in the Consumer Discretionary sector.,"{""value"": ""Consumer Discretionary"", ""type"": ""text""}",5,0.800,llm_template_selection,"[{'stage': 'template_selection', 'tokens': {'prompt_tokens': 6046, 'completion_tokens': 370}, 'latency_ms': 6955, 'success': True, 'confidence': 0.93}]",14.0430,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have international (non-US) incorporation?,international_incorporation_count,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS company_count
+FROM latest_submission
+WHERE rn = 1 AND UPPER(countryinc) <> 'US'",Count: 34,"{""value"": 34, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.700,template,None,0.0097,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the earliest period date in the financial data?,earliest_period_date,SELECT MIN(period) AS earliest_period FROM sub,earliest_period: 2014-05-31 00:00:00,"{""value"": ""2014-05-31 00:00:00"", ""type"": ""text""}",5,0.650,template,None,0.0022,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many unique companies are represented in the dataset?,total_company_count,SELECT COUNT(DISTINCT cik) AS company_count FROM companies,Count: 589,"{""value"": 589, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.700,template,None,0.0014,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which form type appears most frequently in submissions?,most_common_form_type,"SELECT form, COUNT(*) AS filing_count FROM sub GROUP BY form ORDER BY filing_count DESC LIMIT 1",form: 10-Q | filing_count: 16129,"{""value"": ""10-Q"", ""type"": ""text""}",5,0.650,template,None,0.0019,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many financial facts are denominated in USD?,fact_count_by_currency,SELECT COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL AND UPPER(TRIM(uom)) = UPPER('USD'),Count: 14760135,"{""value"": 14760135, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.05}}",5,0.700,template,None,0.0195,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Tesla's CIK number?,company_by_cik,"SELECT name, cik FROM companies WHERE UPPER(name) LIKE UPPER('%TESLA, INC.%') AND name NOT LIKE '%REIT%' ORDER BY LENGTH(name) LIMIT 1","TESLA, INC.'s CIK is 0001318605.","{""value"": ""0001318605"", ""type"": ""text""}",5,0.800,template,None,0.0029,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Utilities sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%utilities%'),There are 20 companies in the Utilities sector.,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0011,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many quarterly (qtrs=1) financial facts are there?,fact_count_by_qtrs,SELECT COUNT(*) AS fact_count FROM num WHERE qtrs = 1,Count: 3566310,"{""value"": 3566310, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.05}}",5,0.700,template,None,0.0223,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has CIK 0000789019?,company_name_by_cik,SELECT name FROM companies WHERE cik = '0000789019' LIMIT 1,MICROSOFT CORP's CIK is unknown.,"{""value"": ""MICROSOFT CORP"", ""type"": ""text""}",5,0.650,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Berkshire Hathaway's GICS sector?,company_sector,"SELECT name, gics_sector FROM companies WHERE UPPER(name) LIKE UPPER('%BERKSHIRE HATHAWAY INC%') LIMIT 1",BERKSHIRE HATHAWAY INC is in the Financials sector.,"{""value"": ""Financials"", ""type"": ""text""}",5,0.800,llm_template_selection,"[{'stage': 'template_selection', 'tokens': {'prompt_tokens': 6044, 'completion_tokens': 369}, 'latency_ms': 3229, 'success': True, 'confidence': 0.95}]",3.2310,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has the longest company name in the dataset?,company_with_longest_name,SELECT name FROM companies ORDER BY LENGTH(name) DESC LIMIT 1,"name: CHARLES RIVER LABORATORIES INTERNATIONAL, INC.","{""type"": ""text"", ""value"": ""CHARLES RIVER LABORATORIES INTERNATIONAL, INC.""}",5,0.650,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Procter & Gamble's CIK number?,company_by_cik,"SELECT name, cik FROM companies WHERE UPPER(name) LIKE UPPER('%PROCTER & GAMBLE CO%') AND name NOT LIKE '%REIT%' ORDER BY LENGTH(name) LIMIT 1",PROCTER & GAMBLE CO's CIK is 0000080424.,"{""value"": ""0000080424"", ""type"": ""text""}",5,0.800,template,None,0.0017,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has CIK 0000789019?,company_name_by_cik,SELECT name FROM companies WHERE cik = '0000789019' LIMIT 1,MICROSOFT CORP's CIK is unknown.,"{""value"": ""MICROSOFT CORP"", ""type"": ""text""}",5,0.650,template,None,0.0008,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have 'CORP' in their official name?,company_name_keyword_count,SELECT COUNT(*) AS company_count FROM companies WHERE UPPER(name) LIKE UPPER('%CORP%'),Count: 180,"{""value"": 180, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.700,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Walmart Inc.'s CIK number?,company_by_cik,"SELECT name, cik FROM companies WHERE UPPER(name) LIKE UPPER('%WALMART INC.%') AND name NOT LIKE '%REIT%' ORDER BY LENGTH(name) LIMIT 1",WALMART INC.'s CIK is 0000104169.,"{""value"": ""0000104169"", ""type"": ""text""}",5,0.800,template,None,0.0016,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has CIK 0000050863?,company_name_by_cik,SELECT name FROM companies WHERE cik = '0000050863' LIMIT 1,INTEL CORP's CIK is unknown.,"{""value"": ""INTEL CORP"", ""type"": ""text""}",5,0.650,template,None,0.0007,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have 'INC' in their official name?,company_name_keyword_count,SELECT COUNT(*) AS company_count FROM companies WHERE UPPER(name) LIKE UPPER('%INC%'),Count: 459,"{""value"": 459, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",5,0.700,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which company has CIK 0000019617?,company_name_by_cik,SELECT name FROM companies WHERE cik = '0000019617' LIMIT 1,JPMORGAN CHASE & CO's CIK is unknown.,"{""value"": ""JPMORGAN CHASE & CO"", ""type"": ""text""}",5,0.650,template,None,0.0008,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have 'LLC' in their official name?,company_name_keyword_count,SELECT COUNT(*) AS company_count FROM companies WHERE UPPER(name) LIKE UPPER('%LLC%'),Count: 5,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 3}, ""value"": 5}",5,0.700,template,None,0.0008,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Tesla's most recent stockholders' equity?,latest_equity,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%TESLA, INC.%')
+    LIMIT 1
+),
+latest_filing AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        s.period,
+        s.fy,
+        s.fp,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN target_company t ON t.cik = s.cik
+)
+SELECT
+    n.value AS equity,
+    l.period AS period_end_date,
+    l.fy AS fiscal_year,
+    l.fp AS fiscal_period
+FROM latest_filing l
+JOIN num n ON n.adsh = l.adsh
+WHERE l.rn = 1
+  AND n.tag = 'StockholdersEquity'
+  AND n.qtrs = 0
+ORDER BY l.period DESC
+LIMIT 1",equity: 74653000000.0 | period_end_date: 2025-03-31 00:00:00 | fiscal_year: 2025.0 | fiscal_period: Q1,"{""value"": 74653000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",5,0.800,template,None,0.0636,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Johnson & Johnson's most recent gross profit?,latest_gross_profit,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%JOHNSON & JOHNSON%')
+    LIMIT 1
+), latest_metric AS (
+    SELECT
+        n.value AS gross_profit,
+        s.period AS period_end,
+        ROW_NUMBER() OVER (ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE s.cik = (SELECT cik FROM target_company)
+      AND n.tag = 'GrossProfit'
+      AND n.qtrs = 0
+)
+SELECT gross_profit, period_end
+FROM latest_metric
+WHERE rn = 1",Could not find information for JOHNSON.,"{""type"": ""text"", ""value"": ""60000000000.0"", ""tolerance"": {""absolute"": 1000000000.0}}",1,0.800,template,None,0.0424,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies reported positive net income in the latest period?,companies_positive_net_income,"WITH latest_net_income AS (
+    SELECT
+        s.cik,
+        n.value,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY n.ddate DESC, n.adsh DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE n.tag = 'NetIncomeLoss'
+      AND n.qtrs = 0
+)
+SELECT COUNT(*) AS company_count
+FROM latest_net_income
+WHERE rn = 1 AND value > 0",Count: 11,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 10}",5,0.850,template,None,0.1016,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Walmart's most recent total liabilities?,latest_total_liabilities,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%WALMART INC.%')
+    LIMIT 1
+), latest_metric AS (
+    SELECT
+        n.value AS total_liabilities,
+        s.period AS period_end,
+        ROW_NUMBER() OVER (ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE s.cik = (SELECT cik FROM target_company)
+      AND n.tag = 'Liabilities'
+      AND n.qtrs = 0
+)
+SELECT total_liabilities, period_end
+FROM latest_metric
+WHERE rn = 1",Could not find information for WALMART INC.,"{""type"": ""text"", ""value"": ""180000000000.0"", ""tolerance"": {""absolute"": 1000000000.0}}",1,0.800,template,None,0.0428,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have total revenue exceeding $50 billion in the latest period?,companies_revenue_above_threshold,"WITH latest_filing AS (
+    SELECT
+        s.cik,
+        s.adsh,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+),
+latest_revenue AS (
+    SELECT lf.cik, n.value AS revenue
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE lf.rn = 1
+      AND n.tag IN ('Revenues', 'SalesRevenueNet')
+      AND n.qtrs = 0
+)
+SELECT COUNT(*) AS count
+FROM latest_revenue lr
+JOIN companies c ON c.cik = lr.cik
+WHERE lr.revenue > 50000000000",Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 0}",5,0.850,template,None,0.1117,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies reported cost of revenue in the latest period?,companies_reporting_cost_of_revenue,"WITH latest_cost AS (
+    SELECT
+        s.cik,
+        n.value,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY n.ddate DESC, n.adsh DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE n.tag = 'CostOfRevenue'
+      AND n.qtrs = 0
+)
+SELECT COUNT(*) AS company_count
+FROM latest_cost
+WHERE rn = 1 AND value IS NOT NULL",Count: 2,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 10}, ""value"": 450}",1,0.850,template,None,0.0480,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Meta's most recent stockholders' equity?,latest_equity,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%META PLATFORMS, INC.%')
+    LIMIT 1
+),
+latest_filing AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        s.period,
+        s.fy,
+        s.fp,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN target_company t ON t.cik = s.cik
+)
+SELECT
+    n.value AS equity,
+    l.period AS period_end_date,
+    l.fy AS fiscal_year,
+    l.fp AS fiscal_period
+FROM latest_filing l
+JOIN num n ON n.adsh = l.adsh
+WHERE l.rn = 1
+  AND n.tag = 'StockholdersEquity'
+  AND n.qtrs = 0
+ORDER BY l.period DESC
+LIMIT 1",equity: 76793000000.0 | period_end_date: 2025-03-31 00:00:00 | fiscal_year: 2025.0 | fiscal_period: Q1,"{""value"": -1865000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.800,template,None,0.0551,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Industrials sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%industrials%'),There are 82 companies in the Industrials sector.,"{""value"": 28, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0010,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which sector has the second most companies?,sector_with_most_companies,"SELECT gics_sector, COUNT(*) as count FROM companies WHERE gics_sector IS NOT NULL GROUP BY gics_sector ORDER BY count DESC LIMIT 1",AT&T INC is in the Financials sector.,"{""value"": ""Other"", ""type"": ""text""}",1,0.800,template,None,0.0011,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Materials sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%materials%'),There are 41 companies in the Materials sector.,"{""value"": 22, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0007,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Energy sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%energy%'),There are 51 companies in the Energy sector.,"{""value"": 15, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0007,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Consumer Discretionary sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%consumer discretionary%'),There are 99 companies in the Consumer Discretionary sector.,"{""value"": 51, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0008,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Consumer Staples sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%consumer staples%'),There are 28 companies in the Consumer Staples sector.,"{""value"": 26, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",3,0.950,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Real Estate sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%real estate%'),There are 3 companies in the Real Estate sector.,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0007,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are in the Communication Services sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%communication services%'),There are 17 companies in the Communication Services sector.,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.950,template,None,0.0007,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which sector has the fewest companies?,sector_with_fewest_companies,"SELECT gics_sector, COUNT(*) as count FROM companies WHERE gics_sector IS NOT NULL AND gics_sector != 'Other' GROUP BY gics_sector ORDER BY count ASC LIMIT 1",AT&T INC is in the Real Estate sector.,"{""type"": ""text"", ""value"": ""Real Estate""}",5,0.800,template,None,0.0019,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many sectors have more than 50 companies?,sectors_above_threshold,"SELECT COUNT(DISTINCT gics_sector) as sector_count FROM (SELECT gics_sector, COUNT(*) as cnt FROM companies GROUP BY gics_sector HAVING cnt > 50) subq",Count: 6,"{""value"": 262, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.850,template,None,0.0032,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many sectors have fewer than 25 companies?,sectors_below_threshold,"WITH sector_counts AS (
+    SELECT gics_sector, COUNT(*) AS count
+    FROM companies
+    WHERE gics_sector IS NOT NULL
+    GROUP BY gics_sector
+)
+SELECT COUNT(*) AS sector_count
+FROM sector_counts
+WHERE count < 25",Count: 4,"{""value"": 262, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1}}",1,0.850,template,None,0.0012,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which sector contains Johnson & Johnson?,company_sector,"SELECT name, gics_sector FROM companies WHERE UPPER(name) LIKE UPPER('%JOHNSON & JOHNSON%') LIMIT 1",JOHNSON & JOHNSON is in the Health Care sector.,"{""value"": ""Health Care"", ""type"": ""text""}",5,0.800,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in New York?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('NY')",Count: 69,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 3}, ""value"": 61}",1,0.700,template,None,0.0075,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Texas?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('TX')",Count: 81,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 3}, ""value"": 67}",1,0.700,template,None,0.0065,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Nevada?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('NV'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('NV'))
+  )
+",Count: 9,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 3}",1,0.700,template,None,0.0070,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Ireland?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('IN'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('IN'))
+  )
+",Count: 6,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 14}",1,0.700,template,None,0.0065,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Canada?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('IN'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('IN'))
+  )
+",Count: 6,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 3}",3,0.700,template,None,0.0069,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which state has the second most company headquarters after California?,state_with_most_headquarters,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT l.headquarters_state AS state, COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND l.headquarters_state IS NOT NULL
+GROUP BY l.headquarters_state
+ORDER BY count DESC
+LIMIT 1",state: CA | count: 123,"{""value"": 106, ""type"": ""text""}",1,0.650,template,None,0.0074,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Illinois?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('IL')",Count: 42,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 35}",1,0.700,template,None,0.0065,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Florida?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('FL')",Count: 26,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 20}",1,0.700,template,None,0.0066,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Switzerland?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('IN'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('IN'))
+  )
+",Count: 6,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 5}",5,0.700,template,None,0.0063,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different countries are represented in the incorporation data?,distinct_incorporation_countries,SELECT COUNT(DISTINCT countryinc) AS country_count FROM sub WHERE countryinc IS NOT NULL,Count: 16,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 16}",5,0.700,template,None,0.0017,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different US states are represented in headquarters data?,distinct_headquarters_states,SELECT COUNT(DISTINCT stprba) AS state_count FROM sub WHERE stprba IS NOT NULL,Count: 44,"{""value"": 44, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",5,0.700,template,None,0.0013,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Ohio?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('OH')",Count: 24,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 20}",3,0.700,template,None,0.0068,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in North Carolina?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('NC')",Count: 20,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 13}",1,0.700,template,None,0.0069,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in the United Kingdom?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('IN'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('IN'))
+  )
+",Count: 6,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 1}, ""value"": 2}",1,0.700,template,None,0.0074,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Massachusetts?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('MA')",Count: 31,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 27}",3,0.700,template,None,0.0065,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,Which state has the third most company headquarters?,state_with_most_headquarters,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT l.headquarters_state AS state, COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND l.headquarters_state IS NOT NULL
+GROUP BY l.headquarters_state
+ORDER BY count DESC
+LIMIT 1",state: CA | count: 123,"{""value"": ""NY"", ""type"": ""text""}",1,0.650,template,None,0.0076,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Washington state?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('WA')",Count: 16,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 14}",5,0.700,template,None,0.0066,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are incorporated in Bermuda?,companies_by_incorporation_state,"WITH latest_submission AS (
+    SELECT
+        s.cik,
+        s.stprinc,
+        s.countryinc,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    WHERE s.stprinc IS NOT NULL OR s.countryinc IS NOT NULL
+)
+SELECT COUNT(*) AS count
+FROM latest_submission
+WHERE rn = 1
+  AND (
+      (stprinc IS NOT NULL AND UPPER(stprinc) = UPPER('IN'))
+      OR (countryinc IS NOT NULL AND UPPER(countryinc) = UPPER('IN'))
+  )
+",Count: 6,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 1}, ""value"": 2}",1,0.700,template,None,0.0066,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies are headquartered in Georgia?,companies_by_hq_state,"WITH latest_business_address AS (
+    SELECT
+        s.cik,
+        s.stprba AS headquarters_state,
+        ROW_NUMBER() OVER (PARTITION BY s.cik ORDER BY s.filed DESC) AS rn
+    FROM sub s
+)
+SELECT COUNT(*) AS count
+FROM latest_business_address l
+JOIN companies c ON c.cik = l.cik
+WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('GA')",Count: 22,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 17}",1,0.700,template,None,0.0067,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Google's (Alphabet) return on equity (ROE)?,,,"An error occurred while processing your question: Binder Error: Referenced column ""cik"" not found in FROM clause!
+Candidate bindings: ""coreg""
+
+LINE 1: ... 1), latest_ni AS (SELECT val as ni, ddate FROM num WHERE cik = (SELECT cik FROM company_cik) AND tag = 'NetIncomeLoss...
+                                                                     ^","{""value"": 15.0, ""type"": ""numeric""}",1,0.000,,None,0.0046,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags have a debit-credit flag of 'Debit'?,,,"An error occurred while processing your question: Binder Error: Referenced column ""debitcredit"" not found in FROM clause!
+Candidate bindings: ""abstract"", ""doc"", ""iord"", ""crdr"", ""source_period""
+
+LINE 1: SELECT COUNT(*) AS tag_count FROM tag WHERE debitcredit IS NOT NULL AND UPPER(debitcredit) = UPPER(...
+                                                    ^","{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 0}",5,0.000,,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags are classified as 'monetary' data type?,tag_count_by_datatype,SELECT COUNT(*) AS tag_count FROM tag WHERE datatype IS NOT NULL AND LOWER(datatype) LIKE LOWER('%monetary%'),Count: 454617,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 454617}",5,0.700,template,None,0.0025,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Revenue' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%REVENUE%',Count: 0,"{""value"": 12221, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.850,template,None,0.0166,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Asset' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%ASSET%',Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 40285}",1,0.700,template,None,0.0169,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Liability' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%LIABILITY%',Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 11059}",1,0.700,template,None,0.0150,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different unit types (UOM) are present in the numerical data?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 8}",1,0.700,template,None,0.0122,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many financial facts have duplicate values (dimhash populated)?,,,"An error occurred while processing your question: Binder Error: Referenced column ""dimhash"" not found in FROM clause!
+Candidate bindings: ""adsh"", ""ddate"", ""segments""
+
+LINE 1: SELECT COUNT(*) AS fact_count FROM num WHERE dimhash IS NOT NULL AND TRIM(dimhash) <> ''
+                                                     ^","{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 45000}",1,0.000,,None,0.0011,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags have 'shares' as unit of measure in numerical data?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 50}, ""value"": 949}",1,0.700,template,None,0.0119,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags are classified as 'per-share' data type?,tag_count_by_datatype,SELECT COUNT(*) AS tag_count FROM tag WHERE datatype IS NOT NULL AND LOWER(datatype) LIKE LOWER('%per-share%'),Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 6063}",1,0.700,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many numerical facts have negative values?,fact_count_negative_values,SELECT COUNT(*) AS fact_count FROM num WHERE value < 0,Count: 2124201,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 125000}",1,0.700,template,None,0.0574,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many numerical facts have zero values?,fact_count_zero_values,SELECT COUNT(*) AS fact_count FROM num WHERE value = 0,Count: 1427015,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 85000}",1,0.700,template,None,0.0554,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the third most frequent XBRL tag in numerical data?,tag_nth_most_common,"WITH tag_counts AS (
+    SELECT
+        tag,
+        COUNT(*) AS fact_count,
+        ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rank
+    FROM num
+    GROUP BY tag
+)
+SELECT tag, fact_count
+FROM tag_counts
+WHERE rank = 1
+LIMIT 1",tag: RevenueFromContractWithCustomerExcludingAssessedTax | fact_count: 621672,"{""type"": ""text"", ""value"": ""Assets""}",1,0.650,template,None,0.0304,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Cash' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%CASH%',Count: 12,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 29232}",1,0.850,template,None,0.0186,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Equity' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%EQUITY%',Count: 0,"{""value"": 24563, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.850,template,None,0.0153,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags contain the word 'Debt' in their name?,tag_count_by_keyword,SELECT COUNT(*) AS tag_count FROM tag WHERE tag LIKE '%DEBT%',Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 26515}",1,0.850,template,None,0.0159,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many XBRL tags are classified as 'string' data type?,tag_count_by_datatype,SELECT COUNT(*) AS tag_count FROM tag WHERE datatype IS NOT NULL AND LOWER(datatype) LIKE LOWER('%string%'),Count: 0,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 0}",5,0.700,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many financial facts are reported with coreg (co-registrant) information?,fact_count_with_coreg,SELECT COUNT(*) AS fact_count FROM num WHERE coreg IS NOT NULL AND TRIM(coreg) <> '',Count: 1261087,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 400}",1,0.700,template,None,0.0152,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies filed 10-Q forms?,company_count_by_form,SELECT COUNT(DISTINCT cik) AS company_count FROM sub WHERE UPPER(form) = UPPER('10-Q'),Count: 543,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 10}, ""value"": 543}",5,0.700,template,None,0.0017,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies filed 8-K forms?,company_count_by_form,SELECT COUNT(DISTINCT cik) AS company_count FROM sub WHERE UPPER(form) = UPPER('8-K'),Count: 112,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 10}, ""value"": 112}",5,0.700,template,None,0.0014,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the earliest filing date in the dataset?,earliest_filing_date,SELECT MIN(filed) AS earliest_filing_date FROM sub,earliest_filing_date: 2015-01-02 00:00:00,"{""value"": ""2015-01-02 00:00:00"", ""type"": ""text""}",5,0.650,template,None,0.0011,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have fiscal year 2024?,submission_count_by_fiscal_year,SELECT COUNT(*) AS submission_count FROM sub WHERE CAST(fy AS INT) = 2024,Count: 4167,"{""value"": 450, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.750,template,None,0.0015,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have fiscal year 2025?,submission_count_by_fiscal_year,SELECT COUNT(*) AS submission_count FROM sub WHERE CAST(fy AS INT) = 2025,Count: 917,"{""value"": 50, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.750,template,None,0.0010,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have fiscal period Q1?,submission_count_by_fiscal_period,SELECT COUNT(*) AS submission_count FROM sub WHERE UPPER(fp) = UPPER('Q1'),Count: 5664,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 400}",1,0.750,template,None,0.0011,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have fiscal period FY (full year)?,submission_count_by_fiscal_period,SELECT COUNT(*) AS submission_count FROM sub WHERE UPPER(fp) = UPPER('FY'),Count: 6476,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 500}",1,0.700,template,None,0.0010,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different form types are present in the submissions?,distinct_form_type_count,SELECT COUNT(DISTINCT form) AS form_type_count FROM sub,Count: 21,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 21}",5,0.700,template,None,0.0014,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have December fiscal year end (1231)?,distinct_fiscal_year_count,SELECT COUNT(DISTINCT fye) AS fiscal_year_end_count FROM sub WHERE fye IS NOT NULL,Count: 14,"{""value"": 350, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.700,template,None,0.0015,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have March fiscal year end (0331)?,distinct_fiscal_year_count,SELECT COUNT(DISTINCT fye) AS fiscal_year_end_count FROM sub WHERE fye IS NOT NULL,Count: 14,"{""value"": 80, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.700,template,None,0.0013,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have June fiscal year end (0630)?,distinct_fiscal_year_count,SELECT COUNT(DISTINCT fye) AS fiscal_year_end_count FROM sub WHERE fye IS NOT NULL,Count: 14,"{""value"": 45, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.700,template,None,0.0013,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions have September fiscal year end (0930)?,distinct_fiscal_year_count,SELECT COUNT(DISTINCT fye) AS fiscal_year_end_count FROM sub WHERE fye IS NOT NULL,Count: 14,"{""value"": 25, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.700,template,None,0.0015,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions are for fiscal period Q2?,submission_count_by_fiscal_period,SELECT COUNT(*) AS submission_count FROM sub WHERE UPPER(fp) = UPPER('Q2'),Count: 5296,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 400}",1,0.750,template,None,0.0010,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions are for fiscal period Q3?,submission_count_by_fiscal_period,SELECT COUNT(*) AS submission_count FROM sub WHERE UPPER(fp) = UPPER('Q3'),Count: 5238,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 400}",1,0.750,template,None,0.0010,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many submissions are for fiscal period Q4?,submission_count_by_fiscal_period,SELECT COUNT(*) AS submission_count FROM sub WHERE UPPER(fp) = UPPER('Q4'),Count: 1,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 5}, ""value"": 400}",1,0.750,template,None,0.0009,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the second most frequent form type in submissions?,form_type_rank,"WITH form_counts AS (
+    SELECT form, COUNT(*) AS filing_count, ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rank
+    FROM sub
+    GROUP BY form
+)
+SELECT form, filing_count
+FROM form_counts
+WHERE rank = 1
+LIMIT 1",form: 10-Q | filing_count: 16129,"{""value"": ""10-Q"", ""type"": ""text""}",5,0.650,template,None,0.0016,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many annual (qtrs=0) financial facts are there?,fact_count_by_qtrs,SELECT COUNT(*) AS fact_count FROM num WHERE qtrs = 0,Count: 5484928,"{""value"": 613954, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.05}}",1,0.700,template,None,0.0243,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have positive Return on Equity in the latest period?,companies_positive_return_on_equity,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+), latest_metrics AS (
+    SELECT
+        lf.cik,
+        MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN ('StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest') THEN n.value END) AS equity
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE n.qtrs = 0
+      AND n.tag IN ('NetIncomeLoss','StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest')
+    GROUP BY lf.cik
+)
+SELECT COUNT(*) AS company_count
+FROM latest_metrics
+WHERE equity IS NOT NULL AND equity <> 0 AND net_income IS NOT NULL AND net_income / equity > 0",Count: 1,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",3,0.850,template,None,0.1296,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have a current ratio above 2.0?,companies_current_ratio_above_threshold,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+), latest_metrics AS (
+    SELECT
+        lf.cik,
+        MAX(CASE WHEN n.tag = 'AssetsCurrent' THEN n.value END) AS current_assets,
+        MAX(CASE WHEN n.tag = 'LiabilitiesCurrent' THEN n.value END) AS current_liabilities
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE n.qtrs = 0
+      AND n.tag IN ('AssetsCurrent','LiabilitiesCurrent')
+    GROUP BY lf.cik
+)
+SELECT COUNT(*) AS company_count
+FROM latest_metrics
+WHERE current_assets IS NOT NULL AND current_liabilities IS NOT NULL
+  AND current_liabilities <> 0
+  AND current_assets / current_liabilities > 2",Count: 115,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 15}}",1,0.700,template,None,0.1184,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have negative Return on Assets?,companies_negative_return_on_assets,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+), latest_metrics AS (
+    SELECT
+        lf.cik,
+        MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag = 'Assets' THEN n.value END) AS assets
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE n.qtrs = 0
+      AND n.tag IN ('NetIncomeLoss','Assets')
+    GROUP BY lf.cik
+)
+SELECT COUNT(*) AS company_count
+FROM latest_metrics
+WHERE assets IS NOT NULL AND assets <> 0 AND net_income IS NOT NULL AND net_income / assets < 0",Count: 0,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.850,template,None,0.1154,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have a debt-to-equity ratio above 1.0?,companies_debt_to_equity_above_threshold,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+), latest_metrics AS (
+    SELECT
+        lf.cik,
+        MAX(CASE WHEN n.tag = 'Liabilities' THEN n.value END) AS liabilities,
+        MAX(CASE WHEN n.tag IN ('StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest') THEN n.value END) AS equity
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE n.qtrs = 0
+      AND n.tag IN ('Liabilities','StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest')
+    GROUP BY lf.cik
+)
+SELECT COUNT(*) AS company_count
+FROM latest_metrics
+WHERE equity IS NOT NULL AND equity <> 0 AND liabilities IS NOT NULL
+  AND liabilities / equity > 1",Count: 236,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 20}}",1,0.850,template,None,0.1302,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have gross margin above 50%?,,,An error occurred while processing your question: invalid literal for int() with base 10: 'MASTERCARD INC',"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",5,0.000,,None,21.0795,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have Return on Equity above 20%?,companies_return_on_equity_above_threshold,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+), latest_metrics AS (
+    SELECT
+        lf.cik,
+        MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN ('StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest') THEN n.value END) AS equity
+    FROM latest_filing lf
+    JOIN num n ON n.adsh = lf.adsh
+    WHERE n.qtrs = 0
+      AND n.tag IN ('NetIncomeLoss','StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest')
+    GROUP BY lf.cik
+)
+SELECT COUNT(*) AS company_count
+FROM latest_metrics
+WHERE equity IS NOT NULL AND equity <> 0 AND net_income IS NOT NULL
+  AND (net_income / equity) * 100 > 20",Count: 0,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",3,0.850,template,None,0.1634,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have current assets exceeding $100 billion?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 3}}",1,0.000,,None,0.0004,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have more liabilities than assets?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,"What is Tesla's property, plant and equipment value?",latest_property_plant_equipment,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%TESLA, INC.%')
+    LIMIT 1
+), latest_metric AS (
+    SELECT
+        n.value AS property_plant_equipment,
+        s.period AS period_end,
+        ROW_NUMBER() OVER (ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE s.cik = (SELECT cik FROM target_company)
+      AND n.tag = 'PropertyPlantAndEquipmentNet'
+      AND n.qtrs = 0
+)
+SELECT property_plant_equipment, period_end
+FROM latest_metric
+WHERE rn = 1",property_plant_equipment: 35836000000.0 | period_end: 2025-03-31 00:00:00,"{""value"": 125000000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.650,template,None,0.0930,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have negative stockholders' equity?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 3}}",1,0.000,,None,0.0004,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have intangible assets exceeding $10 billion?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies report goodwill on their balance sheets?,companies_goodwill_reported,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+)
+SELECT COUNT(*) AS company_count
+FROM latest_filing lf
+JOIN num n ON n.adsh = lf.adsh
+WHERE n.qtrs = 0
+  AND n.tag = 'Goodwill'
+  AND n.value IS NOT NULL
+  AND n.value <> 0",Count: 3491,"{""value"": 12, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.700,template,None,0.0968,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have working capital exceeding $50 billion?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 3}}",1,0.000,,None,0.0004,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies reported research and development expenses?,companies_research_expense_reported,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+)
+SELECT COUNT(*) AS company_count
+FROM latest_filing lf
+JOIN num n ON n.adsh = lf.adsh
+WHERE n.qtrs = 0
+  AND n.tag = 'ResearchAndDevelopmentExpense'
+  AND n.value IS NOT NULL
+  AND n.value <> 0",Count: 7,"{""value"": 156, ""type"": ""numeric"", ""tolerance"": {""absolute"": 15}}",1,0.700,template,None,0.0842,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have positive operating income?,companies_positive_operating_income,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+)
+SELECT COUNT(*) AS company_count
+FROM latest_filing lf
+JOIN num n ON n.adsh = lf.adsh
+WHERE n.qtrs = 0
+  AND n.tag = 'OperatingIncomeLoss'
+  AND n.value > 0",Count: 0,"{""value"": 375, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.850,template,None,0.0832,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Tesla's other income (expense) in the latest period?,latest_other_income_expense,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%TESLA, INC.%')
+    LIMIT 1
+), latest_metric AS (
+    SELECT
+        n.value AS other_income_expense,
+        s.period AS period_end,
+        ROW_NUMBER() OVER (ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE s.cik = (SELECT cik FROM target_company)
+      AND n.tag = 'OtherNonoperatingIncomeExpense'
+      AND n.qtrs = 0
+)
+SELECT other_income_expense, period_end
+FROM latest_metric
+WHERE rn = 1",Could not find information for TESLA INC.,"{""value"": 12556000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.800,template,None,0.0483,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies reported depreciation and amortization expenses?,companies_depreciation_amortization_reported,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+)
+SELECT COUNT(*) AS company_count
+FROM latest_filing lf
+JOIN num n ON n.adsh = lf.adsh
+WHERE n.qtrs = 0
+  AND n.tag = 'DepreciationAndAmortization'
+  AND n.value IS NOT NULL
+  AND n.value <> 0",Count: 0,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.700,template,None,0.0626,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Johnson & Johnson's income tax expense?,latest_income_tax_expense,"WITH target_company AS (
+    SELECT cik
+    FROM companies
+    WHERE UPPER(name) LIKE UPPER('%JOHNSON & JOHNSON%')
+    LIMIT 1
+), latest_metric AS (
+    SELECT
+        n.value AS income_tax_expense,
+        s.period AS period_end,
+        ROW_NUMBER() OVER (ORDER BY s.period DESC, s.filed DESC) AS rn
+    FROM sub s
+    JOIN num n ON n.adsh = s.adsh
+    WHERE s.cik = (SELECT cik FROM target_company)
+      AND n.tag = 'IncomeTaxExpenseBenefit'
+      AND n.qtrs = 0
+)
+SELECT income_tax_expense, period_end
+FROM latest_metric
+WHERE rn = 1",income_tax_expense: -500000000.0 | period_end: 2023-06-30 00:00:00,"{""value"": 2621000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.800,template,None,0.0530,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have negative net income?,companies_negative_net_income,"WITH latest_filing AS (
+    SELECT cik, adsh
+    FROM (
+        SELECT cik, adsh, period, filed, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+        FROM sub
+    )
+    WHERE rn = 1
+)
+SELECT COUNT(*) AS company_count
+FROM latest_filing lf
+JOIN num n ON n.adsh = lf.adsh
+WHERE n.qtrs = 0
+  AND n.tag = 'NetIncomeLoss'
+  AND n.value < 0",Count: 0,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.850,template,None,0.0876,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies reported foreign exchange gains/losses?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0004,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have EBITDA exceeding $10 billion?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have positive free cash flow?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 282, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies spent more than $5 billion on acquisitions?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 125, ""type"": ""numeric"", ""tolerance"": {""absolute"": 3}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Tesla's change in cash and cash equivalents?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 16352000000.0, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have negative operating cash flow?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 76, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What was Johnson & Johnson's acquisition spending?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 2.8, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.01}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies issued new debt during the period?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 180, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies have free cash flow exceeding $10 billion?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 45, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many companies returned more than 50% of operating cash flow to shareholders?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 85, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many different currencies are represented in the financial data?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 14, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the second most common currency in the dataset?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": ""14"", ""type"": ""text""}",1,0.000,,None,0.0002,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Canadian dollars (CAD)?,fact_count_by_currency,SELECT COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL AND UPPER(TRIM(uom)) = UPPER('USD'),Count: 14760135,"{""value"": 14760135, ""type"": ""numeric"", ""tolerance"": {""absolute"": 50}}",5,0.700,template,None,0.0164,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Euros (EUR)?,fact_count_by_currency,SELECT COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL AND UPPER(TRIM(uom)) = UPPER('EUR'),Count: 37847,"{""value"": 37847, ""type"": ""numeric"", ""tolerance"": {""absolute"": 50}}",5,0.700,template,None,0.0119,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts use 'shares' as the unit of measure?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 642330, ""type"": ""numeric"", ""tolerance"": {""relative"": 0.05}}",1,0.700,template,None,0.0121,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are measured in British pounds (GBP)?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 446, ""type"": ""numeric"", ""tolerance"": {""absolute"": 20}}",1,0.000,,None,0.0004,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the most common non-monetary unit of measure?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": ""shares"", ""type"": ""text""}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts use percentage as the unit of measure?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 8420, ""type"": ""numeric"", ""tolerance"": {""absolute"": 50}}",1,0.700,template,None,0.0123,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Swiss francs (CHF)?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 218, ""type"": ""numeric"", ""tolerance"": {""absolute"": 20}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts use square feet as unit of measure?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.700,template,None,0.0118,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are measured in Japanese yen (JPY)?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 122, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the least common currency in the dataset?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": ""14"", ""type"": ""text""}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts use 'days' as the unit of measure?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 20}}",1,0.700,template,None,0.0120,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Australian dollars (AUD)?,fact_count_by_currency,SELECT COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL AND UPPER(TRIM(uom)) = UPPER('USD'),Count: 14760135,"{""value"": 14760135, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",5,0.700,template,None,0.0150,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts use barrels as unit of measure?,distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 0, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",1,0.700,template,None,0.0123,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Mexican pesos (MXN)?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 37, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is the total count of unique unit types in the dataset?,,,There was an error querying the database. Please try again or rephrase your question.,"{""value"": 21, ""type"": ""numeric"", ""tolerance"": {""absolute"": 10}}",1,0.000,,None,0.0003,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,"How many facts use per-share units (per share, per unit)?",distinct_uom_count,SELECT COUNT(DISTINCT TRIM(UPPER(uom))) AS uom_count FROM num WHERE uom IS NOT NULL,Count: 49,"{""value"": 12650, ""type"": ""numeric"", ""tolerance"": {""absolute"": 100}}",1,0.700,template,None,0.0151,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,How many facts are denominated in Hong Kong dollars (HKD)?,fact_count_by_currency,SELECT COUNT(*) AS fact_count FROM num WHERE uom IS NOT NULL AND UPPER(TRIM(uom)) = UPPER('USD'),Count: 14760135,"{""value"": 14760135, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.700,template,None,0.0151,0.0000,0.0000,0.0000,0.0000
+RUN_002,"06 Nov 2025, 1300 hours",simple,What is Johnson & Johnson's return on equity (ROE) percentage?,,,"An error occurred while processing your question: Binder Error: Referenced column ""cik"" not found in FROM clause!
+Candidate bindings: ""coreg""
+
+LINE 1: ... 1), latest_ni AS (SELECT val as ni, ddate FROM num WHERE cik = (SELECT cik FROM company_cik) AND tag = 'NetIncomeLoss...
+                                                                     ^","{""value"": 16.8, ""type"": ""numeric"", ""tolerance"": {""absolute"": 1.0}}",1,0.000,,None,0.0014,0.0000,0.0000,0.0000,0.0000
