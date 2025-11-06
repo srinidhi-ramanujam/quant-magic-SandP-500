@@ -25,13 +25,21 @@ python -m pytest tests/ -v
 1. Create a Codespace from this repo (`Code → Codespaces → Create codespace on master`) or open the shared link.<br>Make sure the repository-level Codespaces setting is enabled.
 2. On first boot the devcontainer provisions Python 3.11 and Node 20, creates `.venv`, and installs `requirements.txt`. When the terminal is ready, activate the environment: `source .venv/bin/activate`.
 3. Fill in Secrets under `Codespaces → Codespaces secrets` (or add a `.env` file) using the keys in `.env.example` so Azure OpenAI calls work inside the container.
-4. Run backend routines as usual (e.g., `python -m pytest -m "not integration"` or `python -m src.cli "How many companies are in Technology?"`). Future FastAPI/React services will auto-forward on ports `8000` and `5173` for browser demos.
-5. Launch the FastAPI layer with `uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000` (task shortcut: “run api”).
-6. Start the React UI from `frontend/` with `npm run dev -- --host 0.0.0.0 --port 5173` (task shortcut: “run ui”). Codespaces will expose a public link you can share.
+4. Run backend routines as usual (e.g., `python -m pytest -m "not integration"` or `python -m src.cli "How many companies are in Technology?"`).
+5. Launch the FastAPI layer with `uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000` (task shortcut: "run api").
+6. Start the React chat interface from `frontend/` with `npm run dev -- --host 0.0.0.0 --port 5173` (task shortcut: "run ui"). Codespaces will expose a public link you can share.
+
+### Chat Interface
+The new chat interface features:
+- **ASCENDION branding** with Quant Magic title
+- **Fixed left sidebar**: Chat history, quick access menu, settings
+- **Scrollable chat area**: User messages (indigo gradient) + AI responses (dark theme)
+- **Real-time API status**: Green indicator when backend is connected
+- **Auto-resizing input**: Textarea grows with content, Enter to send
 
 ---
 
-## Current Status - November 4, 2025
+## Current Status - November 6, 2025
 
 ### ✅ Phase 0: Foundation (COMPLETE)
 - **10/10 PoC questions** correct (<1.1s response time)
@@ -46,6 +54,13 @@ python -m pytest tests/ -v
 - **Hybrid Template Selection**: Deterministic fast path + LLM confirmation/fallback
 - **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series) with automated schema validation
 - **Test suite**: 118 tests passing, 2 skipped (integration gated), 2 xpassed
+
+### ✅ Frontend: Chat Interface (COMPLETE)
+- **Modern UI**: Production-ready chat interface with ASCENDION branding
+- **Layout**: Fixed left sidebar with chat history + scrollable conversation area
+- **Color Scheme**: Professional indigo/blue palette optimized for financial data
+- **Features**: Real-time API status, auto-resizing input, chat session management
+- **Tech Stack**: React + TypeScript + Tailwind CSS + Vite
 
 ### 🚀 Next: Phase 2 - SQL Generation & Coverage
 - Custom SQL generation for non-template questions
@@ -217,12 +232,21 @@ cd frontend
 # Install dependencies (happens automatically inside Codespaces)
 npm install
 
-# Start the Vite dev server with port forwarding
+# Start the chat interface (Vite dev server with port forwarding)
 npm run dev -- --host 0.0.0.0 --port 5173
 
 # Build & type-check the UI
 npm run build
+
+# Preview production build
+npm run preview
 ```
+
+The chat interface connects to the FastAPI backend at `/api/query` and displays:
+- Conversation history with timestamps
+- User questions in indigo gradient bubbles
+- AI responses with SQL queries and metadata
+- Real-time API connection status
 
 ### Test Status
 - **Total**: 104 tests
@@ -297,12 +321,12 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ## Parallel UI & Codespaces Roadmap
 
-| Track | Scope |
-| --- | --- |
-| Codespaces Enablement | Build `.devcontainer/devcontainer.json` on `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature, preinstall Python deps, prep future `npm install`, forward ports 8000 (FastAPI) + 5173 (Vite), document DuckDB parquet availability and Codespaces secrets for Azure credentials. |
-| FastAPI Service Layer | Extract CLI orchestration into a reusable query service, expose `POST /query` via FastAPI (`src/api/app.py`), return structured answer/SQL/metadata, and mirror CLI fallbacks when Azure creds are absent; cover with pytest `TestClient`. |
-| React + HTMX Frontend | Scaffold `frontend/` with Vite (React + TypeScript), configure Tailwind/PostCSS and load HTMX for progressive enhancement, deliver a no-auth query form + results shell hitting the FastAPI endpoint while leaving extension points for charts. |
-| Tooling & Docs | Add shared run scripts/tasks for API (`uvicorn src.api.app:app --reload`), tests (`pytest -m "not integration"`), and UI (`npm run dev`); update onboarding docs with Codespaces instructions and open questions (parquet distribution, streaming updates) before implementation. |
+| Track | Status | Scope |
+| --- | --- | --- |
+| Codespaces Enablement | ✅ Complete | Build `.devcontainer/devcontainer.json` on `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature, preinstall Python deps, prep future `npm install`, forward ports 8000 (FastAPI) + 5173 (Vite), document DuckDB parquet availability and Codespaces secrets for Azure credentials. |
+| FastAPI Service Layer | 🚧 In Progress | Extract CLI orchestration into a reusable query service, expose `POST /query` via FastAPI (`src/api/app.py`), return structured answer/SQL/metadata, and mirror CLI fallbacks when Azure creds are absent; cover with pytest `TestClient`. |
+| React Chat Interface | ✅ Complete | Modern chat UI with ASCENDION branding, fixed sidebar with chat history/quick access, scrollable conversation area, professional indigo/blue color scheme, real-time API status indicator, auto-resizing textarea, chat session management. Built with React + TypeScript + Tailwind CSS. |
+| Tooling & Docs | ✅ Complete | Add shared run scripts/tasks for API (`uvicorn src.api.app:app --reload`), tests (`pytest -m "not integration"`), and UI (`npm run dev`); update onboarding docs with Codespaces instructions and open questions (parquet distribution, streaming updates) before implementation. |
 
 ---
 
@@ -377,5 +401,6 @@ MIT License
 
 ---
 
-**Status**: Phase 1 Complete (100/104 tests) | **Next**: Phase 2 SQL Generation & Coverage  
-**Goal**: 50%+ simple question coverage (86+/171) | **Ultimate**: 90%+ on all 410 questions
+**Status**: Phase 1 Complete + Chat UI Live | **Next**: Phase 2 SQL Generation & Coverage  
+**Goal**: 50%+ simple question coverage (86+/171) | **Ultimate**: 90%+ on all 410 questions  
+**Last Updated**: November 6, 2025
