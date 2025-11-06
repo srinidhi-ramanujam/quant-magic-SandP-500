@@ -529,6 +529,8 @@ class EntityExtractor:
             json_str = response_text.strip()
 
         # Parse JSON
+        if not json_str:
+            raise json.JSONDecodeError("Empty LLM response", json_str, 0)
         try:
             result = json.loads(json_str)
             return result

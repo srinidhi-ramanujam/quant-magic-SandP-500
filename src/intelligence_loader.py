@@ -17,6 +17,94 @@ from src.telemetry import get_logger
 from src.entity_extractor import get_company_alias_map, normalize_company_name
 
 
+# Common currency synonyms to support template parameter extraction.
+_CURRENCY_SYNONYMS: Dict[str, List[str]] = {
+    "USD": [
+        "usd",
+        "u.s. dollar",
+        "us dollar",
+        "u.s. dollars",
+        "us dollars",
+        "united states dollar",
+        "united states dollars",
+        "american dollar",
+    ],
+    "CAD": ["cad", "canadian dollar", "canadian dollars"],
+    "EUR": ["eur", "euro", "euros"],
+    "GBP": ["gbp", "british pound", "british pounds", "pound sterling"],
+    "CHF": ["chf", "swiss franc", "swiss francs"],
+    "JPY": ["jpy", "japanese yen", "yen"],
+    "AUD": ["aud", "australian dollar", "australian dollars"],
+    "MXN": ["mxn", "mexican peso", "mexican pesos"],
+    "HKD": ["hkd", "hong kong dollar", "hong kong dollars"],
+    "CNY": ["cny", "chinese yuan", "renminbi"],
+}
+
+
+# Key unit synonyms for unit-of-measure templates.
+_UNIT_SYNONYMS: Dict[str, List[str]] = {
+    "shares": ["share", "shares", "per share", "per-share", "per unit"],
+    "pure": ["percentage", "percent", "%", "ratio"],
+    "barrels": ["barrel", "barrels", "bbl"],
+    "days": ["day", "days"],
+    "square feet": ["square foot", "square feet", "sqft", "sq ft"],
+}
+
+
+def _find_currency_in_question(question: str) -> Optional[str]:
+    """Return ISO currency code if a known currency is mentioned."""
+
+    question_lower = question.lower()
+
+    for code, synonyms in _CURRENCY_SYNONYMS.items():
+        for term in synonyms:
+            if term in question_lower:
+                return code
+
+    # Look for explicit three-letter code in parentheses or standalone
+    token_match = re.search(r"\b([A-Z]{3})\b", question.upper())
+    if token_match:
+        token = token_match.group(1)
+        if token in _CURRENCY_SYNONYMS:
+            return token
+
+    return None
+
+
+def _find_unit_in_question(question: str) -> Optional[str]:
+    """Return a normalized unit-of-measure token if present in the question."""
+
+    question_lower = question.lower()
+
+    # Prefer explicitly quoted units first (e.g., 'shares')
+    quoted = re.findall(r"'([^']+)'", question_lower)
+    for token in quoted:
+        normalized = _normalize_unit_token(token.strip())
+        if normalized:
+            return normalized
+
+    normalized = _normalize_unit_token(question_lower)
+    if normalized:
+        return normalized
+
+    return None
+
+
+def _normalize_unit_token(token: str) -> Optional[str]:
+    """Normalize free-form unit text using the synonyms mapping."""
+
+    token = token.strip().lower()
+    if not token:
+        return None
+
+    for canonical, synonyms in _UNIT_SYNONYMS.items():
+        for synonym in synonyms:
+            if synonym in token:
+                return canonical
+
+    return None
+
+
 # Phase 0 templates - simple patterns for PoC
 PHASE_0_TEMPLATES = [
     QueryTemplate(
@@ -308,23 +396,64 @@ class IntelligenceLoader:
                 if "state" in template.parameters:
                     params["state"] = normalized
 
+        if "currency" in template.parameters and "currency" not in params:
+            currency = _find_currency_in_question(question)
+            if currency:
+                params["currency"] = currency
+
+        if "unit" in template.parameters and "unit" not in params:
+            unit = _find_unit_in_question(question)
+            if unit:
+                params["unit"] = unit
+
+        if "fye" in template.parameters and "fye" not in params:
+            fye_match = re.search(r"\b(\d{4})\b", question_lower)
+            if fye_match:
+                params["fye"] = fye_match.group(1)
+
+        if "fiscal_year" in template.parameters and "fiscal_year" not in params:
+            fiscal_match = re.search(r"\b(20\d{2})\b", question_lower)
+            if fiscal_match:
+                params["fiscal_year"] = fiscal_match.group(1)
+
+        if "threshold" in template.parameters and "threshold" not in params:
+            threshold_match = re.search(r"(\d+(?:\.\d+)?)\s*%?", question_lower)
+            if threshold_match:
+                threshold_value = threshold_match.group(1)
+
+                scale = 1.0
+                if "trillion" in question_lower:
+                    scale = 1_000_000_000_000.0
+                elif "billion" in question_lower:
+                    scale = 1_000_000_000.0
+                elif "million" in question_lower:
+                    scale = 1_000_000.0
+
+                try:
+                    params["threshold"] = str(float(threshold_value) * scale)
+                except ValueError:
+                    params["threshold"] = threshold_value
+
         if "rank" in template.parameters and "rank" not in params:
             ordinal_map = {
-                "first": 1,
-                "1st": 1,
-                "one": 1,
-                "most": 1,
                 "second": 2,
                 "2nd": 2,
                 "two": 2,
                 "third": 3,
                 "3rd": 3,
                 "three": 3,
+                "first": 1,
+                "1st": 1,
+                "one": 1,
+                "most": 1,
             }
             for token, value in ordinal_map.items():
                 if token in question_lower:
                     params["rank"] = str(value)
                     break
+
+        if "rank" in template.parameters and "rank" not in params:
+            params["rank"] = "1"
 
         if "cik" in template.parameters and "cik" not in params:
             cik_match = re.search(r"\b\d{10}\b", question_lower)

@@ -118,6 +118,7 @@ JOIN_GUIDANCE = """
 - `sub` ↔ `num`: join on `sub.adsh = num.adsh`
 - `sub` ↔ `pre`: join on `sub.adsh = pre.adsh`
 - `num` records do **not** include `cik`; you must join through `sub`
+- When you need a CIK in results, select `sub.cik` (or join to `companies`) — never reference `num.cik`
 - For annual values use `num.qtrs = 0`; for quarterly values use `num.qtrs = 1`
 """
 
