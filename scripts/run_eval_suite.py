@@ -18,9 +18,14 @@ import argparse
 import csv
 import json
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from src.cli import FinancialCLI
 
@@ -41,6 +46,14 @@ FIELDNAMES = [
     "Answer_received",
     "Answer_expected",
     "Quality",
+    "Confidence",
+    "Generation_method",
+    "LLM_calls",
+    "Total_latency_s",
+    "Entity_extraction_s",
+    "SQL_generation_s",
+    "Query_execution_s",
+    "Response_formatting_s",
 ]
 
 
@@ -98,7 +111,7 @@ def extract_numeric(text: str) -> Optional[float]:
 def compute_quality(expected: Optional[Dict], answer: str) -> str:
     """
     Return a quality score (1-5) comparing expected vs answer.
-    5 = match within tolerance, 1 = mismatch, '' = not evaluated.
+    5 = match within tolerance/exact, 3 = near miss, 1 = mismatch, '' = not evaluated.
     """
     if not expected or "value" not in expected:
         return ""
@@ -126,6 +139,14 @@ def compute_quality(expected: Optional[Dict], answer: str) -> str:
             rel_tol = rel_tol / 100 if rel_tol > 1 else rel_tol
             if abs(actual_num - expected_num) / abs(expected_num) <= rel_tol:
                 return "5"
+        # near miss bands: within 2x tolerance -> 3
+        band_abs = abs_tol * 2 if abs_tol is not None else None
+        band_rel = rel_tol * 2 if rel_tol is not None else None
+        if band_abs is not None and abs(actual_num - expected_num) <= band_abs:
+            return "3"
+        if band_rel is not None and expected_num != 0:
+            if abs(actual_num - expected_num) / abs(expected_num) <= band_rel:
+                return "3"
         return "1"
 
     # Text comparison
@@ -140,6 +161,15 @@ def compute_quality(expected: Optional[Dict], answer: str) -> str:
     for alt in expected.get("alternatives", []) or []:
         if str(alt).strip().lower() in answer_lower:
             return "5"
+
+    # fuzzy fallback
+    from difflib import SequenceMatcher
+
+    ratio = SequenceMatcher(None, expected_str, answer_lower).ratio()
+    if ratio >= 0.85:
+        return "4"
+    if ratio >= 0.6:
+        return "3"
 
     return "1"
 
@@ -177,7 +207,8 @@ def run_suite(
     emit_json: bool,
 ) -> None:
     for item in questions:
-        response = cli.process_question(item["question"], debug_mode=True)
+        service_result = cli.query_service.run(item["question"], debug_mode=True)
+        response = service_result.response
         response_dict = response.to_dict()
 
         metadata = response_dict.get("metadata", {})
@@ -202,6 +233,14 @@ def run_suite(
             "Answer_received": answer,
             "Answer_expected": expected_to_string(expected),
             "Quality": quality,
+            "Confidence": f"{response_dict.get('confidence', 0):.3f}",
+            "Generation_method": metadata.get("generation_method", ""),
+            "LLM_calls": str(metadata.get("llm_calls")),
+            "Total_latency_s": f"{metadata.get('total_time_seconds', 0):.4f}",
+            "Entity_extraction_s": f"{metadata.get('component_timings', {}).get('entity_extraction', 0):.4f}",
+            "SQL_generation_s": f"{metadata.get('component_timings', {}).get('sql_generation', 0):.4f}",
+            "Query_execution_s": f"{metadata.get('component_timings', {}).get('query_execution', 0):.4f}",
+            "Response_formatting_s": f"{metadata.get('component_timings', {}).get('response_formatting', 0):.4f}",
         }
         log_entry(EVAL_WORKBOOK, row)
 
