@@ -7,9 +7,11 @@ with comprehensive error handling, retry logic, and token tracking.
 Based on proven patterns from quant-magic-v2/llm/services/llm_service.py
 """
 
+import json
 import logging
-import time
 import os
+import re
+import time
 from typing import Optional, Dict, Any, Tuple, List
 from functools import wraps
 
@@ -18,6 +20,7 @@ try:
 except ImportError:
     OpenAI = None
 
+from src.prompts import get_sql_custom_generation_prompt
 from .models import (
     LLMConfig,
     LLMRequest,
@@ -27,6 +30,8 @@ from .models import (
     EmbeddingRequest,
     EmbeddingResponse,
     QueryComplexity,
+    SQLValidationRequest,
+    SQLValidationVerdict,
 )
 
 logger = logging.getLogger(__name__)
@@ -199,27 +204,18 @@ class AzureOpenAIClient:
             constraints = self._prepare_constraints()
 
             # Build instructions for Responses API
-            instructions = (
-                "You are an expert SQL analyst specializing in SEC EDGAR financial data. Focus on DuckDB-compatible SQL.\n"
-                "Dataset overview: companies(cik, name, countryinc, gics_sector); sub(adsh, cik, form, filed, stprinc, countryinc, period, fye); num(adsh, tag, version, ddate, qtrs, uom, value, footnote); tag(tag, version, datatype, abstract).\n"
-                "Guidelines:\n - Always join numeric facts through sub (num.adsh = sub.adsh) before linking to companies.\n - Treat CIKs as zero-padded 10-character strings.\n - Use UPPER/TRIM for case-insensitive comparisons (sectors, currency codes).\n - Prefer COUNT(DISTINCT ...) when counting companies.\n - Limit results appropriately (LIMIT 1) for single answers.\n - Avoid referencing non-existent tables or columns (e.g., companies_with_sectors)."
+            prompt_parts = get_sql_custom_generation_prompt(
+                question=request.query,
+                entities=request.context.get("entities", {}),
+                schema=schema_context,
+                constraints=constraints,
+                domain_hints=request.context.get("domain_hints"),
+                similar_queries=request.similar_queries,
+                template_attempts=request.template_attempts,
             )
 
-            # Build input prompt
-            input_prompt = f"""
-Generate SQL query for this question: {request.query}
-
-Database Schema:
-{schema_context}
-
-Constraints:
-{constraints}
-
-Additional Context:
-{request.context if request.context else 'None provided'}
-
-Return the SQL query in a code block, followed by a brief explanation.
-"""
+            instructions = prompt_parts["instructions"]
+            input_prompt = prompt_parts["input"]
 
             # Call Azure OpenAI Responses API
             logger.info(f"Calling Responses API for query: {request.query[:100]}...")
@@ -282,6 +278,63 @@ Return the SQL query in a code block, followed by a brief explanation.
                 processing_time_ms=processing_time_ms,
                 model_version=self.config.deployment_name,
                 errors=[str(e)],
+            )
+
+    def validate_sql_semantic(
+        self,
+        request: SQLValidationRequest,
+        instructions: str,
+        input_prompt: str,
+    ) -> SQLValidationVerdict:
+        """Run semantic validation via the Responses API."""
+        start_time = time.time()
+
+        if not self.is_available():
+            return SQLValidationVerdict(
+                success=False,
+                is_valid=False,
+                reason="Azure OpenAI client not available",
+                confidence=0.0,
+                processing_time_ms=int((time.time() - start_time) * 1000),
+                errors=["Client not configured or circuit breaker triggered"],
+            )
+
+        try:
+            response = self.client.responses.create(
+                model=self.config.deployment_name,
+                instructions=instructions,
+                input=input_prompt,
+                max_output_tokens=request.max_tokens or self.config.max_tokens,
+            )
+
+            content = self._parse_api_response(response)
+            payload = self._extract_json_object(content)
+
+            verdict = SQLValidationVerdict(
+                success=True,
+                is_valid=bool(payload.get("is_valid", False)),
+                reason=payload.get("reason"),
+                confidence=float(payload.get("confidence", 0.0)),
+                warnings=payload.get("warnings", []) or [],
+                token_usage=self._extract_token_usage(response),
+                processing_time_ms=int((time.time() - start_time) * 1000),
+                raw_response=payload,
+            )
+
+            self._circuit_breaker_failures = 0
+            return verdict
+
+        except Exception as exc:  # noqa: BLE001
+            self._circuit_breaker_failures += 1
+            processing_time_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Semantic validation failed: {exc}")
+            return SQLValidationVerdict(
+                success=False,
+                is_valid=False,
+                reason=str(exc),
+                confidence=0.0,
+                processing_time_ms=processing_time_ms,
+                errors=[str(exc)],
             )
 
     @retry_with_backoff(max_retries=3, base_delay=1.0)
@@ -520,6 +573,36 @@ Please provide:
             logger.error(f"Error extracting SQL: {e}")
             return None, f"Error parsing response: {str(e)}"
 
+    def _extract_json_object(self, content: str) -> Dict[str, Any]:
+        """Extract JSON object from the LLM response content."""
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            pass
+
+        if "```" in content:
+            start = content.find("```")
+            end = content.find("```", start + 3)
+            if end > start:
+                snippet = content[start + 3 : end].strip()
+                # Handle potential language hint like ```json
+                if snippet.lower().startswith("json"):
+                    snippet = snippet[4:].strip()
+                try:
+                    return json.loads(snippet)
+                except json.JSONDecodeError:
+                    pass
+
+        json_match = re.search(r"\{.*\}", content, re.DOTALL)
+        if json_match:
+            snippet = json_match.group()
+            try:
+                return json.loads(snippet)
+            except json.JSONDecodeError:
+                pass
+
+        raise ValueError("Unable to extract JSON payload from validator response")
+
     def _extract_token_usage(self, response: Any) -> Dict[str, Any]:
         """
         Extract token usage with reasoning breakdown (GPT-5 feature).
@@ -617,13 +700,13 @@ Please provide:
     def _prepare_constraints(self) -> str:
         """Prepare SQL generation constraints."""
         return """
-- Only use tables: num, companies_with_sectors, sub, tag, pre
-- Handle NULL values appropriately
-- Use proper JOIN conditions with CIK
-- CIK fields are 10-digit zero-padded strings
-- Include data validation and error checking
-- Return results in readable format with column aliases
-- Use meaningful column names in SELECT
+- Only use registered DuckDB views: companies, sub, num, tag, pre
+- Handle NULL values explicitly (COALESCE or filters) when comparing metrics
+- Join num through sub (num.adsh = sub.adsh) before joining to companies
+- CIK fields are 10-character strings, zero-padded on the left
+- Prefer COUNT(DISTINCT ...) for company counts
+- Keep answer sets small with LIMIT when returning ordered lists
+- Avoid cross joins or cartesian products unless absolutely required
 """
 
     def _extract_recommendation(self, content: str) -> str:

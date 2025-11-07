@@ -82,3 +82,23 @@ def test_company_roe_template_selected():
 
     assert match.template is not None
     assert match.template.template_id == "latest_roe"
+
+
+def test_jurisdiction_country_extraction_prefers_country_over_state_code():
+    loader = _loader()
+    question = "How many companies are incorporated in Canada?"
+    match = loader.match_pattern(question)
+
+    assert match.template is not None
+    assert match.template.template_id == "companies_by_incorporation_state"
+    assert match.matched_parameters.get("jurisdiction") == "CA"
+
+
+def test_state_abbreviation_requires_uppercase_token():
+    loader = _loader()
+    question = "How many companies are incorporated in CA?"
+    match = loader.match_pattern(question)
+
+    assert match.template is not None
+    assert match.template.template_id == "companies_by_incorporation_state"
+    assert match.matched_parameters.get("jurisdiction") == "CA"

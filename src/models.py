@@ -356,6 +356,55 @@ class LLMResponse(BaseModel):
     )
 
 
+class SQLValidationRequest(BaseModel):
+    """Request payload for semantic SQL validation."""
+
+    question: str = Field(..., description="Original user question")
+    sql: str = Field(..., description="SQL to validate")
+    entities: Dict[str, Any] = Field(
+        default_factory=dict, description="Extracted entities for context"
+    )
+    schema_markdown: str = Field(..., description="Schema documentation snippet")
+    max_tokens: Optional[int] = Field(
+        default=None, description="Optional override for max output tokens", gt=0
+    )
+
+
+class SQLValidationVerdict(BaseModel):
+    """Verdict returned by semantic SQL validation."""
+
+    success: bool = Field(
+        ..., description="Whether the validation pipeline executed successfully"
+    )
+    is_valid: bool = Field(
+        ..., description="Whether the SQL aligns with the question intent"
+    )
+    reason: Optional[str] = Field(
+        default=None, description="Human-readable reason when validation fails"
+    )
+    confidence: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description="Validator confidence in the verdict",
+    )
+    processing_time_ms: int = Field(
+        default=0, ge=0, description="Validation latency in milliseconds"
+    )
+    token_usage: Dict[str, Any] = Field(
+        default_factory=dict, description="Token usage details from the LLM call"
+    )
+    warnings: List[str] = Field(
+        default_factory=list, description="Non-blocking warnings from validation"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="Errors encountered during validation"
+    )
+    raw_response: Dict[str, Any] = Field(
+        default_factory=dict, description="Raw parsed JSON payload from the validator"
+    )
+
+
 class LLMAnalysisRequest(BaseModel):
     """Request for LLM-powered analysis of query patterns."""
 

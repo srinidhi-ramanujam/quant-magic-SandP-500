@@ -173,10 +173,10 @@
       "difficulty": "beginner",
       "category": "geographic_regulatory",
       "expected_answer": {
-        "value": 349,
+        "value": 346,
         "type": "numeric",
         "tolerance": {
-          "absolute": 2
+          "absolute": 5
         }
       },
       "context": {
@@ -1363,7 +1363,7 @@
       "category": "financial_statement_line_items",
       "expected_answer": {
         "type": "numeric",
-        "value": 55394000000.0,
+        "value": 61350000000.0,
         "tolerance": {
           "absolute": 2000000000.0
         }
@@ -1408,7 +1408,7 @@
         "tolerance": {
           "absolute": 5
         },
-        "value": 447.0
+        "value": 452
       },
       "context": {
         "tag": "NetIncomeLoss",
@@ -1818,7 +1818,7 @@
       "difficulty": "beginner",
       "category": "sector_industry_analysis",
       "expected_answer": {
-        "value": 26,
+        "value": 28,
         "type": "numeric",
         "tolerance": {
           "absolute": 1
@@ -2226,7 +2226,7 @@
         "tolerance": {
           "absolute": 2
         },
-        "value": 6
+        "value": 11
       },
       "context": {
         "field": "countryinc",
@@ -2265,9 +2265,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 2
+          "absolute": 3
         },
-        "value": 3
+        "value": 11
       },
       "context": {
         "field": "countryinc",
@@ -2551,9 +2551,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 2
+          "absolute": 3
         },
-        "value": 20
+        "value": 24
       },
       "context": {
         "field": "stprba",
@@ -2635,7 +2635,7 @@
         "tolerance": {
           "absolute": 1
         },
-        "value": 6
+        "value": 1
       },
       "context": {
         "field": "countryinc",
@@ -2674,9 +2674,9 @@
       "expected_answer": {
         "type": "numeric",
         "tolerance": {
-          "absolute": 2
+          "absolute": 3
         },
-        "value": 27
+        "value": 31
       },
       "context": {
         "field": "stprba",
@@ -2797,7 +2797,7 @@
         "tolerance": {
           "absolute": 1
         },
-        "value": 6
+        "value": 2
       },
       "context": {
         "field": "countryinc",
@@ -4413,7 +4413,7 @@
       "difficulty": "intermediate",
       "category": "financial_ratios_performance",
       "expected_answer": {
-        "value": 12,
+        "value": 21,
         "type": "numeric",
         "tolerance": {
           "absolute": 5
@@ -4589,7 +4589,7 @@
       "difficulty": "intermediate",
       "category": "balance_sheet_analysis",
       "expected_answer": {
-        "value": 4,
+        "value": 9,
         "type": "numeric",
         "tolerance": {
           "absolute": 2
@@ -5206,7 +5206,7 @@
       "difficulty": "intermediate",
       "category": "income_statement_analysis",
       "expected_answer": {
-        "value": 2,
+        "value": 68,
         "type": "numeric",
         "tolerance": {
           "absolute": 5

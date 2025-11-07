@@ -21,7 +21,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -48,6 +48,8 @@ FIELDNAMES = [
     "Quality",
     "Confidence",
     "Generation_method",
+    "SQL_validation_result",
+    "SQL_validation_confidence",
     "LLM_calls",
     "Total_latency_s",
     "Entity_extraction_s",
@@ -73,20 +75,20 @@ def next_run_id(csv_path: Path) -> str:
     if not csv_path.exists():
         return "RUN_001"
 
-    last_id: Optional[str] = None
+    max_id = 0
     with csv_path.open("r", newline="") as handle:
         reader = csv.DictReader(handle)
         for row in reader:
-            last_id = row.get("Testrun_ID") or last_id
+            run_id = row.get("Testrun_ID")
+            if not run_id:
+                continue
+            try:
+                _, number = run_id.split("_")
+                max_id = max(max_id, int(number))
+            except ValueError:
+                continue
 
-    if not last_id:
-        return "RUN_001"
-
-    try:
-        prefix, number = last_id.split("_")
-        return f"{prefix}_{int(number) + 1:03d}"
-    except Exception:  # pragma: no cover - defensive
-        return "RUN_001"
+    return f"RUN_{max_id + 1:03d}"
 
 
 def format_timestamp(dt: datetime) -> str:
@@ -184,11 +186,27 @@ def expected_to_string(expected: Optional[Dict]) -> str:
 
 
 def ensure_header(csv_path: Path) -> None:
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
     if not csv_path.exists():
-        csv_path.parent.mkdir(parents=True, exist_ok=True)
         with csv_path.open("w", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
-            writer.writeheader()
+            csv.DictWriter(handle, fieldnames=FIELDNAMES).writeheader()
+        return
+
+    with csv_path.open("r", newline="") as handle:
+        reader = csv.reader(handle)
+        existing_header = next(reader, [])
+
+    if existing_header == FIELDNAMES:
+        return
+
+    with csv_path.open("r", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+
+    with csv_path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
 
 
 def log_entry(csv_path: Path, row: Dict[str, str]) -> None:
@@ -196,6 +214,29 @@ def log_entry(csv_path: Path, row: Dict[str, str]) -> None:
     with csv_path.open("a", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)
         writer.writerow(row)
+
+
+def summarize_validation(metadata: Dict[str, Any]) -> tuple[str, str]:
+    records = metadata.get("sql_validation") or []
+    if not records:
+        return "", ""
+
+    semantic = next(
+        (record for record in records if record.get("stage") == "semantic"), None
+    )
+    target = semantic or records[-1]
+    success = target.get("success", False)
+    reason = target.get("reason") or ""
+    if success:
+        result = "pass"
+    else:
+        result = f"fail: {reason or 'validation rejected'}"
+
+    confidence = target.get("confidence")
+    confidence_str = (
+        f"{confidence:.3f}" if isinstance(confidence, (int, float)) else ""
+    )
+    return result, confidence_str
 
 
 def run_suite(
@@ -222,6 +263,7 @@ def run_suite(
         expected = item.get("expected_answer")
         answer = response_dict.get("answer", "")
         quality = compute_quality(expected, answer)
+        validation_result, validation_confidence = summarize_validation(metadata)
 
         row = {
             "Testrun_ID": run_id,
@@ -235,6 +277,8 @@ def run_suite(
             "Quality": quality,
             "Confidence": f"{response_dict.get('confidence', 0):.3f}",
             "Generation_method": metadata.get("generation_method", ""),
+            "SQL_validation_result": validation_result,
+            "SQL_validation_confidence": validation_confidence,
             "LLM_calls": str(metadata.get("llm_calls")),
             "Total_latency_s": f"{metadata.get('total_time_seconds', 0):.4f}",
             "Entity_extraction_s": f"{metadata.get('component_timings', {}).get('entity_extraction', 0):.4f}",
@@ -285,6 +329,7 @@ def run_custom_questions(
         sql_generated = debug_info.get("sql_executed") or metadata.get("generated_sql")
         answer = response_dict.get("answer", "")
         quality = compute_quality(expected, answer)
+        validation_result, validation_confidence = summarize_validation(metadata)
 
         row = {
             "Testrun_ID": run_id,
@@ -296,6 +341,16 @@ def run_custom_questions(
             "Answer_received": answer,
             "Answer_expected": expected_to_string(expected),
             "Quality": quality,
+            "Confidence": f"{response_dict.get('confidence', 0):.3f}",
+            "Generation_method": metadata.get("generation_method", ""),
+            "SQL_validation_result": validation_result,
+            "SQL_validation_confidence": validation_confidence,
+            "LLM_calls": str(metadata.get("llm_calls")),
+            "Total_latency_s": f"{metadata.get('total_time_seconds', 0):.4f}",
+            "Entity_extraction_s": f"{metadata.get('component_timings', {}).get('entity_extraction', 0):.4f}",
+            "SQL_generation_s": f"{metadata.get('component_timings', {}).get('sql_generation', 0):.4f}",
+            "Query_execution_s": f"{metadata.get('component_timings', {}).get('query_execution', 0):.4f}",
+            "Response_formatting_s": f"{metadata.get('component_timings', {}).get('response_formatting', 0):.4f}",
         }
         log_entry(EVAL_WORKBOOK, row)
 
@@ -375,6 +430,16 @@ def main() -> None:
                 "Answer_received": response_dict.get("answer", ""),
                 "Answer_expected": "",
                 "Quality": "",
+                 "Confidence": f"{response_dict.get('confidence', 0):.3f}",
+                 "Generation_method": metadata.get("generation_method", ""),
+                 "SQL_validation_result": summarize_validation(metadata)[0],
+                 "SQL_validation_confidence": summarize_validation(metadata)[1],
+                 "LLM_calls": str(metadata.get("llm_calls")),
+                 "Total_latency_s": f"{metadata.get('total_time_seconds', 0):.4f}",
+                 "Entity_extraction_s": f"{metadata.get('component_timings', {}).get('entity_extraction', 0):.4f}",
+                 "SQL_generation_s": f"{metadata.get('component_timings', {}).get('sql_generation', 0):.4f}",
+                 "Query_execution_s": f"{metadata.get('component_timings', {}).get('query_execution', 0):.4f}",
+                 "Response_formatting_s": f"{metadata.get('component_timings', {}).get('response_formatting', 0):.4f}",
             }
             log_entry(EVAL_WORKBOOK, row)
             if emit_json:

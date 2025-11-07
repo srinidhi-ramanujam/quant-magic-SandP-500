@@ -373,21 +373,23 @@ class IntelligenceLoader:
                     break
 
             if not normalized:
-                # Check for two-letter codes in the question
-                tokens = re.findall(r"[A-Za-z]{2,}", question)
-                for token in tokens:
-                    state_code = extractor._normalize_state_code(token)
-                    if state_code:
-                        normalized = state_code
-                        break
-
-            if not normalized:
                 # Check for country names
                 for country_name, country_code in sorted(
                     COUNTRIES.items(), key=lambda x: -len(x[0])
                 ):
                     if country_name in question_lower:
                         normalized = country_code
+                        break
+
+            if not normalized:
+                # Check for two-letter codes in the question (only uppercase tokens)
+                tokens = re.findall(r"[A-Za-z]{2,}", question)
+                for token in tokens:
+                    if not token.isupper():
+                        continue
+                    state_code = extractor._normalize_state_code(token)
+                    if state_code:
+                        normalized = state_code
                         break
 
             if normalized:
@@ -417,22 +419,31 @@ class IntelligenceLoader:
                 params["fiscal_year"] = fiscal_match.group(1)
 
         if "threshold" in template.parameters and "threshold" not in params:
-            threshold_match = re.search(r"(\d+(?:\.\d+)?)\s*%?", question_lower)
+            threshold_match = re.search(
+                r"(\d+[,\d]*(?:\.\d+)?)\s*(percent|percentage|%)?", question_lower
+            )
             if threshold_match:
-                threshold_value = threshold_match.group(1)
-
-                scale = 1.0
-                if "trillion" in question_lower:
-                    scale = 1_000_000_000_000.0
-                elif "billion" in question_lower:
-                    scale = 1_000_000_000.0
-                elif "million" in question_lower:
-                    scale = 1_000_000.0
+                threshold_token = threshold_match.group(1).replace(",", "")
+                unit_token = threshold_match.group(2)
 
                 try:
-                    params["threshold"] = str(float(threshold_value) * scale)
+                    numeric_value = float(threshold_token)
                 except ValueError:
-                    params["threshold"] = threshold_value
+                    numeric_value = None
+
+                if numeric_value is not None:
+                    scale = 1.0
+                    if "trillion" in question_lower:
+                        scale = 1_000_000_000_000.0
+                    elif "billion" in question_lower:
+                        scale = 1_000_000_000.0
+                    elif "million" in question_lower:
+                        scale = 1_000_000.0
+                    elif "thousand" in question_lower:
+                        scale = 1_000.0
+
+                    numeric_value *= scale
+                    params["threshold"] = str(numeric_value)
 
         if "rank" in template.parameters and "rank" not in params:
             ordinal_map = {

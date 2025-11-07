@@ -117,87 +117,94 @@
 
 ### Phase 2A: Custom SQL Generation (8-10 hours)
 
+Current status: schema docs + wiring landed, prompt/test scaffolding pending.
+
 #### Deliverables
-- [ ] **Schema Documentation**: Comprehensive schema in `src/schema_docs.py`
-  - Table descriptions (companies, num, sub, tag)
-  - Column definitions with types and examples
-  - Common join patterns
-  - XBRL tag reference (top 50 metrics)
-
-- [ ] **Custom SQL Generator**: New method in `src/sql_generator.py`
-  - `_generate_custom_sql()`: LLM-powered SQL generation
-  - Schema-aware prompts with examples
-  - Parameter extraction and validation
-  - Fallback to template-based if LLM fails
-
-- [ ] **LLM Prompt**: `get_custom_sql_prompt()` in `src/prompts.py`
-  - Few-shot examples (5-10 queries)
-  - Schema documentation included
-  - Output format specification (SELECT only, read-only)
-  
-- [ ] **Tests**: 10+ tests in `tests/test_custom_sql_generation.py`
-  - 7 unit tests: Schema awareness, parameter handling, output format
-  - 2 integration tests: Real LLM calls
-  - 1 edge case: Invalid SQL handling
+- [x] **Schema Documentation** (`src/schema_docs.py`)
+  - Table/column catalog with join hints
+  - Metric taxonomy for top 50 tags
+  - Helper accessors surfaced to prompts
+- [x] **Custom SQL Generator stub** (`SQLGenerator._generate_custom_sql`)
+  - Uses schema docs + LLM fallback when templates miss
+  - Deterministic guardrails around empty/invalid SQL
+- [x] **Prompt Refinement** (`get_sql_custom_generation_prompt`)
+  - Added curated few-shot set covering joins, aggregations, ranking
+  - Embedded failure-mode guidance and domain hints (currency, thresholds, ordering)
+  - Centralized prompt wiring through Azure client
+- [x] **Validation Hooks**
+  - Enforce read-only (`SELECT`) queries with multi-statement rejection
+  - Require `NUM` joins to pass through `SUB`, block unknown tables
+  - Emit telemetry for every custom SQL attempt with pass/fail reason
+- [x] **Test Suite** (`tests/test_sql_generator.py`)
+  - Unit coverage for prompt assembly, guardrails, telemetry logging
+  - Mocked LLM success/failure paths for custom SQL generation
+  - Integration smoke behind `ENABLE_AZURE_INTEGRATION_TESTS` (pending credentials toggle)
 
 #### Exit Criteria
-- [ ] Custom SQL generation working for 10+ non-template questions
-- [ ] 10/10 tests passing
-- [ ] Schema documentation complete
-- [ ] No regressions (100+ tests still passing)
+- [ ] 10+ non-template evaluation questions answered via custom SQL
+- [ ] Prompt/test coverage prevents regressions on schema drift
+- [ ] Telemetry shows success rate & latency for custom SQL path
+- [ ] No drop in existing deterministic/template coverage
 
 ---
 
 ### Phase 2B: Two-Pass Validation (6-8 hours)
 
 #### Deliverables
-- [ ] **SQL Validator**: New class `src/sql_validator.py`
-  - **Pass 1 - Syntax**: Check for dangerous keywords (DROP, DELETE, etc.)
-  - **Pass 2 - Semantic**: LLM validates SQL matches user intent
-  - Retry logic if validation fails (max 3 attempts)
-  - Telemetry tracking (validation time, success rate)
-
-- [ ] **Validation Prompt**: `get_sql_validation_prompt()` in `src/prompts.py`
-  - Compares SQL against user question
-  - Checks for schema violations
-  - Returns confidence score + reasoning
-
-- [ ] **Integration**: Wire into `sql_generator.py` generate() method
-  - Validate all LLM-generated SQL
-  - Optional validation for templates (configurable)
-  - Track validation metrics in telemetry
-
-- [ ] **Tests**: 10+ tests in `tests/test_sql_validator.py`
-  - 6 unit tests: Syntax checks, semantic validation, retry logic
-  - 2 integration tests: Real LLM validation calls
-  - 2 edge cases: Malicious SQL, ambiguous questions
+- [x] **SQL Validator** (`src/sql_validator.py`)
+  - Pass 1: Static scan for DDL/DML + unbounded deletes/updates
+  - Pass 2: LLM intent alignment with structured verdict (`valid`, `reason`, `confidence`)
+  - Configurable retry budget surfaced via config
+  - Emits telemetry (`sql_validation` + `llm_calls` entries for every attempt)
+- [x] **Validation Prompts** (`get_sql_semantic_validation_prompt`)
+  - Include schema snippets + natural-language question
+  - Require JSON verdict with normalized rationale bullets
+  - Provide examples for allow/deny cases via curated instructions
+- [x] **Pipeline Integration**
+  - Invoke validator for all custom SQL paths (templates remain configurable next)
+  - Short-circuit response if validation fails; return actionable error
+  - Persist validation metadata on the request context for downstream logging
+- [x] **Tests** (`tests/test_sql_validator.py`, `tests/test_sql_generator.py`)
+  - Static checks (dangerous SQL, CTE handling)
+  - Mocked LLM semantic checks (match/mismatch)
+  - Telemetry assertions for success/failure paths
 
 #### Exit Criteria
-- [ ] Two-pass validation working
-- [ ] All dangerous SQL blocked (DROP, DELETE, etc.)
-- [ ] Semantic validation confidence >0.8 for correct SQL
-- [ ] 10/10 tests passing
-- [ ] No regressions
+- [ ] 100% of generated SQL passes static scan before execution
+- [ ] Semantic validation confidence ≥0.8 on green paths
+- [ ] Workbook entries capture validation outcome & confidence
+- [ ] No increase in execution failures during eval sweeps
 
 ---
 
 ### Phase 2C: Coverage Expansion (6-8 hours)
 
 #### Deliverables
-- [ ] **Evaluation Runner**: Enhanced `src/eval_runner.py`
-  - Run all 171 simple questions
-  - Track pass/fail with reasons
-  - Generate detailed report (CSV + summary)
-  - Categorize failures by root cause
+- [x] **Evaluation Runner Enhancements** (`scripts/run_eval_suite.py`)
+  - CLI flags for tiers/custom questions
+  - Telemetry logging into `evaluation/EVAL_WORKBOOK.csv`
+  - Auto-scoring (5/3/1) with tolerance awareness
+- [ ] **Workbook Analytics**
+  - Add summarizer script for pass-rate by tag/category
+  - Reverse chronological ordering (done) + filters for regressions
+  - Derive top failure taxonomies (template miss, entity miss, SQL error)
+- [ ] **Iteration 1 – High-Impact Fixes**
+  - Close remaining simple-tier numeric deltas (gross margin, other income)
+  - Add EBITDA / acquisition threshold templates and align expected answers
+  - Target ≥150/171 simple-tier scores at 5
+- [ ] **Iteration 2 – Medium Tier Prep**
+  - Refresh medium/time-series expected answers to match current parquet data
+  - Ensure entity extractor & template loader cover fiscal period questions
+  - Stand up regression templates for multi-year KPIs (inc. top-10 by sector)
+- [ ] **Reporting**
+  - Nightly baseline run stored as `RUN_latest`
+  - Markdown summary snippet for PRs (pass %, top failures, new fixes)
 
-- [ ] **Iteration 1**: Fix high-impact issues
-  - Run evaluation, identify top failure patterns
-  - Add 3-5 new templates OR improve existing ones
-  - Target: +20-30 questions passing
-
-- [ ] **Iteration 2**: Fix medium-impact issues
-  - Address entity extraction gaps
-  - Improve parameter mapping
+#### Exit Criteria
+- [ ] Simple tier ≥50% coverage with quality=5
+- [ ] Medium tier pilot (>30% quality=5) ready for next iteration
+- [ ] Regression alarms when template answers drift from parquet data
+- [ ] Documented playbook for updating expected answers safely
   - Target: +15-20 questions passing
 
 - [ ] **Iteration 3**: Reach 50% threshold

@@ -4,10 +4,12 @@ Tests for SQL generation from entities and templates.
 
 import pytest
 from src.sql_generator import SQLGenerator
-from src.models import ExtractedEntities, LLMResponse
+from src.models import ExtractedEntities, LLMResponse, SQLValidationVerdict
 from src.telemetry import create_request_context
 from src.query_engine import QueryEngine
 from src.entity_extractor import normalize_company_name
+from src.prompts import get_sql_custom_generation_prompt
+from src.schema_docs import schema_for_prompt
 
 
 def test_sector_count_template():
@@ -114,7 +116,12 @@ def test_generate_custom_sql_helper(monkeypatch):
 
     mock_response = LLMResponse(
         success=True,
-        generated_sql="SELECT 1 FROM num LIMIT 1",
+        generated_sql=(
+            "SELECT COUNT(*) AS cnt "
+            "FROM sub s "
+            "JOIN num n ON n.adsh = s.adsh "
+            "LIMIT 1"
+        ),
         explanation="demo",
         confidence=0.8,
         processing_time_ms=120,
@@ -131,6 +138,16 @@ def test_generate_custom_sql_helper(monkeypatch):
 
         def is_available(self):
             return True
+
+        def validate_sql_semantic(self, request, instructions, input_prompt):
+            return SQLValidationVerdict(
+                success=True,
+                is_valid=True,
+                reason=None,
+                confidence=0.9,
+                processing_time_ms=50,
+                token_usage={"prompt_tokens": 12, "completion_tokens": 4, "total_tokens": 16},
+            )
 
     import src.azure_client as azure_module
 
@@ -151,6 +168,9 @@ def test_generate_custom_sql_helper(monkeypatch):
     assert result.generation_method == "llm_custom"
     stages = [call["stage"] for call in context.metadata.get("llm_calls", [])]
     assert "custom_sql" in stages
+    attempts = context.metadata.get("custom_sql_attempts", [])
+    assert attempts and attempts[0]["success"] is True
+    assert "JOIN num n ON n.adsh = s.adsh" in attempts[0]["sql"]
 
 
 def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
@@ -176,6 +196,16 @@ def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
         def is_available(self):
             return True
 
+        def validate_sql_semantic(self, request, instructions, input_prompt):
+            return SQLValidationVerdict(
+                success=True,
+                is_valid=True,
+                reason=None,
+                confidence=0.9,
+                processing_time_ms=40,
+                token_usage={"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13},
+            )
+
     import src.azure_client as azure_module
 
     monkeypatch.setattr(
@@ -193,6 +223,56 @@ def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
 
     assert result is None
     assert context.metadata.get("llm_calls") is None
+    attempts = context.metadata.get("custom_sql_attempts", [])
+    assert attempts and attempts[0]["success"] is False
+    assert "Disallowed keyword" in attempts[0]["failure_reason"]
+
+
+def test_validate_sql_rejects_unknown_tables():
+    generator = SQLGenerator(use_llm=False)
+    is_valid, reason = generator.validate_sql("SELECT * FROM imaginary_table")
+    assert not is_valid
+    assert "Unknown tables" in reason
+
+
+def test_validate_sql_requires_sub_join_for_num():
+    generator = SQLGenerator(use_llm=False)
+    is_valid, reason = generator.validate_sql("SELECT n.value FROM num n WHERE n.tag = 'Revenues'")
+    assert not is_valid
+    assert "join through SUB" in reason
+
+
+def test_validate_sql_accepts_simple_companies_query():
+    generator = SQLGenerator(use_llm=False)
+    sql = "SELECT name FROM companies WHERE gics_sector = 'Energy'"
+    is_valid, reason = generator.validate_sql(sql)
+    assert is_valid
+    assert reason is None
+
+
+def test_custom_sql_prompt_includes_examples_and_hints():
+    schema = schema_for_prompt()
+    constraints = "- Use registered views only\n- Keep results small"
+    prompt_parts = get_sql_custom_generation_prompt(
+        question="How many Energy companies have revenue above $1 billion?",
+        entities={
+            "sectors": ["Energy"],
+            "metrics": ["revenue"],
+            "question_type": "count",
+        },
+        schema=schema,
+        constraints=constraints,
+        domain_hints={"threshold": "> 1 billion USD"},
+    )
+
+    instructions = prompt_parts["instructions"]
+    input_prompt = prompt_parts["input"]
+
+    assert "DuckDB" in instructions
+    assert "Energy" in input_prompt
+    assert "Examples" in input_prompt
+    assert "threshold" in input_prompt.lower()
+    assert "```sql" in input_prompt
 
 
 @pytest.mark.parametrize(

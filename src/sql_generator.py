@@ -6,7 +6,7 @@ Phase 1: Hybrid template selection (deterministic + LLM-assisted)
 """
 
 import re
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Any
 import json
 import time
 from src.models import (
@@ -23,6 +23,7 @@ from src.telemetry import get_logger, RequestContext, log_component_timing
 from src.config import get_config
 from src.prompts import get_template_selection_prompt
 from src import schema_docs
+from src.sql_validator import SQLValidator
 from src.entity_extractor import normalize_company_name
 from src.query_engine import quick_query
 from src.query_engine import QueryEngine
@@ -62,6 +63,8 @@ class SQLGenerator:
             self.logger.info(
                 "SQLGenerator initialized (deterministic template selection only)"
             )
+
+        self.validator = SQLValidator(use_llm=self.use_llm)
 
     def generate(
         self, entities: ExtractedEntities, question: str, context: RequestContext
@@ -699,24 +702,63 @@ class SQLGenerator:
 
         try:
             entity_payload = entities.model_dump()
+            domain_hints = self._build_domain_hints(question, entities)
+            request_context = {
+                "entities": entity_payload,
+                "schema": schema_docs.schema_for_prompt(),
+            }
+            if domain_hints:
+                request_context["domain_hints"] = domain_hints
+
             llm_request = LLMRequest(
                 query=question,
-                context={
-                    "entities": entity_payload,
-                    "schema": schema_docs.schema_for_prompt(),
-                },
+                context=request_context,
+                similar_queries=context.metadata.get("similar_queries", []),
+                template_attempts=context.metadata.get("template_attempts", []),
             )
 
             response = self.azure_client.generate_sql(llm_request)
 
+            attempt_record = {
+                "sql": response.generated_sql,
+                "confidence": response.confidence,
+                "token_usage": response.token_usage,
+                "latency_ms": response.processing_time_ms,
+            }
+
             if not response.success or not response.generated_sql:
+                attempt_record["success"] = False
+                attempt_record["failure_reason"] = (
+                    response.explanation or "LLM response missing SQL"
+                )
+                context.metadata.setdefault("custom_sql_attempts", []).append(
+                    attempt_record
+                )
                 self.logger.warning(
                     "Custom SQL generation failed: %s", response.explanation
                 )
                 return None
 
-            if not self.validate_sql(response.generated_sql):
-                self.logger.warning("Generated SQL failed validation checks")
+            validation_ok, validation_reason, validation_confidence = self.validator.validate(
+                response.generated_sql,
+                question,
+                entities.model_dump(),
+                context,
+            )
+
+            attempt_record["success"] = response.success and validation_ok
+            attempt_record["validation_confidence"] = validation_confidence
+            if validation_reason:
+                attempt_record["failure_reason"] = validation_reason
+
+            context.metadata.setdefault("custom_sql_attempts", []).append(
+                attempt_record
+            )
+
+            if not validation_ok:
+                self.logger.warning(
+                    "Generated SQL failed validation checks: %s", validation_reason
+                )
                 return None
 
             llm_calls = context.metadata.setdefault("llm_calls", [])
@@ -741,7 +783,7 @@ class SQLGenerator:
             self.logger.error(f"Unexpected error generating custom SQL: {exc}")
             return None
 
-    def validate_sql(self, sql: str) -> bool:
+    def validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
         """
         Basic SQL validation.
 
@@ -749,38 +791,101 @@ class SQLGenerator:
             sql: SQL query string
 
         Returns:
-            True if valid, False otherwise
+            Tuple of (is_valid, failure_reason)
         """
-        # Basic checks
-        if not sql or not sql.strip():
-            return False
+        return self.validator.validate_static(sql)
 
-        sql_upper = sql.upper().strip()
+    def _build_domain_hints(
+        self, question: str, entities: ExtractedEntities
+    ) -> Dict[str, Any]:
+        """Derive lightweight domain hints to steer custom SQL generation."""
 
-        # Must start with SELECT
-        if not sql_upper.startswith("SELECT"):
-            return False
+        hints: Dict[str, Any] = {}
+        question_lower = question.lower()
 
-        # Must contain FROM
-        if "FROM" not in sql_upper:
-            return False
+        if entities.metrics:
+            hints["metrics"] = entities.metrics
+            tag_map: Dict[str, List[str]] = {}
+            for metric in entities.metrics:
+                tags = schema_docs.COMMON_METRIC_TAGS.get(metric.lower())
+                if tags:
+                    tag_map[metric] = tags
+            if tag_map:
+                hints["metric_tags"] = tag_map
 
-        # Should not contain dangerous keywords (for read-only safety)
-        dangerous = [
-            "DROP",
-            "DELETE",
-            "INSERT",
-            "UPDATE",
-            "ALTER",
-            "CREATE",
-            "TRUNCATE",
-        ]
-        for keyword in dangerous:
-            if keyword in sql_upper:
-                self.logger.error(f"SQL contains dangerous keyword: {keyword}")
-                return False
+        if entities.companies:
+            hints["companies"] = entities.companies
 
-        return True
+        if entities.sectors:
+            hints["sectors"] = entities.sectors
+
+        if entities.time_periods:
+            hints["time_periods"] = entities.time_periods
+
+        if entities.question_type:
+            hints["question_type"] = entities.question_type
+
+        threshold = self._extract_threshold_hint(question_lower)
+        if threshold:
+            hints["threshold"] = threshold
+
+        ordering = self._extract_ordering_hint(question_lower)
+        if ordering:
+            hints["ordering"] = ordering
+
+        currency_match = re.search(
+            r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", question_lower
+        )
+        if currency_match:
+            hints["currency_filter"] = f"Filter num.uom for '{currency_match.group(1).upper()}'"
+
+        if "per share" in question_lower or "per-share" in question_lower:
+            hints["unit_context"] = "Question references per-share metrics; consider num.uom = 'shares'."
+
+        if "segment" in question_lower or "by segment" in question_lower:
+            hints["segment_context"] = (
+                "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
+            )
+
+        return hints
+
+    @staticmethod
+    def _extract_threshold_hint(question_lower: str) -> Optional[str]:
+        """Detect numeric thresholds in the question for prompt guidance."""
+        match = re.search(
+            r"(over|above|greater than|at least|exceeding|more than)\s+\$?([\d,.,]+)\s*(trillion|billion|million|thousand|bn|m|k|percent|%)?",
+            question_lower,
+        )
+        if not match:
+            return None
+
+        comparator = match.group(1)
+        value = match.group(2)
+        scale = match.group(3) or ""
+        normalized_scale = scale.lower()
+        if normalized_scale in {"bn"}:
+            normalized_scale = "billion"
+        elif normalized_scale in {"m"}:
+            normalized_scale = "million"
+        elif normalized_scale in {"k"}:
+            normalized_scale = "thousand"
+
+        return f"{comparator} {value} {normalized_scale}".strip()
+
+    @staticmethod
+    def _extract_ordering_hint(question_lower: str) -> Optional[str]:
+        """Detect ordering intent (e.g., top/bottom results)."""
+        if any(
+            keyword in question_lower
+            for keyword in ["top", "largest", "highest", "biggest", "most"]
+        ):
+            return "Use ORDER BY metric DESC with LIMIT to surface top results."
+        if any(
+            keyword in question_lower
+            for keyword in ["smallest", "lowest", "least", "bottom"]
+        ):
+            return "Use ORDER BY metric ASC with LIMIT to surface bottom results."
+        return None
 
 
 # Global instance

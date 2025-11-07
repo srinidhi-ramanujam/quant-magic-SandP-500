@@ -10,6 +10,8 @@ This module contains all prompts for the 4-stage LLM pipeline:
 All prompts are designed for Azure OpenAI gpt-5 deployment with structured output.
 """
 
+import re
+from textwrap import dedent
 from typing import List, Dict, Optional, Any
 
 
@@ -400,27 +402,334 @@ JSON Response:"""
     return prompt
 
 
-def get_sql_template_population_prompt(
-    template: Dict[str, Any], entities: Dict[str, Any]
+CUSTOM_SQL_FEW_SHOT_EXAMPLES = [
+    {
+        "question": "What was Apple's revenue in the latest fiscal year?",
+        "sql": dedent(
+            """
+            WITH company AS (
+                SELECT cik
+                FROM companies
+                WHERE UPPER(name) LIKE UPPER('%APPLE INC%')
+                LIMIT 1
+            ),
+            latest_filing AS (
+                SELECT s.adsh, s.period
+                FROM sub s
+                WHERE s.cik = (SELECT cik FROM company)
+                  AND s.form IN ('10-K', '10-K/A')
+                ORDER BY s.period DESC, s.filed DESC
+                LIMIT 1
+            )
+            SELECT n.value AS revenue_usd,
+                   n.ddate AS period_end
+            FROM latest_filing lf
+            JOIN num n ON n.adsh = lf.adsh
+            WHERE n.tag IN ('Revenues', 'SalesRevenueNet')
+              AND n.qtrs IN (0, 4)
+            ORDER BY n.ddate DESC
+            LIMIT 1
+            """
+        ).strip(),
+        "explanation": "Join companies → sub → num, filter latest 10-K, use canonical revenue tags.",
+    },
+    {
+        "question": "How many companies reported gross margin above 50%?",
+        "sql": dedent(
+            """
+            WITH latest_filing AS (
+                SELECT cik, adsh
+                FROM (
+                    SELECT cik,
+                           adsh,
+                           period,
+                           filed,
+                           ROW_NUMBER() OVER (PARTITION BY cik ORDER BY period DESC, filed DESC) AS rn
+                    FROM sub
+                    WHERE form IN ('10-K', '10-K/A')
+                )
+                WHERE rn = 1
+            ),
+            metrics AS (
+                SELECT lf.cik,
+                       MAX(CASE WHEN n.tag IN ('Revenues', 'SalesRevenueNet') THEN n.value END) AS revenue,
+                       MAX(CASE WHEN n.tag = 'CostOfRevenue' THEN n.value END) AS cost_of_revenue
+                FROM latest_filing lf
+                JOIN num n ON n.adsh = lf.adsh
+                WHERE n.qtrs IN (0, 4)
+                  AND (n.segments IS NULL OR TRIM(n.segments) = '')
+                  AND n.ddate = (
+                      SELECT MAX(n2.ddate)
+                      FROM num n2
+                      WHERE n2.adsh = lf.adsh
+                        AND n2.tag = n.tag
+                        AND n2.qtrs IN (0, 4)
+                  )
+                GROUP BY lf.cik
+            )
+            SELECT COUNT(*) AS company_count
+            FROM metrics
+            WHERE revenue IS NOT NULL
+              AND cost_of_revenue IS NOT NULL
+              AND (revenue - cost_of_revenue) / revenue > 0.50
+            """
+        ).strip(),
+        "explanation": "Reference latest 10-K data, compute gross margin with annual facts, guard against NULLs.",
+    },
+    {
+        "question": "Which sector has the largest number of S&P 500 companies?",
+        "sql": dedent(
+            """
+            SELECT gics_sector,
+                   COUNT(*) AS company_count
+            FROM companies
+            WHERE gics_sector IS NOT NULL
+            GROUP BY gics_sector
+            ORDER BY company_count DESC
+            LIMIT 1
+            """
+        ).strip(),
+        "explanation": "Pure companies table aggregation with ordering to surface the leading sector.",
+    },
+]
+
+
+def _render_domain_hints(
+    question: str, entities: Dict[str, Any], domain_hints: Optional[Dict[str, Any]] = None
 ) -> str:
-    """Generate prompt for Stage 3: SQL Generation (template-based) (TODO: Implement in Stage 3)."""
-    raise NotImplementedError("Stage 3: SQL Generation - to be implemented")
+    """Render domain-specific hints for the custom SQL prompt."""
+    hints: List[str] = []
+
+    if entities.get("metrics"):
+        metrics = ", ".join(sorted(set(entities["metrics"])))
+        hints.append(f"Metrics of interest: {metrics}")
+
+    if entities.get("time_periods"):
+        periods = ", ".join(entities["time_periods"])
+        hints.append(f"Time context: {periods} (latest implies most recent filing)")
+
+    if entities.get("sectors"):
+        sectors = ", ".join(entities["sectors"])
+        hints.append(f"Sector filter required: {sectors}")
+
+    if entities.get("question_type"):
+        hints.append(f"Question type: {entities['question_type']}")
+
+    if domain_hints:
+        for key, value in domain_hints.items():
+            if isinstance(value, (list, tuple, set)):
+                joined = ", ".join(str(item) for item in value)
+                hints.append(f"{key.replace('_', ' ').title()}: {joined}")
+            else:
+                hints.append(f"{key.replace('_', ' ').title()}: {value}")
+
+    lowercase_q = question.lower()
+    if any(keyword in lowercase_q for keyword in ["latest", "recent", "most recent"]):
+        hints.append("Use latest filings (ORDER BY period DESC, filed DESC) when applicable.")
+
+    if any(keyword in lowercase_q for keyword in ["top", "largest", "highest", "biggest"]):
+        hints.append("Likely need ORDER BY metric DESC with LIMIT clause.")
+
+    if any(keyword in lowercase_q for keyword in ["lowest", "smallest", "least"]):
+        hints.append("Likely need ORDER BY metric ASC with LIMIT clause.")
+
+    threshold_match = re.search(
+        r"(over|above|greater than|exceeding)\s+\$?([\d,.,]+)\s*(trillion|billion|million|thousand|bn|m|k)?",
+        lowercase_q,
+    )
+    if threshold_match:
+        hints.append(
+            f"Threshold detected: {threshold_match.group(2)} {threshold_match.group(3) or ''}".strip()
+        )
+
+    currency_match = re.search(r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", lowercase_q)
+    if currency_match:
+        hints.append(f"Filter unit of measure (`num.uom`) for '{currency_match.group(1).upper()}'.")
+
+    return "\n".join(f"- {hint}" for hint in hints) if hints else "- No additional hints detected."
+
+
+def _render_few_shot_examples() -> str:
+    """Render curated few-shot examples for the custom SQL generator."""
+    blocks = []
+    for example in CUSTOM_SQL_FEW_SHOT_EXAMPLES:
+        blocks.append(
+            dedent(
+                f"""
+                ### Example: {example['question']}
+                ```sql
+                {example['sql']}
+                ```
+                Why this works: {example['explanation']}
+                """
+            ).strip()
+        )
+    return "\n\n".join(blocks)
+
+
+def _render_failed_templates(template_attempts: Optional[List[Dict[str, Any]]]) -> str:
+    """Summarize template attempts to help the LLM avoid repeated mistakes."""
+    if not template_attempts:
+        return "None"
+
+    summaries = []
+    for attempt in template_attempts:
+        template_id = attempt.get("template_id", "unknown")
+        reason = attempt.get("reason", "no reason provided")
+        summaries.append(f"- {template_id}: {reason}")
+    return "\n".join(summaries)
 
 
 def get_sql_custom_generation_prompt(
-    question: str, entities: Dict[str, Any], schema: str
-) -> str:
-    """Generate prompt for Stage 3: SQL Generation (custom SQL) (TODO: Implement in Stage 3)."""
-    raise NotImplementedError("Stage 3: SQL Generation - to be implemented")
+    question: str,
+    entities: Dict[str, Any],
+    schema: str,
+    constraints: str,
+    *,
+    domain_hints: Optional[Dict[str, Any]] = None,
+    similar_queries: Optional[List[Dict[str, Any]]] = None,
+    template_attempts: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, str]:
+    """
+    Build instructions and input prompt for custom SQL generation.
+
+    Returns:
+        Dict with `instructions` and `input` keys ready for Azure Responses API.
+    """
+
+    instructions = dedent(
+        """
+        You are an elite DuckDB SQL analyst specializing in SEC EDGAR data.
+        Follow these rules with zero exceptions:
+        1. Produce read-only SQL (SELECT statements only).
+        2. Join numeric facts through SUB (num.adsh = sub.adsh) before linking to COMPANIES.
+        3. Prefer latest 10-K/10-Q filings (form in ('10-K','10-K/A','10-Q','10-Q/A')) unless a specific period is specified.
+        4. Use canonical tag names from the schema (e.g., Revenues, NetIncomeLoss, Assets).
+        5. Filter out segmented data unless dimensions are explicitly requested (`num.segments IS NULL OR TRIM(num.segments) = ''`).
+        6. CIKs are zero-padded 10-character strings; use companies.cik or sub.cik rather than num.cik (which does not exist).
+        7. Alias columns with business-friendly names and keep result sets compact (LIMIT when appropriate).
+        8. Never invent tables or columns not present in the schema description.
+        9. Return the SQL inside a ```sql code block followed by a brief explanation paragraph.
+        """
+    ).strip()
+
+    rendered_examples = _render_few_shot_examples()
+    domain_hint_text = _render_domain_hints(question, entities or {}, domain_hints)
+    failed_templates_text = _render_failed_templates(template_attempts)
+
+    similar_text = "None"
+    if similar_queries:
+        rendered = []
+        for item in similar_queries[:3]:
+            rendered.append(
+                f"- Q: {item.get('question', 'unknown')} | SQL: {item.get('sql', 'n/a')}"
+            )
+        if rendered:
+            similar_text = "\n".join(rendered)
+
+    input_prompt = dedent(
+        f"""
+        ### Task
+        Generate a DuckDB-compatible SQL query that answers the user's question.
+
+        ### User Question
+        {question}
+
+        ### Extracted Entities
+        {entities or {}}
+
+        ### Domain Hints
+        {domain_hint_text}
+
+        ### Schema Reference
+        {schema}
+
+        ### Generation Constraints
+        {constraints.strip()}
+
+        ### Prior Template Attempts
+        {failed_templates_text}
+
+        ### Similar Query Archive
+        {similar_text}
+
+        ### Examples
+        {rendered_examples}
+
+        ### Output Requirements
+        - Provide the SQL within a ```sql code block.
+        - Follow with a concise explanation (2-3 sentences) summarizing the approach and key filters.
+        - Do not include any other commentary.
+        """
+    ).strip()
+
+    return {"instructions": instructions, "input": input_prompt}
 
 
 def get_sql_syntax_validation_prompt(sql: str) -> str:
-    """Generate prompt for Stage 4: SQL Validation Pass 1 (syntax) (TODO: Implement in Stage 4)."""
-    raise NotImplementedError("Stage 4: SQL Validation - to be implemented")
+    """Return a human-readable summary of syntax checks performed in code."""
+    return dedent(
+        f"""
+        Static SQL checks performed prior to execution:
+        - Ensure statement begins with SELECT.
+        - Confirm a FROM clause exists.
+        - Reject multiple statements or trailing content after semicolons.
+        - Restrict access to registered views: companies, sub, num, tag, pre.
+        - Enforce NUM joins through SUB and disallow dangerous DDL/DML keywords.
+
+        Reviewed SQL:
+        ```sql
+        {sql}
+        ```
+        """
+    ).strip()
 
 
 def get_sql_semantic_validation_prompt(
-    sql: str, question: str, entities: Dict[str, Any]
-) -> str:
-    """Generate prompt for Stage 4: SQL Validation Pass 2 (semantics) (TODO: Implement in Stage 4)."""
-    raise NotImplementedError("Stage 4: SQL Validation - to be implemented")
+    sql: str,
+    question: str,
+    entities: Dict[str, Any],
+    schema_markdown: str,
+) -> Dict[str, str]:
+    """Generate prompt package for Stage 4 semantic SQL validation."""
+
+    instructions = dedent(
+        """
+        You are reviewing a DuckDB SQL query for alignment with a financial analytics question.
+        Carefully inspect the SQL and decide if it correctly answers the question while staying
+        within the provided schema. Follow these rules strictly:
+        1. Only mark queries valid when they answer the question fully and use the schema correctly.
+        2. Flag issues such as wrong filters, missing joins, incorrect aggregations, or misuse of tags.
+        3. Return a JSON object with the following fields:
+           {
+             "is_valid": true/false,
+             "reason": "Short explanation of the verdict",
+             "confidence": 0.0-1.0,
+             "warnings": ["optional, list of non-blocking warnings"]
+           }
+        4. Confidence should be lower if there is uncertainty or partial coverage.
+        5. Do not generate alternative SQL; focus on the evaluation only.
+        """
+    ).strip()
+
+    input_prompt = dedent(
+        f"""
+        ### User Question
+        {question}
+
+        ### Extracted Entities
+        {entities}
+
+        ### Schema Reference
+        {schema_markdown}
+
+        ### SQL Under Review
+        ```sql
+        {sql}
+        ```
+
+        Respond ONLY with the JSON object described above. Do not include commentary.
+        """
+    ).strip()
+
+    return {"instructions": instructions, "input": input_prompt}
