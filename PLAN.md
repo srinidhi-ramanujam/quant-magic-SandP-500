@@ -244,6 +244,9 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 3. Add focused unit tests per family that validate metric math against DuckDB snapshots.
 4. Re-run `scripts/run_eval_suite.py --suite time_series` and append telemetry to `evaluation/EVAL_WORKBOOK.csv`.
 
+**Progress (Nov 10)**
+- Ground-truthed TS_001 using a DuckDB profit-margin consistency query; JSON + validator entries now include the exact SQL, sample data, and insights, so the `profit_margin_consistency_trend` template has a concrete reference implementation.
+
 ---
 
 ### Phase 2D: Hybrid Retrieval Initiative (Next)

@@ -64,7 +64,7 @@
       "difficulty": "medium",
       "category": "profitability",
       "business_context": "Long-term profitability analysis for technology investment strategy and competitive positioning assessment",
-      "time_span": "5 years",
+      "time_span": "FY2019-FY2023",
       "expected_semantic_match_types": [
         "profitability analysis",
         "technology sector analysis",
@@ -86,8 +86,8 @@
       },
       "expected_answer": {
         "type": "multi_year_analysis",
-        "validation_method": "time_series_sql_query",
-        "answer_pattern": "Technology companies ranked by profitability consistency with 5-year data",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Rank technology companies by 5-year profit margin improvement and monotonic consistency.",
         "format": "Multi-year table with profit margins",
         "visualization": "Line chart showing profit margin trends",
         "data_table": {
@@ -98,76 +98,75 @@
             "2021_Margin_%",
             "2022_Margin_%",
             "2023_Margin_%",
-            "5Yr_Improvement",
-            "Consistency_Score"
+            "5Yr_Improvement_pp",
+            "Consistency_Steps"
           ],
           "sample_data": [
             [
-              "Apple Inc",
-              "21.2",
-              "20.9",
-              "25.9",
-              "25.3",
-              "26.1",
-              "+4.9%",
-              "9.2"
+              "ON Semiconductor",
+              "3.84",
+              "4.46",
+              "14.98",
+              "22.85",
+              "26.46",
+              "+22.62",
+              "4 / 4"
             ],
             [
-              "Microsoft Corp",
-              "15.2",
-              "17.0",
-              "22.2",
-              "23.7",
-              "24.3",
-              "+9.1%",
-              "8.8"
+              "Automatic Data Processing",
+              "16.17",
+              "16.91",
+              "17.32",
+              "17.87",
+              "18.94",
+              "+2.77",
+              "4 / 4"
             ],
             [
-              "NVIDIA Corp",
-              "12.8",
-              "15.3",
-              "26.0",
-              "32.0",
-              "28.5",
-              "+15.7%",
-              "7.5"
+              "Emerson Electric",
+              "12.55",
+              "11.70",
+              "12.61",
+              "16.45",
+              "87.17",
+              "+74.62",
+              "3 / 4"
             ],
             [
-              "Adobe Inc",
-              "18.9",
-              "22.1",
-              "23.5",
-              "24.8",
-              "26.2",
-              "+7.3%",
-              "8.9"
+              "Uber Technologies",
+              "-60.13",
+              "-54.48",
+              "-2.84",
+              "-28.68",
+              "5.06",
+              "+65.19",
+              "3 / 4"
             ],
             [
-              "Salesforce Inc",
-              "2.1",
-              "17.7",
-              "18.9",
-              "19.2",
-              "20.4",
-              "+18.3%",
-              "7.2"
+              "First Solar",
+              "-3.75",
+              "14.69",
+              "16.03",
+              "-1.69",
+              "25.03",
+              "+28.78",
+              "3 / 4"
             ]
           ]
         },
-        "business_insight": "Technology leaders demonstrate distinct profitability patterns: Apple maintains premium margins through ecosystem lock-in, Microsoft benefits from recurring cloud revenue, while NVIDIA shows explosive growth driven by AI demand. Companies with subscription models (Microsoft, Adobe, Salesforce) show more consistent improvement than hardware-dependent firms.",
+        "business_insight": "Semiconductor suppliers and recurring-revenue platforms are the only tech cohorts delivering four straight years of margin improvement; heavy transformation stories still show volatility but the slope is finally positive.",
         "key_findings": [
-          "NVIDIA leads in absolute margin improvement (+15.7%) driven by AI/datacenter demand",
-          "Microsoft shows most consistent growth pattern with cloud transition maturity",
-          "Apple maintains highest absolute margins (26.1%) with strong brand premium",
-          "Subscription-based software companies outperform hardware companies in consistency",
-          "Post-COVID digital transformation accelerated profitability for cloud leaders"
+          "ON Semiconductor expanded net profit margin from 3.84% in FY2019 to 26.46% in FY2023 (+22.62pp) thanks to silicon-carbide mix and disciplined capex, delivering 4/4 positive steps.",
+          "ADP inched margins from 16.17% to 18.94% with subscription automation and pricing lift\u2014steady 0.5-0.7pp annual gains make it the benchmark compounder.",
+          "Uber swung from -60% to +5% margins as take rates and cost leverage improved post-pandemic; volatility remains but the profitability breakthrough is tangible.",
+          "Emerson\u2019s FY2023 margin spike to 87.17% is tied to asset divestiture gains, highlighting the need to flag non-recurring uplift when ranking \u201cimprovements.\u201d"
         ],
         "investment_implications": [
-          "Companies with recurring revenue models show more predictable margin expansion",
-          "AI infrastructure providers (NVIDIA) offer highest growth but more volatility",
-          "Mature platforms (Apple, Microsoft) provide stable margin profiles for conservative investors",
-          "Cloud transformation leaders positioned for continued profitability growth"
-        ]
+          "Focus on firms showing structural, not just cyclical, margin expansion (ADP, ON Semi) for core holdings.",
+          "Turnaround names (Uber, First Solar) carry higher volatility but can rapidly add 25-65pp of margin once scale and mix inflect; size positions accordingly.",
+          "CFO teams should annotate one-time gains (e.g., Emerson disposals) before feeding automated storytellers, so downstream answers stay decision grade."
+        ],
+        "sample_analysis": "WITH tech_companies AS (\n    SELECT DISTINCT cik, name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Information Technology'\n),\nbase_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN tech_companies t USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nfilings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM base_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT f.cik, f.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM filings f\n    JOIN read_parquet('data/parquet/num.parquet') n\n      ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n    SELECT t.name, v.cik, v.fiscal_year, v.net_income, v.revenue,\n           v.net_income / NULLIF(v.revenue, 0) AS profit_margin\n    FROM values v\n    JOIN tech_companies t ON v.cik = t.cik\n    WHERE v.net_income IS NOT NULL\n      AND v.revenue IS NOT NULL\n),\nordered AS (\n    SELECT m.*,\n           LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin,\n           LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year\n    FROM margins m\n)\nSELECT name,\n       ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END)*100, 2) AS margin_2019_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END)*100, 2) AS margin_2020_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END)*100, 2) AS margin_2021_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END)*100, 2) AS margin_2022_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END)*100, 2) AS margin_2023_pct,\n       ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))*100, 2) AS improvement_pct,\n       SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps\nFROM ordered\nGROUP BY name\nHAVING COUNT(DISTINCT fiscal_year) = 5\nORDER BY consistency_steps DESC, improvement_pct DESC, name\nLIMIT 5;"
       },
       "max_response_time_ms": 15000
     },
