@@ -268,6 +268,37 @@ class ResponseFormatter:
 
             return "Top FY2021-FY2023 deleveragers:\n" + "\n".join(bullets)
 
+        if template_id == "profit_margin_consistency_trend":
+            if query_result.row_count == 0:
+                return "No profitability improvements were found for the requested period."
+            data = query_result.data
+            if not isinstance(data, pd.DataFrame):
+                return None
+
+            rows = data.head(5)
+            bullets = []
+            for idx, row in rows.iterrows():
+                name = row.get("name", "Unknown company")
+                start_margin = self._format_percentage(
+                    self._get_first_value(row, ["margin_2019_pct"]), signed=False
+                )
+                end_margin = self._format_percentage(
+                    self._get_first_value(row, ["margin_2023_pct"]), signed=False
+                )
+                improvement = self._format_percentage(
+                    self._get_first_value(row, ["improvement_pct"]), signed=True
+                )
+                consistency = row.get("consistency_steps", "0")
+                bullets.append(
+                    f"{len(bullets)+1}) {name}: {start_margin} (2019) → "
+                    f"{end_margin} (2023) {improvement} | "
+                    f"Consistency steps: {consistency}"
+                )
+
+            return "Top Technology profit margin improvers (FY2019-FY2023):\n" + "\n".join(
+                bullets
+            )
+
         return None
 
     @staticmethod
