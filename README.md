@@ -372,6 +372,19 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
   - Validator pass rate for true custom SQL calls.
 - See `PLAN.md` for detailed deliverables and thresholds; embedding refresh instructions will land once the feature is implemented.
 
+### Catalog-Driven Retrieval (Phase 2D)
+- Editable catalogs live under `data/entities.json` and `data/template_intents.json`. Update these files to add new entity synonyms or template intents.
+- After editing, regenerate the FAISS indexes:
+  1. `python scripts/export_template_intents.py` (populates `data/template_intents.json` from `query_intelligence.parquet`)
+  2. `python scripts/build_vector_store.py` (writes embeddings + metadata into `artifacts/vector_store/`)
+- Runtime flow:
+  1. **User query** enters via CLI/API.
+  2. **EntityExtractor** runs deterministic heuristics, then asks `HybridEntityRetriever` (FAISS index + MiniLM) to fill missing slots (sectors, metrics, question type). LLM fallback is only used if both paths fail.
+  3. **SQLGenerator** does deterministic regex/template matching; if no template is found it consults `TemplateIntentRetriever` (same FAISS store) to pick the best template intent. LLM template-selection is now reserved for genuinely novel intents.
+  4. **Template SQL** is populated with extracted parameters, validated by `SQLValidator` (static + semantic passes).
+  5. **Query execution** happens in DuckDB via `QueryEngine`, returning a pandas DataFrame.
+  6. **ResponseFormatter** formats the result (count, lookup, table) and attaches telemetry (latency, validator result). The CLI or API returns the final answer.
+
 ### Commit & PR Expectations
 - Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise present-tense summaries under 72 characters.
 - Document scope, verification commands (`pytest ...`, CLI demos), and link roadmap items or issues.
