@@ -246,6 +246,7 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 
 **Progress (Nov 10)**
 - Ground-truthed TS_001 using a DuckDB profit-margin consistency query; JSON + validator entries now include the exact SQL, sample data, and insights, so the `profit_margin_consistency_trend` template has a concrete reference implementation.
+- Registered `profit_margin_consistency_trend` in the template catalog / metadata / FAISS store so hybrid retrieval can route Technology profit-margin questions without falling back to the LLM.
 
 ---
 

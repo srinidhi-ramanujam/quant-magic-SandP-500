@@ -335,6 +335,21 @@
     }
   },
   {
+    "template_id": "profit_margin_consistency_trend",
+    "intent_text": "Rank sector companies by five-year profit margin improvement and consistency",
+    "pattern": "(?i)(which|what).*(technology|tech|software|sector).*(profit|margin).*(improv|consisten).*(5|five).*year",
+    "example_questions": [
+      "Which Technology companies have shown the most consistent profitability improvement over the last five years?",
+      "Rank cloud software firms by five-year profit margin expansion."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
     "template_id": "net_margin_trend",
     "intent_text": "Track net profit margin evolution over time",
     "pattern": "(show|calculate|analyze).*(net |profit )?margin.*(trend|over time)",
