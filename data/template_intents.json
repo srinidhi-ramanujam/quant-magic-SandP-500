@@ -350,6 +350,23 @@
     }
   },
   {
+    "template_id": "operating_margin_delta",
+    "intent_text": "Rank sector companies by operating margin improvement between two fiscal years",
+    "pattern": "(?i)(which|what).*(company|companies).*(operating margin).*(improv|expand|increase).*(20\\d{2}).*(20\\d{2})",
+    "example_questions": [
+      "Which Technology companies expanded operating margins the most between FY2022 and FY2023?",
+      "Which Financials companies posted the largest operating margin rebound year over year?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
     "template_id": "debt_reduction_progression",
     "intent_text": "Rank companies by multi-year debt reduction",
     "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",

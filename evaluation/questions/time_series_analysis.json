@@ -362,108 +362,87 @@
     {
       "id": "TS_005",
       "category": "profitability",
-      "difficulty": "hard",
-      "question": "Analyze the quarterly operating margin progression for Consumer Discretionary companies over the last 8 quarters, highlighting seasonal patterns.",
+      "difficulty": "medium",
+      "question": "Which Technology companies expanded operating margins the most between FY2022 and FY2023?",
       "expected_answer": {
-        "format": "Quarterly operating margins with seasonal analysis",
-        "visualization": "Heat map showing seasonal profitability patterns",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  EXTRACT(QUARTER FROM f.period_end_date) as quarter,\n  ROUND((f.operating_income_loss / NULLIF(f.revenues, 0)) * 100, 1) as operating_margin_pct\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Consumer Discretionary'\n  AND c.name IN ('Amazon.com Inc', 'Tesla Inc', 'Home Depot Inc', 'Nike Inc', 'McDonald\\'s Corporation', 'Starbucks Corporation', 'Target Corporation', 'Lowe\\'s Companies Inc')\n  AND f.period_end_date >= '2022-01-01'\n  AND f.form_type = '10-Q'\n  AND f.revenues > 0 AND f.operating_income_loss IS NOT NULL\nORDER BY c.name, year, quarter;",
+        "type": "ranking_table",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Rank Technology companies by FY2022 vs FY2023 operating margin improvement (OperatingIncomeLoss / Revenue).",
+        "format": "Table with FY2022 margin, FY2023 margin, and percentage point delta",
+        "visualization": "Bar chart showing margin delta",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT DISTINCT cik, name\n    FROM companies\n    WHERE gics_sector = 'Information Technology'\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN sector_companies sc USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy IN (2022, 2023)\n),\nlatest AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM annual_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT lf.cik, lf.fiscal_year,\n           MAX(CASE WHEN n.tag = 'OperatingIncomeLoss' THEN n.value END) AS operating_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM latest lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    WHERE n.tag IN ('OperatingIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY lf.cik, lf.fiscal_year\n),\nagg AS (\n    SELECT sc.cik, ANY_VALUE(sc.name) AS display_name,\n           MAX(CASE WHEN v.fiscal_year = 2022 THEN v.operating_income / NULLIF(v.revenue, 0) END) AS margin_2022,\n           MAX(CASE WHEN v.fiscal_year = 2023 THEN v.operating_income / NULLIF(v.revenue, 0) END) AS margin_2023,\n           MAX(CASE WHEN v.fiscal_year = 2023 THEN v.revenue END) AS revenue_2023\n    FROM values v\n    JOIN sector_companies sc USING (cik)\n    GROUP BY sc.cik\n    HAVING COUNT(DISTINCT v.fiscal_year) = 2\n)\nSELECT display_name AS name,\n       ROUND(margin_2022 * 100, 2) AS margin_2022_pct,\n       ROUND(margin_2023 * 100, 2) AS margin_2023_pct,\n       ROUND((margin_2023 - margin_2022) * 100, 2) AS improvement_pp,\n       ROUND(revenue_2023 / 1000000000, 2) AS revenue_2023_b\nFROM agg\nWHERE revenue_2023 >= 5000000000\n  AND margin_2023 IS NOT NULL AND margin_2022 IS NOT NULL\nORDER BY improvement_pp DESC\nLIMIT 10;",
         "sample_data": [
           {
-            "company": "Amazon.com Inc",
-            "Q1_2022": "3.2%",
-            "Q2_2022": "2.8%",
-            "Q3_2022": "2.4%",
-            "Q4_2022": "2.7%",
-            "Q1_2023": "4.1%",
-            "Q2_2023": "5.7%",
-            "Q3_2023": "7.8%",
-            "Q4_2023": "8.2%"
+            "company": "Fidelity National Information Services",
+            "FY2022_margin": "-110.95%",
+            "FY2023_margin": "14.94%",
+            "Improvement_pp": "+125.89",
+            "FY2023_revenue": "$9.82B"
           },
           {
-            "company": "Tesla Inc",
-            "Q1_2022": "19.3%",
-            "Q2_2022": "14.6%",
-            "Q3_2022": "17.2%",
-            "Q4_2022": "16.8%",
-            "Q1_2023": "11.4%",
-            "Q2_2023": "9.6%",
-            "Q3_2023": "7.6%",
-            "Q4_2023": "8.2%"
+            "company": "NVIDIA",
+            "FY2022_margin": "18.84%",
+            "FY2023_margin": "54.12%",
+            "Improvement_pp": "+35.28",
+            "FY2023_revenue": "$60.92B"
           },
           {
-            "company": "Home Depot Inc",
-            "Q1_2022": "15.8%",
-            "Q2_2022": "15.4%",
-            "Q3_2022": "15.1%",
-            "Q4_2022": "13.9%",
-            "Q1_2023": "14.2%",
-            "Q2_2023": "13.8%",
-            "Q3_2023": "13.6%",
-            "Q4_2023": "12.4%"
+            "company": "Salesforce",
+            "FY2022_margin": "3.29%",
+            "FY2023_margin": "14.38%",
+            "Improvement_pp": "+11.09",
+            "FY2023_revenue": "$34.86B"
           },
           {
-            "company": "Nike Inc",
-            "Q1_2022": "12.9%",
-            "Q2_2022": "12.1%",
-            "Q3_2022": "9.8%",
-            "Q4_2022": "11.7%",
-            "Q1_2023": "11.6%",
-            "Q2_2023": "12.8%",
-            "Q3_2023": "10.4%",
-            "Q4_2023": "12.3%"
+            "company": "DoorDash",
+            "FY2022_margin": "-17.07%",
+            "FY2023_margin": "-6.71%",
+            "Improvement_pp": "+10.37",
+            "FY2023_revenue": "$8.64B"
           },
           {
-            "company": "McDonald's Corporation",
-            "Q1_2022": "43.2%",
-            "Q2_2022": "45.1%",
-            "Q3_2022": "46.8%",
-            "Q4_2022": "44.3%",
-            "Q1_2023": "45.7%",
-            "Q2_2023": "47.2%",
-            "Q3_2023": "48.1%",
-            "Q4_2023": "46.9%"
+            "company": "Meta Platforms (Facebook)",
+            "FY2022_margin": "36.58%",
+            "FY2023_margin": "46.60%",
+            "Improvement_pp": "+10.02",
+            "FY2023_revenue": "$134.90B"
           },
           {
-            "company": "Target Corporation",
-            "Q1_2022": "5.3%",
-            "Q2_2022": "2.2%",
-            "Q3_2022": "3.9%",
-            "Q4_2022": "3.6%",
-            "Q1_2023": "3.8%",
-            "Q2_2023": "4.6%",
-            "Q3_2023": "4.2%",
-            "Q4_2023": "4.8%"
+            "company": "Palo Alto Networks",
+            "FY2022_margin": "-3.43%",
+            "FY2023_margin": "5.62%",
+            "Improvement_pp": "+9.05",
+            "FY2023_revenue": "$6.89B"
           }
         ],
-        "business_insight": "Consumer Discretionary companies exhibit pronounced seasonal and secular margin patterns reflecting diverse business models and market positioning. McDonald's demonstrates exceptional margin stability (43-48%) due to its asset-light franchise model, while Amazon shows dramatic margin expansion from 2.4% to 8.2% as cloud services scaled and logistics efficiency improved. Tesla experienced margin compression from peak levels in early 2022 due to price competition and production scaling challenges, illustrating the volatility of high-growth manufacturing models.",
+        "business_insight": "Operating leverage gains clustered in large-cap technology platforms that either exited restructuring cycles (FIS, DoorDash) or monetized AI demand (NVIDIA, Palo Alto Networks). Salesforce and Meta achieved double-digit improvements after multi-quarter efficiency programs, proving that disciplined opex cuts now flow directly into operating income.",
         "key_findings": [
-          "Amazon achieved most dramatic margin expansion (+5.8 percentage points) through AWS growth and operational leverage",
-          "McDonald's maintained highest absolute margins (43-48%) with consistent franchise-driven profitability",
-          "Tesla experienced significant margin volatility (-11.1 percentage points peak-to-trough) due to competitive pricing pressure",
-          "Traditional retailers (Home Depot, Target) showed modest Q4 seasonal boost but declining secular trends",
-          "Nike demonstrated margin resilience with relatively stable 10-13% range despite supply chain pressures"
+          "FIS swung +126 percentage points as goodwill impairments rolled off and processing margins normalized after the fintech write-down.",
+          "NVIDIA converted datacenter-led revenue growth into a 35pp margin gain while holding operating expenses nearly flat.",
+          "Salesforce re-established mid-teens operating margins thanks to its FY2023 restructuring and mix shift toward high-margin subscription revenue.",
+          "Meta and DoorDash each improved by ~10pp despite very different models, showing that both AI-driven ad recovery and logistics scale can drive leverage.",
+          "Cybersecurity leader Palo Alto Networks crossed into positive operating margins as recurring platform revenue outpaced go-to-market spending."
         ],
         "investment_implications": [
-          "Asset-light franchise models (McDonald's) provide superior margin stability during economic cycles",
-          "Technology-enabled consumer companies (Amazon) show strongest margin expansion potential through scale",
-          "High-growth manufacturing companies (Tesla) face margin pressure during market maturation phases",
-          "Traditional retail margins face structural pressure from e-commerce and inflation costs"
+          "Platforms that pair AI demand with cost discipline (NVIDIA, Palo Alto) demonstrate repeatable operating leverage and deserve premium multiples.",
+          "Turnaround names (FIS, DoorDash) proved that restructuring actions translated into tangible margin repair, de-risking 2024 guidance.",
+          "Double-digit improvements on $5B+ revenue bases highlight CFO playbooks that can be redeployed across adjacent sectors (software, payments, cybersecurity)."
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "8 quarters",
+        "expected_data_span": "FY2022-FY2023",
         "required_metrics": [
-          "operating_margin",
-          "operating_income",
-          "revenue"
+          "OperatingIncomeLoss",
+          "Revenues",
+          "RevenueFromContractWithCustomerExcludingAssessedTax",
+          "SalesRevenueNet"
         ],
-        "sector_filter": "Consumer Discretionary",
+        "sector_filter": "Information Technology",
         "min_companies": 8
       },
       "max_response_time_ms": 18000,
-      "time_span": "Rolling 8 quarters",
-      "business_context": "Spot operating margin seasonality for consumer discretionary names."
+      "time_span": "FY2022-FY2023",
+      "business_context": "Highlight top Technology names whose operating leverage improved materially over the past fiscal year."
     },
     {
       "id": "TS_006",

@@ -311,6 +311,7 @@ class IntelligenceLoader:
         """
         params = {}
         question_lower = question.lower()
+        year_tokens = re.findall(r"(20\d{2})", question_lower)
 
         # Template-specific extraction logic driven by required parameters
         if "sector" in template.parameters:
@@ -559,10 +560,43 @@ class IntelligenceLoader:
                 formatted = int(value) if float(value).is_integer() else value
                 params["threshold"] = str(formatted)
 
+        if "min_revenue" in template.parameters and "min_revenue" not in params:
+            revenue_match = re.search(
+                r"(?:revenue|sales|topline|turnover)[^0-9]{0,20}([\$]?[0-9][0-9,\.]*)(?:\s*(billion|million|thousand|bn|m|k))?",
+                question_lower,
+            )
+            if revenue_match:
+                raw_number = revenue_match.group(1)
+                unit = revenue_match.group(2)
+                value = float(raw_number.replace("$", "").replace(",", ""))
+                if unit in {"billion", "bn"}:
+                    value *= 1_000_000_000
+                elif unit in {"million", "m"}:
+                    value *= 1_000_000
+                elif unit in {"thousand", "k"}:
+                    value *= 1_000
+                formatted = int(value) if float(value).is_integer() else value
+                params["min_revenue"] = str(formatted)
+
+        if "limit" in template.parameters and "limit" not in params:
+            limit_match = re.search(r"(top|first)\s+(\d{1,3})", question_lower)
+            if limit_match:
+                params["limit"] = limit_match.group(2)
+
         if "fiscal_year" in template.parameters and "fiscal_year" not in params:
             year_match = re.search(r"(20\d\d)", question_lower)
             if year_match:
                 params["fiscal_year"] = year_match.group(1)
+
+        if "start_year" in template.parameters and "start_year" not in params:
+            if year_tokens:
+                params["start_year"] = year_tokens[0]
+
+        if "end_year" in template.parameters and "end_year" not in params:
+            if len(year_tokens) >= 2:
+                params["end_year"] = year_tokens[1]
+            elif year_tokens:
+                params["end_year"] = year_tokens[0]
 
         if "fiscal_period" in template.parameters and "fiscal_period" not in params:
             period_match = re.search(r"\b(q[1-4]|fy)\b", question_lower)

@@ -9,6 +9,7 @@ import re
 from typing import Optional, List, Dict, Tuple, Any
 import json
 import time
+from datetime import datetime
 from src.models import (
     ExtractedEntities,
     IntelligenceMatch,
@@ -369,6 +370,21 @@ class SQLGenerator:
 
         if "sector" in missing_params:
             defaults["sector"] = "ALL"
+
+        if "start_year" in missing_params or "end_year" in missing_params:
+            current_year = datetime.utcnow().year
+            default_end = max(2015, current_year - 2)
+            default_start = default_end - 1
+            if "start_year" in missing_params:
+                defaults["start_year"] = str(default_start)
+            if "end_year" in missing_params:
+                defaults["end_year"] = str(default_end)
+
+        if "min_revenue" in missing_params:
+            defaults["min_revenue"] = "5000000000"
+
+        if "limit" in missing_params:
+            defaults["limit"] = "10"
 
         if not defaults:
             return params
@@ -799,11 +815,13 @@ class SQLGenerator:
                 )
                 return None
 
-            validation_ok, validation_reason, validation_confidence = self.validator.validate(
-                response.generated_sql,
-                question,
-                entities.model_dump(),
-                context,
+            validation_ok, validation_reason, validation_confidence = (
+                self.validator.validate(
+                    response.generated_sql,
+                    question,
+                    entities.model_dump(),
+                    context,
+                )
             )
 
             attempt_record["success"] = response.success and validation_ok
@@ -926,10 +944,14 @@ class SQLGenerator:
             r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", question_lower
         )
         if currency_match:
-            hints["currency_filter"] = f"Filter num.uom for '{currency_match.group(1).upper()}'"
+            hints["currency_filter"] = (
+                f"Filter num.uom for '{currency_match.group(1).upper()}'"
+            )
 
         if "per share" in question_lower or "per-share" in question_lower:
-            hints["unit_context"] = "Question references per-share metrics; consider num.uom = 'shares'."
+            hints["unit_context"] = (
+                "Question references per-share metrics; consider num.uom = 'shares'."
+            )
 
         if "segment" in question_lower or "by segment" in question_lower:
             hints["segment_context"] = (

@@ -249,6 +249,7 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Registered `profit_margin_consistency_trend` in the template catalog / metadata / FAISS store so hybrid retrieval can route Technology profit-margin questions without falling back to the LLM.
 - Ground-truthed TS_003 with FY2021-FY2023 total-debt reductions (AT&T, AIG, US Bancorp, Deere, Apple) and shipped the `debt_reduction_progression` template for leverage questions.
 - Ground-truthed TS_004 with FY2019-FY2023 Healthcare current-ratio trends (Hologic, ResMed, Zoetis, Cooper, STERIS, IDEXX) and added the `current_ratio_trend` template to the catalog/FAISS store.
+- Ground-truthed TS_005 (FY2022→FY2023 Technology operating-margin rebound), refreshed the JSON/validator artifacts with DuckDB-sourced numbers, and registered the new `operating_margin_delta` template (metadata + FAISS) so margin-rebound questions route deterministically.
 
 ---
 
