@@ -350,6 +350,21 @@
     }
   },
   {
+    "template_id": "debt_reduction_progression",
+    "intent_text": "Rank companies by multi-year debt reduction",
+    "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
+    "example_questions": [
+      "Which companies across all sectors cut debt the most between 2021 and 2023?",
+      "Show Technology leaders that reduced total debt over the past three fiscal years."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "leverage"
+    }
+  },
+  {
     "template_id": "net_margin_trend",
     "intent_text": "Track net profit margin evolution over time",
     "pattern": "(show|calculate|analyze).*(net |profit )?margin.*(trend|over time)",

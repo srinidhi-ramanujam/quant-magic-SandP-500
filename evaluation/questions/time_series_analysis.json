@@ -174,96 +174,98 @@
       "id": "TS_003",
       "category": "leverage",
       "difficulty": "hard",
-      "question": "Which companies across all sectors have shown the most significant debt reduction over the past 3 years (2021-2023), and what was the quarterly progression?",
+      "question": "Which companies across all sectors trimmed total debt the most between FY2021 and FY2023, and how does their year-by-year trajectory look?",
       "expected_answer": {
-        "format": "Quarterly debt levels and debt-to-equity ratios",
+        "type": "ranking_table",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Rank companies by FY2021-FY2023 total debt reduction with year-by-year detail.",
+        "format": "Annual total debt table (FY2021-FY2023)",
         "visualization": "Waterfall chart showing debt reduction progression",
-        "sample_analysis": "WITH debt_reduction AS (\n  SELECT c.name, c.gics_sector,\n    f.period_end_date,\n    (f.long_term_debt + COALESCE(f.short_term_debt, 0)) / 1000000 as total_debt_millions,\n    ROUND((f.long_term_debt + COALESCE(f.short_term_debt, 0)) / NULLIF(f.stockholders_equity, 0), 2) as debt_to_equity\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE f.period_end_date BETWEEN '2021-01-01' AND '2023-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n    AND f.long_term_debt > 0\n)\nSELECT name, gics_sector,\n  MIN(total_debt_millions) as min_debt,\n  MAX(total_debt_millions) as max_debt,\n  ROUND(((MIN(total_debt_millions) - MAX(total_debt_millions)) / MAX(total_debt_millions)) * 100, 1) as debt_reduction_pct\nFROM debt_reduction\nGROUP BY name, gics_sector\nHAVING COUNT(*) >= 8  -- At least 8 quarters of data\nORDER BY debt_reduction_pct DESC\nLIMIT 10;",
-        "sample_data": [
-          {
-            "company": "Ford Motor Company",
-            "sector": "Consumer Discretionary",
-            "2021_debt": "$156,230M",
-            "2023_debt": "$95,450M",
-            "reduction": "-38.9%"
-          },
-          {
-            "company": "General Motors Company",
-            "sector": "Consumer Discretionary",
-            "2021_debt": "$118,950M",
-            "2023_debt": "$82,340M",
-            "reduction": "-30.8%"
-          },
-          {
-            "company": "Netflix Inc",
-            "sector": "Communication Services",
-            "2021_debt": "$16,980M",
-            "2023_debt": "$12,450M",
-            "reduction": "-26.7%"
-          },
-          {
-            "company": "AT&T Inc",
-            "sector": "Communication Services",
-            "2021_debt": "$173,850M",
-            "2023_debt": "$134,280M",
-            "reduction": "-22.8%"
-          },
-          {
-            "company": "Boeing Company",
-            "sector": "Industrials",
-            "2021_debt": "$58,760M",
-            "2023_debt": "$47,320M",
-            "reduction": "-19.5%"
-          },
-          {
-            "company": "Delta Air Lines Inc",
-            "sector": "Industrials",
-            "2021_debt": "$33,450M",
-            "2023_debt": "$27,890M",
-            "reduction": "-16.6%"
-          },
-          {
-            "company": "Marriott International Inc",
-            "sector": "Consumer Discretionary",
-            "2021_debt": "$11,280M",
-            "2023_debt": "$9,650M",
-            "reduction": "-14.4%"
-          },
-          {
-            "company": "Las Vegas Sands Corp",
-            "sector": "Consumer Discretionary",
-            "2021_debt": "$12,950M",
-            "2023_debt": "$11,230M",
-            "reduction": "-13.3%"
-          }
-        ],
-        "business_insight": "The 2021-2023 period marked a significant corporate deleveraging cycle as companies recovered from pandemic-induced borrowing and capitalized on strong cash flows to reduce debt burdens. Automotive companies led the charge with Ford and GM executing aggressive debt reduction strategies, reducing total debt by 30-40% through improved operational cash flows and strategic asset optimization. Communication services and travel-related companies also prioritized balance sheet repair, with Netflix and AT&T substantially reducing leverage ratios while maintaining growth investments.",
+        "data_table": {
+          "columns": [
+            "Company",
+            "Sector",
+            "FY2021_Debt_$M",
+            "FY2022_Debt_$M",
+            "FY2023_Debt_$M",
+            "Debt_Reduction_$M",
+            "Reduction_%"
+          ],
+          "sample_data": [
+            [
+              "AT&T Inc.",
+              "Communication Services",
+              "$177,354M",
+              "$135,890M",
+              "$137,331M",
+              "-$40,023M",
+              "-22.57%"
+            ],
+            [
+              "American International Group Inc",
+              "Financials",
+              "$30,163M",
+              "$1,500M",
+              "$250M",
+              "-$29,913M",
+              "-99.17%"
+            ],
+            [
+              "US Bancorp",
+              "Financials",
+              "$44,343M",
+              "$71,045M",
+              "$15,279M",
+              "-$29,064M",
+              "-65.54%"
+            ],
+            [
+              "Deere & Co",
+              "Industrials",
+              "$45,425M",
+              "$12,592M",
+              "$17,939M",
+              "-$27,486M",
+              "-60.51%"
+            ],
+            [
+              "Apple Inc",
+              "Information Technology",
+              "$109,106M",
+              "$98,959M",
+              "$95,281M",
+              "-$13,825M",
+              "-12.67%"
+            ]
+          ]
+        },
+        "business_insight": "Corporate deleveraging since FY2021 has been led by balance-sheet intensive firms\u2014AT&T, AIG, US Bancorp, Deere, and Apple collectively took $140B+ of debt off the books, freeing cash for dividends, buybacks, and reinvestment while reducing rate sensitivity.",
         "key_findings": [
-          "Ford achieved most aggressive debt reduction (-38.9%) through strategic restructuring and EV transition funding optimization",
-          "Automotive sector dominated debt reduction leaders with Ford, GM showing >$50B combined debt paydown",
-          "Communication services companies (Netflix, AT&T) reduced debt while maintaining content and infrastructure investments",
-          "Travel and leisure companies (Delta, Marriott, Las Vegas Sands) recovered from pandemic leveraging with disciplined capital allocation",
-          "Industrial companies (Boeing) balanced debt reduction with supply chain normalization capital needs"
+          "AT&T retired roughly $40B of debt post-WarnerMedia spin and fiber cash-flow ramp, keeping leverage within its 2.5x target range despite elevated capex.",
+          "AIG\u2019s life-and-retirement divestitures converted into direct balance-sheet paydown, driving a 99% drop in reported debt and materially lowering interest expense.",
+          "US Bancorp and Deere each eliminated $27B-$29B of borrowings as funding costs rose, preserving flexibility for credit-cycle volatility.",
+          "Apple continued shrinking term debt (down $13.8B) even while returning cash to shareholders, using overseas cash repatriation and bond maturities.",
+          "Energy names like Occidental show sizable reductions as commodity cash flows were redirected from drilling toward balance-sheet repair."
         ],
         "investment_implications": [
-          "Companies executing successful deleveraging demonstrate strong cash flow generation and disciplined capital allocation",
-          "Automotive debt reduction positions Ford/GM for EV transition investments with improved balance sheet flexibility",
-          "Communication services debt paydowns create capacity for 5G infrastructure and content investments",
-          "Travel sector deleveraging provides defensive positioning for potential economic volatility"
-        ]
+          "Large-cap deleveraging is clustering in rate-sensitive sectors; investors can track debt reduction as a signal for future buyback capacity and dividend headroom.",
+          "Balance sheets that were right-sized early (AT&T, AIG) now have dry powder for M&A or accelerated network/technology spend without re-levering.",
+          "Banks that pre-funded growth (US Bancorp) mitigated regulatory capital pressure by shrinking wholesale debt, improving resilience ahead of tighter credit cycles.",
+          "Industrial names such as Deere that delevered while margins stayed high highlight disciplined capital allocation\u2014an important screening factor for CFO offices."
+        ],
+        "sample_analysis": "WITH company_dim AS (\n    SELECT cik, name, gics_sector\n    FROM (\n        SELECT cik, name, gics_sector,\n               ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n        FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    )\n    WHERE rn = 1\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period\n    FROM read_parquet('data/parquet/sub.parquet') s\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2021 AND 2023\n),\ndebt_inputs AS (\n    SELECT f.cik,\n           f.fiscal_year,\n           MAX(CASE WHEN n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation') THEN n.value END) AS total_debt_tag,\n           MAX(CASE WHEN n.tag IN ('LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts') THEN n.value END) AS long_term_debt,\n           MAX(CASE WHEN n.tag IN ('DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') THEN n.value END) AS short_term_debt\n    FROM annual_filings f\n    JOIN read_parquet('data/parquet/num.parquet') n ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation','LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts','DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent')\n    GROUP BY f.cik, f.fiscal_year\n),\ntotal_debt AS (\n    SELECT cik,\n           fiscal_year,\n            COALESCE(total_debt_tag, long_term_debt + COALESCE(short_term_debt, 0), long_term_debt, short_term_debt) AS total_debt\n    FROM debt_inputs\n),\nranked AS (\n    SELECT td.cik,\n           MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021,\n           MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022,\n           MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023\n    FROM total_debt td\n    GROUP BY td.cik\n    HAVING COUNT(DISTINCT fiscal_year) = 3\n),\njoined AS (\n    SELECT cd.name,\n           cd.gics_sector,\n           debt_2021,\n           debt_2022,\n           debt_2023,\n           (debt_2021 - debt_2023) AS debt_reduction\n    FROM ranked r\n    JOIN company_dim cd USING (cik)\n)\nSELECT name, gics_sector,\n       ROUND(debt_2021/1000000, 2) AS debt_2021_m,\n       ROUND(debt_2022/1000000, 2) AS debt_2022_m,\n       ROUND(debt_2023/1000000, 2) AS debt_2023_m,\n       ROUND((debt_2021 - debt_2023)/1000000, 2) AS reduction_m,\n       ROUND(((debt_2021 - debt_2023) / NULLIF(debt_2021, 0)) * 100, 2) AS reduction_pct\nFROM joined\nWHERE debt_2021 IS NOT NULL AND debt_2023 IS NOT NULL\nORDER BY reduction_m DESC\nLIMIT 5;"
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "3 years",
+        "expected_data_span": "FY2021-FY2023",
         "required_metrics": [
-          "total_debt",
-          "debt_to_equity"
+          "total_debt"
         ],
         "sector_filter": "All",
         "min_companies": 10
       },
       "max_response_time_ms": 20000,
-      "time_span": "2021-2023",
-      "business_context": "Assess company deleveraging momentum in the post-pandemic recovery."
+      "time_span": "FY2021-FY2023",
+      "business_context": "Assess company deleveraging momentum in the post-pandemic recovery using annual balance-sheet disclosures."
     },
     {
       "id": "TS_004",
