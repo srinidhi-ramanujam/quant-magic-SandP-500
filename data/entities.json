@@ -1,0 +1,383 @@
+[
+  {
+    "id": "sector_information_technology",
+    "slot": "sector",
+    "canonical": "Information Technology",
+    "synonyms": [
+      "information technology",
+      "technology",
+      "tech sector",
+      "technology sector"
+    ]
+  },
+  {
+    "id": "sector_health_care",
+    "slot": "sector",
+    "canonical": "Health Care",
+    "synonyms": [
+      "health care",
+      "healthcare",
+      "medical sector"
+    ]
+  },
+  {
+    "id": "sector_financials",
+    "slot": "sector",
+    "canonical": "Financials",
+    "synonyms": [
+      "financials",
+      "finance sector",
+      "banks and financials"
+    ]
+  },
+  {
+    "id": "sector_consumer_discretionary",
+    "slot": "sector",
+    "canonical": "Consumer Discretionary",
+    "synonyms": [
+      "consumer discretionary",
+      "discretionary sector",
+      "consumer cyclical"
+    ]
+  },
+  {
+    "id": "sector_communication_services",
+    "slot": "sector",
+    "canonical": "Communication Services",
+    "synonyms": [
+      "communication services",
+      "communications sector",
+      "telecom and media"
+    ]
+  },
+  {
+    "id": "sector_industrials",
+    "slot": "sector",
+    "canonical": "Industrials",
+    "synonyms": [
+      "industrial",
+      "industrials sector",
+      "manufacturing sector"
+    ]
+  },
+  {
+    "id": "sector_consumer_staples",
+    "slot": "sector",
+    "canonical": "Consumer Staples",
+    "synonyms": [
+      "consumer staples",
+      "consumer defensive",
+      "staples sector"
+    ]
+  },
+  {
+    "id": "sector_energy",
+    "slot": "sector",
+    "canonical": "Energy",
+    "synonyms": [
+      "energy sector",
+      "oil and gas"
+    ]
+  },
+  {
+    "id": "sector_utilities",
+    "slot": "sector",
+    "canonical": "Utilities",
+    "synonyms": [
+      "utilities",
+      "utility sector"
+    ]
+  },
+  {
+    "id": "sector_real_estate",
+    "slot": "sector",
+    "canonical": "Real Estate",
+    "synonyms": [
+      "real estate",
+      "reit sector",
+      "property sector"
+    ]
+  },
+  {
+    "id": "sector_materials",
+    "slot": "sector",
+    "canonical": "Materials",
+    "synonyms": [
+      "materials sector",
+      "basic materials"
+    ]
+  },
+  {
+    "id": "jurisdiction_united_states",
+    "slot": "jurisdiction",
+    "canonical": "US",
+    "synonyms": [
+      "united states",
+      "usa",
+      "u.s.",
+      "america"
+    ]
+  },
+  {
+    "id": "jurisdiction_canada",
+    "slot": "jurisdiction",
+    "canonical": "CA",
+    "synonyms": [
+      "canada",
+      "canadian"
+    ]
+  },
+  {
+    "id": "jurisdiction_united_kingdom",
+    "slot": "jurisdiction",
+    "canonical": "UK",
+    "synonyms": [
+      "united kingdom",
+      "uk",
+      "britain",
+      "england"
+    ]
+  },
+  {
+    "id": "jurisdiction_ireland",
+    "slot": "jurisdiction",
+    "canonical": "IE",
+    "synonyms": [
+      "ireland",
+      "irish"
+    ]
+  },
+  {
+    "id": "jurisdiction_bermuda",
+    "slot": "jurisdiction",
+    "canonical": "BM",
+    "synonyms": [
+      "bermuda",
+      "bermudian"
+    ]
+  },
+  {
+    "id": "jurisdiction_delaware",
+    "slot": "jurisdiction",
+    "canonical": "DE",
+    "synonyms": [
+      "delaware",
+      "state of delaware",
+      "de"
+    ]
+  },
+  {
+    "id": "jurisdiction_texas",
+    "slot": "jurisdiction",
+    "canonical": "TX",
+    "synonyms": [
+      "texas",
+      "tx"
+    ]
+  },
+  {
+    "id": "jurisdiction_california",
+    "slot": "jurisdiction",
+    "canonical": "CA",
+    "synonyms": [
+      "california",
+      "ca"
+    ]
+  },
+  {
+    "id": "metric_revenue",
+    "slot": "metric",
+    "canonical": "Revenue",
+    "synonyms": [
+      "revenue",
+      "revenues",
+      "sales",
+      "sales revenue"
+    ]
+  },
+  {
+    "id": "metric_net_income",
+    "slot": "metric",
+    "canonical": "NetIncomeLoss",
+    "synonyms": [
+      "net income",
+      "earnings",
+      "profit",
+      "net earnings"
+    ]
+  },
+  {
+    "id": "metric_assets",
+    "slot": "metric",
+    "canonical": "Assets",
+    "synonyms": [
+      "assets",
+      "total assets",
+      "asset balance"
+    ]
+  },
+  {
+    "id": "metric_current_assets",
+    "slot": "metric",
+    "canonical": "AssetsCurrent",
+    "synonyms": [
+      "current assets"
+    ]
+  },
+  {
+    "id": "metric_current_liabilities",
+    "slot": "metric",
+    "canonical": "LiabilitiesCurrent",
+    "synonyms": [
+      "current liabilities"
+    ]
+  },
+  {
+    "id": "metric_liabilities",
+    "slot": "metric",
+    "canonical": "Liabilities",
+    "synonyms": [
+      "liabilities",
+      "total liabilities"
+    ]
+  },
+  {
+    "id": "metric_equity",
+    "slot": "metric",
+    "canonical": "StockholdersEquity",
+    "synonyms": [
+      "stockholders' equity",
+      "shareholders equity",
+      "equity"
+    ]
+  },
+  {
+    "id": "metric_gross_profit",
+    "slot": "metric",
+    "canonical": "GrossProfit",
+    "synonyms": [
+      "gross profit"
+    ]
+  },
+  {
+    "id": "metric_gross_margin",
+    "slot": "metric",
+    "canonical": "GrossMargin",
+    "synonyms": [
+      "gross margin"
+    ]
+  },
+  {
+    "id": "metric_ebitda",
+    "slot": "metric",
+    "canonical": "EBITDA",
+    "synonyms": [
+      "ebitda",
+      "earnings before interest taxes depreciation amortization"
+    ]
+  },
+  {
+    "id": "metric_return_on_equity",
+    "slot": "metric",
+    "canonical": "ReturnOnEquity",
+    "synonyms": [
+      "return on equity",
+      "roe"
+    ]
+  },
+  {
+    "id": "metric_return_on_assets",
+    "slot": "metric",
+    "canonical": "ReturnOnAssets",
+    "synonyms": [
+      "return on assets",
+      "roa"
+    ]
+  },
+  {
+    "id": "metric_income_tax_expense",
+    "slot": "metric",
+    "canonical": "IncomeTaxExpenseBenefit",
+    "synonyms": [
+      "income tax expense",
+      "tax expense"
+    ]
+  },
+  {
+    "id": "metric_other_income_expense",
+    "slot": "metric",
+    "canonical": "OtherNonoperatingIncomeExpense",
+    "synonyms": [
+      "other income",
+      "other expense",
+      "non operating income"
+    ]
+  },
+  {
+    "id": "metric_acquisition_spending",
+    "slot": "metric",
+    "canonical": "PaymentsToAcquireBusinessesNetOfCashAcquired",
+    "synonyms": [
+      "acquisition spending",
+      "payments to acquire businesses"
+    ]
+  },
+  {
+    "id": "question_type_count",
+    "slot": "question_type",
+    "canonical": "count",
+    "synonyms": [
+      "how many",
+      "number of",
+      "count the"
+    ]
+  },
+  {
+    "id": "question_type_lookup",
+    "slot": "question_type",
+    "canonical": "lookup",
+    "synonyms": [
+      "what is",
+      "which sector",
+      "lookup"
+    ]
+  },
+  {
+    "id": "question_type_list",
+    "slot": "question_type",
+    "canonical": "list",
+    "synonyms": [
+      "list",
+      "show me",
+      "give me the companies"
+    ]
+  },
+  {
+    "id": "time_latest",
+    "slot": "time_reference",
+    "canonical": "latest",
+    "synonyms": [
+      "latest",
+      "most recent",
+      "current period"
+    ]
+  },
+  {
+    "id": "time_previous_year",
+    "slot": "time_reference",
+    "canonical": "previous_year",
+    "synonyms": [
+      "previous year",
+      "last year"
+    ]
+  },
+  {
+    "id": "time_previous_quarter",
+    "slot": "time_reference",
+    "canonical": "previous_quarter",
+    "synonyms": [
+      "previous quarter",
+      "last quarter"
+    ]
+  }
+]

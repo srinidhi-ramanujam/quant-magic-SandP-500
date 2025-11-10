@@ -72,6 +72,9 @@ evaluation/validation_reports/*.csv
 # Tools output
 tools/output/
 
+# Vector stores / artefacts
+artifacts/
+
 # Frontend artefacts
 frontend/node_modules/
 frontend/dist/

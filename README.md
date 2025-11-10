@@ -355,6 +355,8 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 - Single-shot debug query: `python -m src.cli "How many companies are in Technology?" --debug`.
 - Full test suite: `python -m pytest tests/ -v`; target modules via `python -m pytest tests/test_sql_generator_hybrid.py -v`.
 - Formatting pass: `python -m black src/ tests/`.
+- Regenerate template intents JSON: `python scripts/export_template_intents.py`.
+- Build FAISS vector stores: `python scripts/build_vector_store.py`.
 
 ### Testing Guidelines
 - Keep pytest as the single source of truth; mirror module structure and name tests `test_*`.

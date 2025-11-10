@@ -1,0 +1,1495 @@
+[
+  {
+    "template_id": "company_by_cik",
+    "intent_text": "Find company name and details given a CIK identifier",
+    "pattern": "what.*(is|are).*(cik|cik number)|cik.*(for|of|number)",
+    "example_questions": [
+      "what.*(is|are).*(cik|cik number)|cik.*(for|of|number)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "company_headquarters",
+    "intent_text": "Get headquarters state and city for a company",
+    "pattern": "(where|what).*(headquarter|hq|headquarters|located|location).*(of|for|is)",
+    "example_questions": [
+      "(where|what).*(headquarter|hq|headquarters|located|location).*(of|for|is)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "company_incorporation",
+    "intent_text": "Find where a company is legally incorporated",
+    "pattern": "(where|what).*(incorporated|incorporation|state of incorporation)",
+    "example_questions": [
+      "(where|what).*(incorporated|incorporation|state of incorporation)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "sector_company_count",
+    "intent_text": "Count number of companies in a specific sector",
+    "pattern": "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)",
+    "example_questions": [
+      "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "companies_in_sector_list",
+    "intent_text": "Get all company names in a specific sector",
+    "pattern": "(list|show) (all )?companies.*(in|from).*(sector|industry)",
+    "example_questions": [
+      "(list|show) (all )?companies.*(in|from).*(sector|industry)"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "sector_with_most_companies",
+    "intent_text": "Identify which sector has the highest company count",
+    "pattern": "which sector.*(most|highest|largest number)",
+    "example_questions": [
+      "which sector.*(most|highest|largest number)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "sector_with_fewest_companies",
+    "intent_text": "Identify which sector has the lowest company count",
+    "pattern": "which sector.*(fewest|lowest|smallest number)",
+    "example_questions": [
+      "which sector.*(fewest|lowest|smallest number)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "all_sectors_count",
+    "intent_text": "List all sectors with their company counts",
+    "pattern": "(list|show|count).*(all sectors|sector breakdown|by sector)",
+    "example_questions": [
+      "(list|show|count).*(all sectors|sector breakdown|by sector)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "sectors_above_threshold",
+    "intent_text": "How many sectors have more than N companies",
+    "pattern": "how many sectors.*(more than|above|over|exceeding)",
+    "example_questions": [
+      "how many sectors.*(more than|above|over|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "companies_by_hq_state",
+    "intent_text": "How many companies are headquartered in a state",
+    "pattern": "how many.*headquartered in",
+    "example_questions": [
+      "how many.*headquartered in"
+    ],
+    "metadata": {
+      "parameters": [
+        "state"
+      ],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "companies_by_incorporation_state",
+    "intent_text": "How many companies incorporated in a state/country",
+    "pattern": "how many.*incorporated in",
+    "example_questions": [
+      "how many.*incorporated in"
+    ],
+    "metadata": {
+      "parameters": [
+        "jurisdiction"
+      ],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "state_with_most_headquarters",
+    "intent_text": "Which state has the most company headquarters",
+    "pattern": "which state.*most (company )?headquarters",
+    "example_questions": [
+      "which state.*most (company )?headquarters"
+    ],
+    "metadata": {
+      "parameters": [
+        "rank"
+      ],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "latest_revenue",
+    "intent_text": "Latest annual revenue for a company",
+    "pattern": "(what|get|show).*(latest|most recent|current).*(revenue|sales)",
+    "example_questions": [
+      "(what|get|show).*(latest|most recent|current).*(revenue|sales)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_assets",
+    "intent_text": "Latest total assets for a company",
+    "pattern": "(what|get|show).*(latest|most recent|current).*(total )?assets",
+    "example_questions": [
+      "(what|get|show).*(latest|most recent|current).*(total )?assets"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_equity",
+    "intent_text": "Latest equity for a company",
+    "pattern": "(what|get|show).*(latest|most recent|current).*(stockholders'? )?equity",
+    "example_questions": [
+      "(what|get|show).*(latest|most recent|current).*(stockholders'? )?equity"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_net_income",
+    "intent_text": "Latest annual net income for a company",
+    "pattern": "(what|get|show).*(latest|most recent|current).*net income",
+    "example_questions": [
+      "(what|get|show).*(latest|most recent|current).*net income"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_revenue_above_threshold",
+    "intent_text": "Count/list companies exceeding revenue threshold",
+    "pattern": "(how many|which) companies.*(revenue|sales).*(above|over|exceeding)",
+    "example_questions": [
+      "(how many|which) companies.*(revenue|sales).*(above|over|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_roe",
+    "intent_text": "Latest ROE = Net Income / Equity",
+    "pattern": "(what|calculate|show).*(return on equity|roe)",
+    "example_questions": [
+      "(what|calculate|show).*(return on equity|roe)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "latest_current_ratio",
+    "intent_text": "Current Ratio = Current Assets / Current Liabilities",
+    "pattern": "(what|calculate|show).*current ratio",
+    "example_questions": [
+      "(what|calculate|show).*current ratio"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "latest_debt_to_equity",
+    "intent_text": "D/E = Total Debt / Equity",
+    "pattern": "(what|calculate|show).*debt.*(to|/).*equity",
+    "example_questions": [
+      "(what|calculate|show).*debt.*(to|/).*equity"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "revenue_yoy_growth",
+    "intent_text": "Calculate annual revenue growth rates over time",
+    "pattern": "(what|calculate|show).*(revenue|sales).*(growth|change).*(year over year|yoy|annual)",
+    "example_questions": [
+      "(what|calculate|show).*(revenue|sales).*(growth|change).*(year over year|yoy|annual)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_year",
+        "end_year"
+      ],
+      "intent_category": "time_series_revenue"
+    }
+  },
+  {
+    "template_id": "revenue_trend_multi_year",
+    "intent_text": "Show revenue progression over multiple years with moving average",
+    "pattern": "(show|analyze|display).*revenue.*(trend|progression|over time|history)",
+    "example_questions": [
+      "(show|analyze|display).*revenue.*(trend|progression|over time|history)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_year"
+      ],
+      "intent_category": "time_series_revenue"
+    }
+  },
+  {
+    "template_id": "quarterly_revenue_trend",
+    "intent_text": "Show quarterly revenue with year-over-year comparisons",
+    "pattern": "(show|analyze).*quarterly.*(revenue|sales).*(trend|pattern|seasonal)",
+    "example_questions": [
+      "(show|analyze).*quarterly.*(revenue|sales).*(trend|pattern|seasonal)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_date"
+      ],
+      "intent_category": "time_series_revenue"
+    }
+  },
+  {
+    "template_id": "roe_trend_multi_year",
+    "intent_text": "Track Return on Equity evolution over time",
+    "pattern": "(show|analyze|track).*(roe|return on equity).*(trend|over time|history)",
+    "example_questions": [
+      "(show|analyze|track).*(roe|return on equity).*(trend|over time|history)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_year"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "net_margin_trend",
+    "intent_text": "Track net profit margin evolution over time",
+    "pattern": "(show|calculate|analyze).*(net |profit )?margin.*(trend|over time)",
+    "example_questions": [
+      "(show|calculate|analyze).*(net |profit )?margin.*(trend|over time)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_year"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "operating_margin_quarterly",
+    "intent_text": "Track operating margin by quarter with trends",
+    "pattern": "(show|analyze).*quarterly.*(operating margin|operating income)",
+    "example_questions": [
+      "(show|analyze).*quarterly.*(operating margin|operating income)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company",
+        "start_date"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "company_sector",
+    "intent_text": "Look up which sector a company belongs to",
+    "pattern": "((what|which).*(gics )?sector.*(is|does|contains)|what(?:'s| is).*(gics )?sector|.*sector.*(of|for) .*)",
+    "example_questions": [
+      "((what|which).*(gics )?sector.*(is|does|contains)|what(?:'s| is).*(gics )?sector|.*sector.*(of|for) .*)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "company_name_by_cik",
+    "intent_text": "Return the official company name for an exact CIK value",
+    "pattern": "(which|what).*(company|firm).*cik\\s*[0-9]{5,}",
+    "example_questions": [
+      "(which|what).*(company|firm).*cik\\s*[0-9]{5,}"
+    ],
+    "metadata": {
+      "parameters": [
+        "cik"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "most_common_currency",
+    "intent_text": "Identify the currency/unit of measure used most frequently in the num table",
+    "pattern": "(what|which).*(currency|unit).*most",
+    "example_questions": [
+      "(what|which).*(currency|unit).*most"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_by_currency",
+    "intent_text": "Count numeric facts for a specific currency/unit of measure",
+    "pattern": "(how many|count).*(facts|entries|records).*(currency|denominated|measured in|use|using)",
+    "example_questions": [
+      "(how many|count).*(facts|entries|records).*(currency|denominated|measured in|use|using)"
+    ],
+    "metadata": {
+      "parameters": [
+        "currency"
+      ],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_with_footnotes",
+    "intent_text": "Count numeric facts that include non-empty footnotes",
+    "pattern": "(how many|count).*(footnote)",
+    "example_questions": [
+      "(how many|count).*(footnote)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "latest_filing_date",
+    "intent_text": "Return the most recent SEC filing date in the submissions table",
+    "pattern": "(what|when).*(latest|most recent).*(filing date|filed)",
+    "example_questions": [
+      "(what|when).*(latest|most recent).*(filing date|filed)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "company_count_by_form",
+    "intent_text": "Count distinct companies that filed a specific SEC form type",
+    "pattern": "(how many|count).*(companies).*(filed|filings).*(10-k|10q|form)",
+    "example_questions": [
+      "(how many|count).*(companies).*(filed|filings).*(10-k|10q|form)"
+    ],
+    "metadata": {
+      "parameters": [
+        "form"
+      ],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "distinct_fiscal_year_count",
+    "intent_text": "Count distinct fiscal year end values reported in submissions",
+    "pattern": "(how many|count).*(fiscal year end).*?(\\d{4})",
+    "example_questions": [
+      "(how many|count).*(fiscal year end).*?(\\d{4})"
+    ],
+    "metadata": {
+      "parameters": [
+        "fye"
+      ],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "international_incorporation_count",
+    "intent_text": "Count companies whose latest incorporation country is not the United States",
+    "pattern": "(how many|count).*(international|non-?us).*(incorporation|companies)",
+    "example_questions": [
+      "(how many|count).*(international|non-?us).*(incorporation|companies)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "most_common_form_type",
+    "intent_text": "Identify the SEC form type that appears most frequently in submissions",
+    "pattern": "(what|which).*(form).*(most|frequent)",
+    "example_questions": [
+      "(what|which).*(form).*(most|frequent)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "total_company_count",
+    "intent_text": "Total number of distinct companies represented in the dataset",
+    "pattern": "(how many|count).*(companies).*(dataset)",
+    "example_questions": [
+      "(how many|count).*(companies).*(dataset)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "earliest_period_date",
+    "intent_text": "Return the earliest reporting period date available in submissions",
+    "pattern": "(what|when).*(earliest).*(period)",
+    "example_questions": [
+      "(what|when).*(earliest).*(period)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "company_name_keyword_count",
+    "intent_text": "Count companies whose official name contains a specific keyword",
+    "pattern": "(how many|count).*(companies).*(\"|\\').+(\"|\\')",
+    "example_questions": [
+      "(how many|count).*(companies).*(\"|\\').+(\"|\\')"
+    ],
+    "metadata": {
+      "parameters": [
+        "keyword"
+      ],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "company_with_longest_name",
+    "intent_text": "Return the company whose official name has the greatest length",
+    "pattern": "(which|what).*(company).*(longest).*(name)",
+    "example_questions": [
+      "(which|what).*(company).*(longest).*(name)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "company_lookup"
+    }
+  },
+  {
+    "template_id": "state_with_second_most_headquarters",
+    "intent_text": "State with the second highest number of company headquarters",
+    "pattern": "which state.*second most (company )?headquarters",
+    "example_questions": [
+      "which state.*second most (company )?headquarters"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "state_with_third_most_headquarters",
+    "intent_text": "State with the third highest number of company headquarters",
+    "pattern": "which state.*third most (company )?headquarters",
+    "example_questions": [
+      "which state.*third most (company )?headquarters"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "sector_company_rank",
+    "intent_text": "Return the sector with the specified rank by company count",
+    "pattern": "which sector.*(second|third) most companies",
+    "example_questions": [
+      "which sector.*(second|third) most companies"
+    ],
+    "metadata": {
+      "parameters": [
+        "rank"
+      ],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "companies_positive_net_income",
+    "intent_text": "Count companies whose latest annual net income is positive",
+    "pattern": "(how many|count).*(positive).*(net income)",
+    "example_questions": [
+      "(how many|count).*(positive).*(net income)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_gross_profit",
+    "intent_text": "Retrieve the latest annual gross profit for a company",
+    "pattern": "(gross profit)",
+    "example_questions": [
+      "(gross profit)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_total_liabilities",
+    "intent_text": "Retrieve the latest annual total liabilities for a company",
+    "pattern": "(total liabilities)",
+    "example_questions": [
+      "(total liabilities)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_reporting_cost_of_revenue",
+    "intent_text": "Number of companies with a non-null latest annual cost of revenue value",
+    "pattern": "(how many|count).*(cost of revenue)",
+    "example_questions": [
+      "(how many|count).*(cost of revenue)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "distinct_incorporation_countries",
+    "intent_text": "Number of distinct incorporation countries in submissions",
+    "pattern": "how many.*(countries).*(incorporation)",
+    "example_questions": [
+      "how many.*(countries).*(incorporation)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "distinct_headquarters_states",
+    "intent_text": "Number of distinct HQ states in submissions",
+    "pattern": "how many.*(states).*(headquarters|hq)",
+    "example_questions": [
+      "how many.*(states).*(headquarters|hq)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "geographic"
+    }
+  },
+  {
+    "template_id": "tag_count_by_debit_credit",
+    "intent_text": "Count tags by debit/credit classification",
+    "pattern": "how many.*tags.*debit|how many.*tags.*credit",
+    "example_questions": [
+      "how many.*tags.*debit|how many.*tags.*credit"
+    ],
+    "metadata": {
+      "parameters": [
+        "flag"
+      ],
+      "intent_category": "xbrl_metadata"
+    }
+  },
+  {
+    "template_id": "tag_count_by_datatype",
+    "intent_text": "Count tags whose data type matches the specified category",
+    "pattern": "how many.*tags.*(monetary|string|per-share|per share)",
+    "example_questions": [
+      "how many.*tags.*(monetary|string|per-share|per share)"
+    ],
+    "metadata": {
+      "parameters": [
+        "datatype"
+      ],
+      "intent_category": "xbrl_metadata"
+    }
+  },
+  {
+    "template_id": "tag_count_by_keyword",
+    "intent_text": "Count tags whose name contains a specified keyword",
+    "pattern": "how many.*tags.*(cash|revenue|asset|liability|equity|debt)",
+    "example_questions": [
+      "how many.*tags.*(cash|revenue|asset|liability|equity|debt)"
+    ],
+    "metadata": {
+      "parameters": [
+        "keyword"
+      ],
+      "intent_category": "xbrl_metadata"
+    }
+  },
+  {
+    "template_id": "distinct_uom_count",
+    "intent_text": "Count distinct unit of measure values present in numeric facts.",
+    "pattern": "(how many|count).*(distinct|different|unique).*(unit|uom|unit types)",
+    "example_questions": [
+      "(how many|count).*(distinct|different|unique).*(unit|uom|unit types)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_negative_values",
+    "intent_text": "Count numeric facts where the value is negative",
+    "pattern": "how many.*(facts|entries).*negative",
+    "example_questions": [
+      "how many.*(facts|entries).*negative"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_zero_values",
+    "intent_text": "Count numeric facts where the value is zero",
+    "pattern": "how many.*(facts|entries).*zero",
+    "example_questions": [
+      "how many.*(facts|entries).*zero"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_dimhash_populated",
+    "intent_text": "Count numeric facts where dimhash column is populated",
+    "pattern": "how many.*(facts|entries).*dimhash",
+    "example_questions": [
+      "how many.*(facts|entries).*dimhash"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "tag_nth_most_common",
+    "intent_text": "Return the tag with the specified rank by frequency in numeric facts",
+    "pattern": "what is the (second|third).*(most frequent|most common) xbrl tag",
+    "example_questions": [
+      "what is the (second|third).*(most frequent|most common) xbrl tag"
+    ],
+    "metadata": {
+      "parameters": [
+        "rank"
+      ],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "fact_count_by_qtrs",
+    "intent_text": "Count numeric facts where qtrs equals the specified value",
+    "pattern": "how many.*(qtrs=\\d).*(facts|entries)",
+    "example_questions": [
+      "how many.*(qtrs=\\d).*(facts|entries)"
+    ],
+    "metadata": {
+      "parameters": [
+        "qtrs"
+      ],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "sectors_below_threshold",
+    "intent_text": "Count sectors whose company count is below a specified threshold",
+    "pattern": "how many sectors.*(fewer|less).*(companies)",
+    "example_questions": [
+      "how many sectors.*(fewer|less).*(companies)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "fact_count_with_coreg",
+    "intent_text": "Count numeric facts that include co-registrant information",
+    "pattern": "how many.*(facts|entries).*(coreg|co-registrant)",
+    "example_questions": [
+      "how many.*(facts|entries).*(coreg|co-registrant)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "dataset_statistics"
+    }
+  },
+  {
+    "template_id": "earliest_filing_date",
+    "intent_text": "Return the earliest filing date in the submissions table",
+    "pattern": "what.*earliest.*filing date",
+    "example_questions": [
+      "what.*earliest.*filing date"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "submission_count_by_fiscal_year",
+    "intent_text": "Count submissions for a specified fiscal year",
+    "pattern": "how many submissions.*fiscal year",
+    "example_questions": [
+      "how many submissions.*fiscal year"
+    ],
+    "metadata": {
+      "parameters": [
+        "fiscal_year"
+      ],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "submission_count_by_fiscal_period",
+    "intent_text": "Count submissions for a specified fiscal period (Q1, Q2, Q3, Q4, FY)",
+    "pattern": "how many submissions.*fiscal period",
+    "example_questions": [
+      "how many submissions.*fiscal period"
+    ],
+    "metadata": {
+      "parameters": [
+        "fiscal_period"
+      ],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "distinct_form_type_count",
+    "intent_text": "Number of distinct SEC form types in submissions",
+    "pattern": "how many (?:different |distinct )?(form types|forms)",
+    "example_questions": [
+      "how many (?:different |distinct )?(form types|forms)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "form_type_rank",
+    "intent_text": "Return the form type with the specified rank by frequency",
+    "pattern": "what is the (second|third).*form type",
+    "example_questions": [
+      "what is the (second|third).*form type"
+    ],
+    "metadata": {
+      "parameters": [
+        "rank"
+      ],
+      "intent_category": "filing_activity"
+    }
+  },
+  {
+    "template_id": "companies_positive_return_on_equity",
+    "intent_text": "Count companies whose latest annual ROE is positive",
+    "pattern": "(how many|count).*(positive).*(return on equity)",
+    "example_questions": [
+      "(how many|count).*(positive).*(return on equity)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_return_on_equity_above_threshold",
+    "intent_text": "Count companies whose latest annual ROE exceeds a percentage threshold",
+    "pattern": "(how many|count).*(return on equity).*(above|over|greater)",
+    "example_questions": [
+      "(how many|count).*(return on equity).*(above|over|greater)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_current_ratio_above_threshold",
+    "intent_text": "Count companies whose latest annual current ratio exceeds a threshold",
+    "pattern": "(how many|count).*(current ratio).*(above|over|greater)",
+    "example_questions": [
+      "(how many|count).*(current ratio).*(above|over|greater)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_negative_return_on_assets",
+    "intent_text": "Count companies whose latest annual ROA is negative",
+    "pattern": "(how many|count).*(negative).*(return on assets)",
+    "example_questions": [
+      "(how many|count).*(negative).*(return on assets)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_debt_to_equity_above_threshold",
+    "intent_text": "Count companies whose latest annual debt-to-equity ratio exceeds a threshold",
+    "pattern": "(how many|count).*(debt-to-equity|debt to equity).*(above|over|greater)",
+    "example_questions": [
+      "(how many|count).*(debt-to-equity|debt to equity).*(above|over|greater)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_current_assets_above_threshold",
+    "intent_text": "Count companies whose latest annual current assets exceed a threshold",
+    "pattern": "(how many|count).*(current assets).*(above|over|greater|exceeding|exceeds)",
+    "example_questions": [
+      "(how many|count).*(current assets).*(above|over|greater|exceeding|exceeds)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_liabilities_exceed_assets",
+    "intent_text": "Count companies whose latest annual liabilities exceed assets",
+    "pattern": "(how many|count).*(liabilities).*(more than|greater than|exceed|more).*assets",
+    "example_questions": [
+      "(how many|count).*(liabilities).*(more than|greater than|exceed|more).*assets"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_property_plant_equipment",
+    "intent_text": "Retrieve the latest PP&E value for a company",
+    "pattern": "(property,? plant and equipment)",
+    "example_questions": [
+      "(property,? plant and equipment)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_intangible_assets_above_threshold",
+    "intent_text": "Count companies whose latest intangible assets exceed a threshold",
+    "pattern": "(how many|count).*(intangible assets).*(above|over|greater)",
+    "example_questions": [
+      "(how many|count).*(intangible assets).*(above|over|greater)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_goodwill_reported",
+    "intent_text": "Count companies with non-zero goodwill on their latest filing",
+    "pattern": "(how many|count).*(goodwill)",
+    "example_questions": [
+      "(how many|count).*(goodwill)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_working_capital_above_threshold",
+    "intent_text": "Count companies whose working capital exceeds a threshold",
+    "pattern": "(how many|count).*(working capital).*(above|over|greater than|exceed|exceeding)",
+    "example_questions": [
+      "(how many|count).*(working capital).*(above|over|greater than|exceed|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_research_expense_reported",
+    "intent_text": "Count companies with non-zero R&D expense in the latest annual filing",
+    "pattern": "(how many|count).*(research and development|r&d)",
+    "example_questions": [
+      "(how many|count).*(research and development|r&d)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_positive_operating_income",
+    "intent_text": "Count companies where operating income is positive in the latest annual filing",
+    "pattern": "(how many|count).*(positive).*(operating income)",
+    "example_questions": [
+      "(how many|count).*(positive).*(operating income)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_other_income_expense",
+    "intent_text": "Retrieve the latest other non-operating income/expense for a company",
+    "pattern": "(other income|nonoperating income|non-operating income)",
+    "example_questions": [
+      "(other income|nonoperating income|non-operating income)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_depreciation_amortization_reported",
+    "intent_text": "Count companies reporting depreciation and amortization expense",
+    "pattern": "(how many|count).*(depreciation and amortization)",
+    "example_questions": [
+      "(how many|count).*(depreciation and amortization)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "latest_income_tax_expense",
+    "intent_text": "Retrieve the latest income tax expense for a company",
+    "pattern": "(income tax expense)",
+    "example_questions": [
+      "(income tax expense)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_negative_net_income",
+    "intent_text": "Count companies whose latest annual net income is negative",
+    "pattern": "(how many|count).*(negative).*(net income)",
+    "example_questions": [
+      "(how many|count).*(negative).*(net income)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "companies_ebitda_above_threshold",
+    "intent_text": "Count companies whose latest EBITDA exceeds a threshold",
+    "pattern": "(how many|count).*(ebitda).*(above|over|greater|exceeding|exceeds)",
+    "example_questions": [
+      "(how many|count).*(ebitda).*(above|over|greater|exceeding|exceeds)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_metrics"
+    }
+  },
+  {
+    "template_id": "fact_count_by_unit",
+    "intent_text": "Count numeric facts that use a specific unit of measure (e.g., shares, percentage).",
+    "pattern": "(how many|count).*(facts|entries|records).*(unit of measure|unit|uom|measured in|use|using)",
+    "example_questions": [
+      "(how many|count).*(facts|entries|records).*(unit of measure|unit|uom|measured in|use|using)"
+    ],
+    "metadata": {
+      "parameters": [
+        "unit"
+      ],
+      "intent_category": "unit_analysis"
+    }
+  },
+  {
+    "template_id": "tag_count_by_unit",
+    "intent_text": "Count distinct XBRL tags that use a specific unit of measure.",
+    "pattern": "how many.*tags.*(unit of measure|unit|uom)",
+    "example_questions": [
+      "how many.*tags.*(unit of measure|unit|uom)"
+    ],
+    "metadata": {
+      "parameters": [
+        "unit"
+      ],
+      "intent_category": "unit_analysis"
+    }
+  },
+  {
+    "template_id": "tag_debit_credit_count",
+    "intent_text": "Count XBRL tags with a CRDR flag of Debit.",
+    "pattern": "how many.*tags.*debit-credit.*debit",
+    "example_questions": [
+      "how many.*tags.*debit-credit.*debit"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "xbrl_quality"
+    }
+  },
+  {
+    "template_id": "dimhash_fact_count",
+    "intent_text": "Count financial facts with dimensional context (segments populated).",
+    "pattern": "how many.*(facts|entries).*(dimhash|duplicate)",
+    "example_questions": [
+      "how many.*(facts|entries).*(dimhash|duplicate)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "xbrl_quality"
+    }
+  },
+  {
+    "template_id": "company_return_on_equity",
+    "intent_text": "Calculate the latest return on equity for a specific company.",
+    "pattern": "(what|show).*(return on equity|roe).*",
+    "example_questions": [
+      "(what|show).*(return on equity|roe).*"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "companies_roe_positive",
+    "intent_text": "Count S&P 500 companies with positive return on equity.",
+    "pattern": "how many.*companies.*positive.*return on equity",
+    "example_questions": [
+      "how many.*companies.*positive.*return on equity"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "companies_roe_above_threshold",
+    "intent_text": "Count S&P 500 companies whose return on equity exceeds a given threshold.",
+    "pattern": "how many.*companies.*return on equity.*(above|over|greater than)",
+    "example_questions": [
+      "how many.*companies.*return on equity.*(above|over|greater than)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "financial_ratios"
+    }
+  },
+  {
+    "template_id": "companies_gross_margin_above_threshold",
+    "intent_text": "Count companies whose gross margin exceeds a specified threshold.",
+    "pattern": "(how many|count).*(gross margin|gross profit margin).*(above|over|greater than)",
+    "example_questions": [
+      "(how many|count).*(gross margin|gross profit margin).*(above|over|greater than)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "companies_liabilities_exceed_assets",
+    "intent_text": "Count companies where total liabilities exceed total assets.",
+    "pattern": "(how many|count).*(liabilities).*(more than|greater than|exceed|more).*assets",
+    "example_questions": [
+      "(how many|count).*(liabilities).*(more than|greater than|exceed|more).*assets"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "balance_sheet"
+    }
+  },
+  {
+    "template_id": "companies_negative_equity",
+    "intent_text": "Count companies with negative stockholders equity.",
+    "pattern": "(how many|count).*(negative).*(stockholders'? equity|shareholders'? equity)",
+    "example_questions": [
+      "(how many|count).*(negative).*(stockholders'? equity|shareholders'? equity)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "balance_sheet"
+    }
+  },
+  {
+    "template_id": "companies_intangibles_above_threshold",
+    "intent_text": "Count companies whose intangible assets exceed a threshold.",
+    "pattern": "(how many|count).*(intangible).*assets.*(above|over|greater than|exceed|exceeding)",
+    "example_questions": [
+      "(how many|count).*(intangible).*assets.*(above|over|greater than|exceed|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "balance_sheet"
+    }
+  },
+  {
+    "template_id": "companies_working_capital_above_threshold",
+    "intent_text": "Count companies whose working capital exceeds a threshold.",
+    "pattern": "(how many|count).*(working capital).*(above|over|greater than|exceed|exceeding)",
+    "example_questions": [
+      "(how many|count).*(working capital).*(above|over|greater than|exceed|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "liquidity"
+    }
+  },
+  {
+    "template_id": "companies_positive_free_cash_flow",
+    "intent_text": "Count companies reporting positive operating cash flow.",
+    "pattern": "(how many|count).*(positive).*(free cash flow)",
+    "example_questions": [
+      "(how many|count).*(positive).*(free cash flow)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_free_cash_flow_above_threshold",
+    "intent_text": "Count companies whose free cash flow exceeds a threshold.",
+    "pattern": "(how many|count).*(free cash flow).*(above|over|greater than|exceed|exceeding)",
+    "example_questions": [
+      "(how many|count).*(free cash flow).*(above|over|greater than|exceed|exceeding)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_acquisitions_above_threshold",
+    "intent_text": "Count companies whose acquisition spending exceeds a threshold.",
+    "pattern": "(how many|count).*(acquisition|acquisitions|business combination).*(above|over|greater than|exceed)",
+    "example_questions": [
+      "(how many|count).*(acquisition|acquisitions|business combination).*(above|over|greater than|exceed)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_change_in_cash",
+    "intent_text": "Retrieve latest change in cash and cash equivalents for a company.",
+    "pattern": "what.*change.*cash.*cash equivalents",
+    "example_questions": [
+      "what.*change.*cash.*cash equivalents"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_negative_operating_cash_flow",
+    "intent_text": "Count companies reporting negative operating cash flow.",
+    "pattern": "(how many|count).*(negative).*(operating cash flow)",
+    "example_questions": [
+      "(how many|count).*(negative).*(operating cash flow)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "company_acquisition_spending",
+    "intent_text": "Retrieve recent acquisition spending for a company.",
+    "pattern": "what.*acquisition.*spending",
+    "example_questions": [
+      "what.*acquisition.*spending"
+    ],
+    "metadata": {
+      "parameters": [
+        "company"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_new_debt_issued",
+    "intent_text": "Count companies that issued new long-term debt.",
+    "pattern": "(how many|count).*(issued|raised).*(debt)",
+    "example_questions": [
+      "(how many|count).*(issued|raised).*(debt)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "companies_shareholder_return_above_threshold",
+    "intent_text": "Count companies returning more than a threshold share of operating cash flow to shareholders.",
+    "pattern": "(how many|count).*(return|returned).*(operating cash flow).*(above|over|greater than|exceed|%)?.*shareholders",
+    "example_questions": [
+      "(how many|count).*(return|returned).*(operating cash flow).*(above|over|greater than|exceed|%)?.*shareholders"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "distinct_currency_count",
+    "intent_text": "Count distinct currency codes present in the dataset.",
+    "pattern": "how many.*(currencies|currency codes).*represented",
+    "example_questions": [
+      "how many.*(currencies|currency codes).*represented"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "currency_units"
+    }
+  },
+  {
+    "template_id": "second_most_common_currency",
+    "intent_text": "Identify the second most common currency in the dataset.",
+    "pattern": "second most common currency",
+    "example_questions": [
+      "second most common currency"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "currency_units"
+    }
+  },
+  {
+    "template_id": "least_common_currency",
+    "intent_text": "Identify the least common currency in the dataset.",
+    "pattern": "least common currency",
+    "example_questions": [
+      "least common currency"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "currency_units"
+    }
+  },
+  {
+    "template_id": "companies_forex_gain_loss",
+    "intent_text": "Count companies with non-zero foreign exchange gains or losses in the latest filing.",
+    "pattern": "(how many|count).*(foreign exchange|fx|currency translation).*(gain|loss)",
+    "example_questions": [
+      "(how many|count).*(foreign exchange|fx|currency translation).*(gain|loss)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "income_statement"
+    }
+  },
+  {
+    "template_id": "most_common_non_monetary_unit",
+    "intent_text": "Identify the most common unit of measure that is not a currency code.",
+    "pattern": "most common non-monetary unit",
+    "example_questions": [
+      "most common non-monetary unit"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "unit_analysis"
+    }
+  },
+  {
+    "template_id": "unique_unit_count",
+    "intent_text": "Count total unique unit types present in the dataset.",
+    "pattern": "(total|overall).*(unique|different).*(unit types|units)",
+    "example_questions": [
+      "(total|overall).*(unique|different).*(unit types|units)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "unit_analysis"
+    }
+  },
+  {
+    "template_id": "distinct_fiscal_year_total",
+    "intent_text": "Count the number of unique fiscal year end codes.",
+    "pattern": "(how many|count).*(different|unique).*(fiscal year ends)",
+    "example_questions": [
+      "(how many|count).*(different|unique).*(fiscal year ends)"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "filing_patterns"
+    }
+  },
+  {
+    "template_id": "companies_more_liabilities_than_assets",
+    "intent_text": "Count companies with total liabilities greater than total assets.",
+    "pattern": "(how many|count).*(have ).*liabilities.*than.*assets",
+    "example_questions": [
+      "(how many|count).*(have ).*liabilities.*than.*assets"
+    ],
+    "metadata": {
+      "parameters": [],
+      "intent_category": "balance_sheet"
+    }
+  },
+  {
+    "template_id": "companies_acquisition_spending_above_threshold",
+    "intent_text": "Count companies whose acquisition spending exceeds a threshold (spent phrasing).",
+    "pattern": "(how many|count).*(spent|spend).*(above|over|greater than|more than|exceed|exceeding).*(acquisition|acquisitions|business combination)",
+    "example_questions": [
+      "(how many|count).*(spent|spend).*(above|over|greater than|more than|exceed|exceeding).*(acquisition|acquisitions|business combination)"
+    ],
+    "metadata": {
+      "parameters": [
+        "threshold"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "submission_count_by_fiscal_year_value",
+    "intent_text": "Count submissions for a specific fiscal year.",
+    "pattern": "(how many|count).*(fiscal year) (\\d{4})",
+    "example_questions": [
+      "(how many|count).*(fiscal year) (\\d{4})"
+    ],
+    "metadata": {
+      "parameters": [
+        "fiscal_year"
+      ],
+      "intent_category": "filing_patterns"
+    }
+  }
+]
