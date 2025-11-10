@@ -4,7 +4,7 @@
     "description": "Advanced time series analysis questions for multi-period financial trend evaluation and visualization, enhanced with CFO strategic focus areas",
     "version": "2.0",
     "created_date": "2025-01-28",
-    "total_questions": 46,
+    "total_questions": 45,
     "difficulty_level": "advanced",
     "expected_max_response_time_ms": 20000,
     "categories": [
@@ -169,73 +169,6 @@
         "sample_analysis": "WITH tech_companies AS (\n    SELECT DISTINCT cik, name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Information Technology'\n),\nbase_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN tech_companies t USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nfilings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM base_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT f.cik, f.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM filings f\n    JOIN read_parquet('data/parquet/num.parquet') n\n      ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n    SELECT t.name, v.cik, v.fiscal_year, v.net_income, v.revenue,\n           v.net_income / NULLIF(v.revenue, 0) AS profit_margin\n    FROM values v\n    JOIN tech_companies t ON v.cik = t.cik\n    WHERE v.net_income IS NOT NULL\n      AND v.revenue IS NOT NULL\n),\nordered AS (\n    SELECT m.*,\n           LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin,\n           LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year\n    FROM margins m\n)\nSELECT name,\n       ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END)*100, 2) AS margin_2019_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END)*100, 2) AS margin_2020_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END)*100, 2) AS margin_2021_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END)*100, 2) AS margin_2022_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END)*100, 2) AS margin_2023_pct,\n       ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))*100, 2) AS improvement_pct,\n       SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps\nFROM ordered\nGROUP BY name\nHAVING COUNT(DISTINCT fiscal_year) = 5\nORDER BY consistency_steps DESC, improvement_pct DESC, name\nLIMIT 5;"
       },
       "max_response_time_ms": 15000
-    },
-    {
-      "id": "TS_002",
-      "category": "cash_flow",
-      "difficulty": "medium",
-      "question": "Analyze free cash flow generation trends for Energy sector companies from 2020 through 2023, showing how swings in operating cash and capex affected free cash flow.",
-      "expected_answer": {
-        "format": "Quarterly cash flow progression table",
-        "visualization": "Stacked bar chart showing cash flow components",
-        "sample_analysis": "SELECT c.name, f.period_end_date,\n  f.net_cash_provided_by_used_in_operating_activities / 1000000 as operating_cf_millions,\n  f.payments_to_acquire_property_plant_and_equipment / 1000000 as capex_millions,\n  (f.net_cash_provided_by_used_in_operating_activities + f.payments_to_acquire_property_plant_and_equipment) / 1000000 as free_cf_millions\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Energy'\n  AND c.name IN ('Exxon Mobil Corporation', 'Chevron Corporation', 'ConocoPhillips', 'EOG Resources Inc')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2023-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nORDER BY c.name, f.period_end_date;",
-        "sample_data": [
-          {
-            "company": "Exxon Mobil Corporation",
-            "2020": "-$19,320M",
-            "2021": "$6,845M",
-            "2022": "$49,065M",
-            "2023": "$36,010M"
-          },
-          {
-            "company": "Chevron Corporation",
-            "2020": "-$8,510M",
-            "2021": "$15,625M",
-            "2022": "$35,280M",
-            "2023": "$26,855M"
-          },
-          {
-            "company": "ConocoPhillips",
-            "2020": "-$1,845M",
-            "2021": "$8,920M",
-            "2022": "$18,650M",
-            "2023": "$14,230M"
-          },
-          {
-            "company": "EOG Resources Inc",
-            "2020": "$1,260M",
-            "2021": "$4,185M",
-            "2022": "$8,945M",
-            "2023": "$6,720M"
-          }
-        ],
-        "business_insight": "Energy sector companies experienced the most dramatic free cash flow transformation of any S&P sector from 2020-2023, directly tracking oil price recovery and operational efficiency gains. The pandemic-induced oil price collapse in 2020 generated massive negative free cash flows for integrated oils, followed by unprecedented cash generation as WTI crude recovered from $20 to $80+ per barrel. Companies that maintained disciplined capital allocation while optimizing production costs emerged as cash flow champions, with Chevron and ConocoPhillips demonstrating superior capital efficiency.",
-        "key_findings": [
-          "Exxon showed most dramatic turnaround: -$19.3B to +$49.1B free cash flow (2020 to 2022 peak)",
-          "Chevron maintained strongest consistency with positive FCF in 2021-2023 averaging $26B annually",
-          "ConocoPhillips demonstrated best capital discipline with 2022 FCF yield exceeding 15%",
-          "Independent producers (EOG) showed more resilient cash flows during 2020 downturn",
-          "Sector aggregate free cash flow improved by $180B+ from 2020 trough to 2022 peak"
-        ],
-        "investment_implications": [
-          "Energy cash flows remain highly correlated with commodity prices, requiring disciplined capital allocation",
-          "Companies with lower breakeven costs (Chevron, ConocoPhillips) offer more sustainable FCF profiles",
-          "Record 2022-2023 cash generation enabled aggressive shareholder returns via dividends and buybacks",
-          "Capital discipline learned during downturn creates structural cash flow advantages at current oil prices"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "4 years",
-        "required_metrics": [
-          "free_cash_flow",
-          "operating_cash_flow"
-        ],
-        "sector_filter": "Energy",
-        "min_companies": 4
-      },
-      "max_response_time_ms": 15000,
-      "time_span": "2020-2023",
-      "business_context": "Quantify energy free cash flow swings tied to oil price volatility."
     },
     {
       "id": "TS_003",
