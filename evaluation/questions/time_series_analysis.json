@@ -4,15 +4,52 @@
     "description": "Advanced time series analysis questions for multi-period financial trend evaluation and visualization, enhanced with CFO strategic focus areas",
     "version": "2.0",
     "created_date": "2025-01-28",
-    "total_questions": 40,
+    "total_questions": 15,
     "difficulty_level": "advanced",
     "expected_max_response_time_ms": 20000,
-    "categories": ["ROE", "Financial Ratios", "Profitability", "Cash Flow", "Debt Analysis", "Capital Allocation", "ESG Performance", "Digital ROI", "Risk Management", "M&A Efficiency", "Supply Chain Resilience", "Regulatory Impact", "Market Share Strategy"],
-    "visualization_types": ["Line charts", "Bar charts", "Trend analysis", "Comparative analysis", "Heat maps", "Waterfall charts", "Heatmaps", "Scatter plots", "Multi-axis charts", "Dashboard matrices", "Correlation matrices", "Risk-return bubbles", "Portfolio optimization frontiers"],
-    "time_spans": ["YoY", "QoQ", "Multi-year trends", "5-year analysis", "3-5 years", "7-10 years", "Full cycle analysis", "Pre/post event analysis"],
+    "categories": [
+      "ROE",
+      "Financial Ratios",
+      "Profitability",
+      "Cash Flow",
+      "Debt Analysis",
+      "Capital Allocation",
+      "ESG Performance",
+      "Digital ROI",
+      "Risk Management",
+      "M&A Efficiency",
+      "Supply Chain Resilience",
+      "Regulatory Impact",
+      "Market Share Strategy"
+    ],
+    "visualization_types": [
+      "Line charts",
+      "Bar charts",
+      "Trend analysis",
+      "Comparative analysis",
+      "Heat maps",
+      "Waterfall charts",
+      "Heatmaps",
+      "Scatter plots",
+      "Multi-axis charts",
+      "Dashboard matrices",
+      "Correlation matrices",
+      "Risk-return bubbles",
+      "Portfolio optimization frontiers"
+    ],
+    "time_spans": [
+      "YoY",
+      "QoQ",
+      "Multi-year trends",
+      "5-year analysis",
+      "3-5 years",
+      "7-10 years",
+      "Full cycle analysis",
+      "Pre/post event analysis"
+    ],
     "business_focus": [
       "Long-term trend analysis",
-      "Cyclical pattern identification", 
+      "Cyclical pattern identification",
       "Competitive performance tracking",
       "Risk assessment over time",
       "Investment decision support",
@@ -38,7 +75,7 @@
       "time_span": "5 years",
       "expected_semantic_match_types": [
         "profitability analysis",
-        "technology sector analysis", 
+        "technology sector analysis",
         "multi-year trends",
         "margin improvement"
       ],
@@ -47,7 +84,11 @@
         "expected_sql_generation": true,
         "expected_business_relevance": "high",
         "expected_data_span": "5 years",
-        "required_metrics": ["profit_margin", "revenue", "net_income"],
+        "required_metrics": [
+          "profit_margin",
+          "revenue",
+          "net_income"
+        ],
         "sector_filter": "Information Technology",
         "min_companies": 5
       },
@@ -58,13 +99,67 @@
         "format": "Multi-year table with profit margins",
         "visualization": "Line chart showing profit margin trends",
         "data_table": {
-          "columns": ["Company", "2019_Margin_%", "2020_Margin_%", "2021_Margin_%", "2022_Margin_%", "2023_Margin_%", "5Yr_Improvement", "Consistency_Score"],
+          "columns": [
+            "Company",
+            "2019_Margin_%",
+            "2020_Margin_%",
+            "2021_Margin_%",
+            "2022_Margin_%",
+            "2023_Margin_%",
+            "5Yr_Improvement",
+            "Consistency_Score"
+          ],
           "sample_data": [
-            ["Apple Inc", "21.2", "20.9", "25.9", "25.3", "26.1", "+4.9%", "9.2"],
-            ["Microsoft Corp", "15.2", "17.0", "22.2", "23.7", "24.3", "+9.1%", "8.8"], 
-            ["NVIDIA Corp", "12.8", "15.3", "26.0", "32.0", "28.5", "+15.7%", "7.5"],
-            ["Adobe Inc", "18.9", "22.1", "23.5", "24.8", "26.2", "+7.3%", "8.9"],
-            ["Salesforce Inc", "2.1", "17.7", "18.9", "19.2", "20.4", "+18.3%", "7.2"]
+            [
+              "Apple Inc",
+              "21.2",
+              "20.9",
+              "25.9",
+              "25.3",
+              "26.1",
+              "+4.9%",
+              "9.2"
+            ],
+            [
+              "Microsoft Corp",
+              "15.2",
+              "17.0",
+              "22.2",
+              "23.7",
+              "24.3",
+              "+9.1%",
+              "8.8"
+            ],
+            [
+              "NVIDIA Corp",
+              "12.8",
+              "15.3",
+              "26.0",
+              "32.0",
+              "28.5",
+              "+15.7%",
+              "7.5"
+            ],
+            [
+              "Adobe Inc",
+              "18.9",
+              "22.1",
+              "23.5",
+              "24.8",
+              "26.2",
+              "+7.3%",
+              "8.9"
+            ],
+            [
+              "Salesforce Inc",
+              "2.1",
+              "17.7",
+              "18.9",
+              "19.2",
+              "20.4",
+              "+18.3%",
+              "7.2"
+            ]
           ]
         },
         "business_insight": "Technology leaders demonstrate distinct profitability patterns: Apple maintains premium margins through ecosystem lock-in, Microsoft benefits from recurring cloud revenue, while NVIDIA shows explosive growth driven by AI demand. Companies with subscription models (Microsoft, Adobe, Salesforce) show more consistent improvement than hardware-dependent firms.",
@@ -77,7 +172,7 @@
         ],
         "investment_implications": [
           "Companies with recurring revenue models show more predictable margin expansion",
-          "AI infrastructure providers (NVIDIA) offer highest growth but more volatility", 
+          "AI infrastructure providers (NVIDIA) offer highest growth but more volatility",
           "Mature platforms (Apple, Microsoft) provide stable margin profiles for conservative investors",
           "Cloud transformation leaders positioned for continued profitability growth"
         ]
@@ -85,59 +180,43 @@
       "max_response_time_ms": 15000
     },
     {
-      "id": "TS_002", 
-      "category": "ROE",
-      "difficulty": "medium",
-      "question": "Show the Return on Equity trends for major Financial Services companies from 2020 to 2024, including the impact of interest rate changes.",
-      "expected_answer": {
-        "format": "Year-over-year ROE comparison table",
-        "visualization": "Multi-line chart with ROE trends",
-        "sample_analysis": "SELECT c.name, f.period_end_date, \n  ROUND((f.net_income_loss * 4.0) / f.stockholders_equity * 100, 2) as roe_percent\nFROM financials f\nJOIN companies c ON f.cik = c.cik \nWHERE c.gics_sector = 'Financials' \n  AND c.name IN ('JPMorgan Chase & Co', 'Bank of America Corp', 'Wells Fargo & Company', 'Goldman Sachs Group Inc', 'Morgan Stanley', 'Citigroup Inc')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nORDER BY c.name, f.period_end_date;",
-        "sample_data": [
-          {"company": "JPMorgan Chase & Co", "2020": "11.2%", "2021": "16.8%", "2022": "15.3%", "2023": "14.9%", "2024": "15.1%"},
-          {"company": "Bank of America Corp", "2020": "6.1%", "2021": "12.3%", "2022": "11.8%", "2023": "11.4%", "2024": "11.7%"},
-          {"company": "Wells Fargo & Company", "2020": "2.4%", "2021": "11.8%", "2022": "10.9%", "2023": "10.1%", "2024": "10.8%"},
-          {"company": "Goldman Sachs Group Inc", "2020": "11.1%", "2021": "23.0%", "2022": "11.5%", "2023": "10.8%", "2024": "12.4%"},
-          {"company": "Morgan Stanley", "2020": "13.2%", "2021": "19.6%", "2022": "14.8%", "2023": "13.5%", "2024": "14.2%"},
-          {"company": "Citigroup Inc", "2020": "4.1%", "2021": "11.5%", "2022": "7.9%", "2023": "7.2%", "2024": "8.1%"}
-        ],
-        "business_insight": "Financial Services companies demonstrated remarkable ROE recovery patterns from 2020-2024, directly correlated with interest rate cycles and credit normalization. The COVID-19 pandemic initially compressed returns due to massive loan loss provisions, but the subsequent rate hiking cycle beginning in 2022 restored profitability dynamics. Investment banks (Goldman Sachs, Morgan Stanley) showed higher volatility due to trading revenues, while commercial banks exhibited more stable patterns as net interest margins expanded with rising rates.",
-        "key_findings": [
-          "Goldman Sachs showed highest ROE volatility (11.1% to 23.0% range) due to trading revenue sensitivity",
-          "JPMorgan maintained most consistent performance with ROE above 14% post-2021 recovery",
-          "Wells Fargo experienced deepest COVID impact (2.4% in 2020) but showed strong recovery trajectory",
-          "All major banks benefited from 2022-2024 rate increases, with ROE improvement averaging 3-4 percentage points",
-          "Commercial banks outperformed investment banks in ROE stability during rate transition periods"
-        ],
-        "investment_implications": [
-          "Rising rate environments favor commercial banks with large deposit bases over investment banks",
-          "Credit cycle normalization post-COVID provides sustainable ROE improvement for quality banks",
-          "JPMorgan's consistent 15%+ ROE demonstrates defensive moat in competitive banking sector",
-          "Regional bank exposure may offer higher ROE upside but with increased credit cycle sensitivity"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
-        "required_metrics": ["roe", "net_income", "shareholders_equity"],
-        "sector_filter": "Financials",
-        "min_companies": 6
-      },
-      "max_response_time_ms": 15000
-    },
-    {
       "id": "TS_003",
       "category": "Cash Flow",
-      "difficulty": "medium", 
+      "difficulty": "medium",
       "question": "Analyze the free cash flow generation trends for Energy sector companies over the past 4 years (2020-2023), highlighting the impact of oil price volatility.",
       "expected_answer": {
         "format": "Quarterly cash flow progression table",
         "visualization": "Stacked bar chart showing cash flow components",
         "sample_analysis": "SELECT c.name, f.period_end_date,\n  f.net_cash_provided_by_used_in_operating_activities / 1000000 as operating_cf_millions,\n  f.payments_to_acquire_property_plant_and_equipment / 1000000 as capex_millions,\n  (f.net_cash_provided_by_used_in_operating_activities + f.payments_to_acquire_property_plant_and_equipment) / 1000000 as free_cf_millions\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Energy'\n  AND c.name IN ('Exxon Mobil Corporation', 'Chevron Corporation', 'ConocoPhillips', 'EOG Resources Inc')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2023-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nORDER BY c.name, f.period_end_date;",
         "sample_data": [
-          {"company": "Exxon Mobil Corporation", "2020": "-$19,320M", "2021": "$6,845M", "2022": "$49,065M", "2023": "$36,010M"},
-          {"company": "Chevron Corporation", "2020": "-$8,510M", "2021": "$15,625M", "2022": "$35,280M", "2023": "$26,855M"},
-          {"company": "ConocoPhillips", "2020": "-$1,845M", "2021": "$8,920M", "2022": "$18,650M", "2023": "$14,230M"},
-          {"company": "EOG Resources Inc", "2020": "$1,260M", "2021": "$4,185M", "2022": "$8,945M", "2023": "$6,720M"}
+          {
+            "company": "Exxon Mobil Corporation",
+            "2020": "-$19,320M",
+            "2021": "$6,845M",
+            "2022": "$49,065M",
+            "2023": "$36,010M"
+          },
+          {
+            "company": "Chevron Corporation",
+            "2020": "-$8,510M",
+            "2021": "$15,625M",
+            "2022": "$35,280M",
+            "2023": "$26,855M"
+          },
+          {
+            "company": "ConocoPhillips",
+            "2020": "-$1,845M",
+            "2021": "$8,920M",
+            "2022": "$18,650M",
+            "2023": "$14,230M"
+          },
+          {
+            "company": "EOG Resources Inc",
+            "2020": "$1,260M",
+            "2021": "$4,185M",
+            "2022": "$8,945M",
+            "2023": "$6,720M"
+          }
         ],
         "business_insight": "Energy sector companies experienced the most dramatic free cash flow transformation of any S&P sector from 2020-2023, directly tracking oil price recovery and operational efficiency gains. The pandemic-induced oil price collapse in 2020 generated massive negative free cash flows for integrated oils, followed by unprecedented cash generation as WTI crude recovered from $20 to $80+ per barrel. Companies that maintained disciplined capital allocation while optimizing production costs emerged as cash flow champions, with Chevron and ConocoPhillips demonstrating superior capital efficiency.",
         "key_findings": [
@@ -150,13 +229,16 @@
         "investment_implications": [
           "Energy cash flows remain highly correlated with commodity prices, requiring disciplined capital allocation",
           "Companies with lower breakeven costs (Chevron, ConocoPhillips) offer more sustainable FCF profiles",
-          "Record 2022-2023 cash generation enabled aggressive shareholder returns via dividends and buybacks", 
+          "Record 2022-2023 cash generation enabled aggressive shareholder returns via dividends and buybacks",
           "Capital discipline learned during downturn creates structural cash flow advantages at current oil prices"
         ]
       },
       "retrieval_test_criteria": {
         "expected_data_span": "4 years",
-        "required_metrics": ["free_cash_flow", "operating_cash_flow"],
+        "required_metrics": [
+          "free_cash_flow",
+          "operating_cash_flow"
+        ],
         "sector_filter": "Energy",
         "min_companies": 4
       },
@@ -172,14 +254,62 @@
         "visualization": "Waterfall chart showing debt reduction progression",
         "sample_analysis": "WITH debt_reduction AS (\n  SELECT c.name, c.gics_sector,\n    f.period_end_date,\n    (f.long_term_debt + COALESCE(f.short_term_debt, 0)) / 1000000 as total_debt_millions,\n    ROUND((f.long_term_debt + COALESCE(f.short_term_debt, 0)) / NULLIF(f.stockholders_equity, 0), 2) as debt_to_equity\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE f.period_end_date BETWEEN '2021-01-01' AND '2023-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n    AND f.long_term_debt > 0\n)\nSELECT name, gics_sector,\n  MIN(total_debt_millions) as min_debt,\n  MAX(total_debt_millions) as max_debt,\n  ROUND(((MIN(total_debt_millions) - MAX(total_debt_millions)) / MAX(total_debt_millions)) * 100, 1) as debt_reduction_pct\nFROM debt_reduction\nGROUP BY name, gics_sector\nHAVING COUNT(*) >= 8  -- At least 8 quarters of data\nORDER BY debt_reduction_pct DESC\nLIMIT 10;",
         "sample_data": [
-          {"company": "Ford Motor Company", "sector": "Consumer Discretionary", "2021_debt": "$156,230M", "2023_debt": "$95,450M", "reduction": "-38.9%"},
-          {"company": "General Motors Company", "sector": "Consumer Discretionary", "2021_debt": "$118,950M", "2023_debt": "$82,340M", "reduction": "-30.8%"},
-          {"company": "Netflix Inc", "sector": "Communication Services", "2021_debt": "$16,980M", "2023_debt": "$12,450M", "reduction": "-26.7%"},
-          {"company": "AT&T Inc", "sector": "Communication Services", "2021_debt": "$173,850M", "2023_debt": "$134,280M", "reduction": "-22.8%"},
-          {"company": "Boeing Company", "sector": "Industrials", "2021_debt": "$58,760M", "2023_debt": "$47,320M", "reduction": "-19.5%"},
-          {"company": "Delta Air Lines Inc", "sector": "Industrials", "2021_debt": "$33,450M", "2023_debt": "$27,890M", "reduction": "-16.6%"},
-          {"company": "Marriott International Inc", "sector": "Consumer Discretionary", "2021_debt": "$11,280M", "2023_debt": "$9,650M", "reduction": "-14.4%"},
-          {"company": "Las Vegas Sands Corp", "sector": "Consumer Discretionary", "2021_debt": "$12,950M", "2023_debt": "$11,230M", "reduction": "-13.3%"}
+          {
+            "company": "Ford Motor Company",
+            "sector": "Consumer Discretionary",
+            "2021_debt": "$156,230M",
+            "2023_debt": "$95,450M",
+            "reduction": "-38.9%"
+          },
+          {
+            "company": "General Motors Company",
+            "sector": "Consumer Discretionary",
+            "2021_debt": "$118,950M",
+            "2023_debt": "$82,340M",
+            "reduction": "-30.8%"
+          },
+          {
+            "company": "Netflix Inc",
+            "sector": "Communication Services",
+            "2021_debt": "$16,980M",
+            "2023_debt": "$12,450M",
+            "reduction": "-26.7%"
+          },
+          {
+            "company": "AT&T Inc",
+            "sector": "Communication Services",
+            "2021_debt": "$173,850M",
+            "2023_debt": "$134,280M",
+            "reduction": "-22.8%"
+          },
+          {
+            "company": "Boeing Company",
+            "sector": "Industrials",
+            "2021_debt": "$58,760M",
+            "2023_debt": "$47,320M",
+            "reduction": "-19.5%"
+          },
+          {
+            "company": "Delta Air Lines Inc",
+            "sector": "Industrials",
+            "2021_debt": "$33,450M",
+            "2023_debt": "$27,890M",
+            "reduction": "-16.6%"
+          },
+          {
+            "company": "Marriott International Inc",
+            "sector": "Consumer Discretionary",
+            "2021_debt": "$11,280M",
+            "2023_debt": "$9,650M",
+            "reduction": "-14.4%"
+          },
+          {
+            "company": "Las Vegas Sands Corp",
+            "sector": "Consumer Discretionary",
+            "2021_debt": "$12,950M",
+            "2023_debt": "$11,230M",
+            "reduction": "-13.3%"
+          }
         ],
         "business_insight": "The 2021-2023 period marked a significant corporate deleveraging cycle as companies recovered from pandemic-induced borrowing and capitalized on strong cash flows to reduce debt burdens. Automotive companies led the charge with Ford and GM executing aggressive debt reduction strategies, reducing total debt by 30-40% through improved operational cash flows and strategic asset optimization. Communication services and travel-related companies also prioritized balance sheet repair, with Netflix and AT&T substantially reducing leverage ratios while maintaining growth investments.",
         "key_findings": [
@@ -198,7 +328,10 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "3 years",
-        "required_metrics": ["total_debt", "debt_to_equity"],
+        "required_metrics": [
+          "total_debt",
+          "debt_to_equity"
+        ],
         "sector_filter": "All",
         "min_companies": 10
       },
@@ -214,12 +347,60 @@
         "visualization": "Line chart with trend indicators",
         "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  ROUND(AVG(f.assets_current / NULLIF(f.liabilities_current, 0)), 2) as current_ratio\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Health Care'\n  AND c.name IN ('Johnson & Johnson', 'Pfizer Inc', 'Merck & Co Inc', 'Abbott Laboratories', 'Eli Lilly and Company', 'Bristol-Myers Squibb Company')\n  AND f.period_end_date BETWEEN '2019-01-01' AND '2023-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\n  AND f.assets_current > 0 AND f.liabilities_current > 0\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
         "sample_data": [
-          {"company": "Johnson & Johnson", "2019": "1.32", "2020": "1.45", "2021": "1.61", "2022": "1.58", "2023": "1.74", "trend": "↗"},
-          {"company": "Pfizer Inc", "2019": "1.18", "2020": "1.28", "2021": "2.11", "2022": "1.89", "2023": "1.95", "trend": "↗"},
-          {"company": "Merck & Co Inc", "2019": "1.25", "2020": "1.31", "2021": "1.44", "2022": "1.52", "2023": "1.67", "trend": "↗"},
-          {"company": "Abbott Laboratories", "2019": "0.98", "2020": "1.15", "2021": "1.28", "2022": "1.41", "2023": "1.38", "trend": "↗"},
-          {"company": "Eli Lilly and Company", "2019": "1.09", "2020": "1.22", "2021": "1.35", "2022": "1.48", "2023": "1.52", "trend": "↗"},
-          {"company": "Bristol-Myers Squibb Company", "2019": "1.41", "2020": "1.38", "2021": "1.55", "2022": "1.47", "2023": "1.59", "trend": "↗"}
+          {
+            "company": "Johnson & Johnson",
+            "2019": "1.32",
+            "2020": "1.45",
+            "2021": "1.61",
+            "2022": "1.58",
+            "2023": "1.74",
+            "trend": "\u2197"
+          },
+          {
+            "company": "Pfizer Inc",
+            "2019": "1.18",
+            "2020": "1.28",
+            "2021": "2.11",
+            "2022": "1.89",
+            "2023": "1.95",
+            "trend": "\u2197"
+          },
+          {
+            "company": "Merck & Co Inc",
+            "2019": "1.25",
+            "2020": "1.31",
+            "2021": "1.44",
+            "2022": "1.52",
+            "2023": "1.67",
+            "trend": "\u2197"
+          },
+          {
+            "company": "Abbott Laboratories",
+            "2019": "0.98",
+            "2020": "1.15",
+            "2021": "1.28",
+            "2022": "1.41",
+            "2023": "1.38",
+            "trend": "\u2197"
+          },
+          {
+            "company": "Eli Lilly and Company",
+            "2019": "1.09",
+            "2020": "1.22",
+            "2021": "1.35",
+            "2022": "1.48",
+            "2023": "1.52",
+            "trend": "\u2197"
+          },
+          {
+            "company": "Bristol-Myers Squibb Company",
+            "2019": "1.41",
+            "2020": "1.38",
+            "2021": "1.55",
+            "2022": "1.47",
+            "2023": "1.59",
+            "trend": "\u2197"
+          }
         ],
         "business_insight": "Healthcare companies demonstrated remarkable liquidity strengthening from 2019-2023, driven by COVID-19 vaccine revenues, accelerated drug approvals, and conservative cash management during uncertainty. Pfizer showed the most dramatic improvement with current ratios jumping from 1.18x to 2.11x in 2021 due to COVID vaccine cash generation, while maintaining elevated levels through 2023. Diversified healthcare leaders like J&J and Merck exhibited steady liquidity improvements, reflecting strong operational cash flows and prudent working capital management during supply chain disruptions.",
         "key_findings": [
@@ -238,7 +419,11 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "5 years",
-        "required_metrics": ["current_ratio", "current_assets", "current_liabilities"],
+        "required_metrics": [
+          "current_ratio",
+          "current_assets",
+          "current_liabilities"
+        ],
         "sector_filter": "Health Care",
         "min_companies": 6
       },
@@ -254,12 +439,72 @@
         "visualization": "Heat map showing seasonal profitability patterns",
         "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  EXTRACT(QUARTER FROM f.period_end_date) as quarter,\n  ROUND((f.operating_income_loss / NULLIF(f.revenues, 0)) * 100, 1) as operating_margin_pct\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Consumer Discretionary'\n  AND c.name IN ('Amazon.com Inc', 'Tesla Inc', 'Home Depot Inc', 'Nike Inc', 'McDonald\\'s Corporation', 'Starbucks Corporation', 'Target Corporation', 'Lowe\\'s Companies Inc')\n  AND f.period_end_date >= '2022-01-01'\n  AND f.form_type = '10-Q'\n  AND f.revenues > 0 AND f.operating_income_loss IS NOT NULL\nORDER BY c.name, year, quarter;",
         "sample_data": [
-          {"company": "Amazon.com Inc", "Q1_2022": "3.2%", "Q2_2022": "2.8%", "Q3_2022": "2.4%", "Q4_2022": "2.7%", "Q1_2023": "4.1%", "Q2_2023": "5.7%", "Q3_2023": "7.8%", "Q4_2023": "8.2%"},
-          {"company": "Tesla Inc", "Q1_2022": "19.3%", "Q2_2022": "14.6%", "Q3_2022": "17.2%", "Q4_2022": "16.8%", "Q1_2023": "11.4%", "Q2_2023": "9.6%", "Q3_2023": "7.6%", "Q4_2023": "8.2%"},
-          {"company": "Home Depot Inc", "Q1_2022": "15.8%", "Q2_2022": "15.4%", "Q3_2022": "15.1%", "Q4_2022": "13.9%", "Q1_2023": "14.2%", "Q2_2023": "13.8%", "Q3_2023": "13.6%", "Q4_2023": "12.4%"},
-          {"company": "Nike Inc", "Q1_2022": "12.9%", "Q2_2022": "12.1%", "Q3_2022": "9.8%", "Q4_2022": "11.7%", "Q1_2023": "11.6%", "Q2_2023": "12.8%", "Q3_2023": "10.4%", "Q4_2023": "12.3%"},
-          {"company": "McDonald's Corporation", "Q1_2022": "43.2%", "Q2_2022": "45.1%", "Q3_2022": "46.8%", "Q4_2022": "44.3%", "Q1_2023": "45.7%", "Q2_2023": "47.2%", "Q3_2023": "48.1%", "Q4_2023": "46.9%"},
-          {"company": "Target Corporation", "Q1_2022": "5.3%", "Q2_2022": "2.2%", "Q3_2022": "3.9%", "Q4_2022": "3.6%", "Q1_2023": "3.8%", "Q2_2023": "4.6%", "Q3_2023": "4.2%", "Q4_2023": "4.8%"}
+          {
+            "company": "Amazon.com Inc",
+            "Q1_2022": "3.2%",
+            "Q2_2022": "2.8%",
+            "Q3_2022": "2.4%",
+            "Q4_2022": "2.7%",
+            "Q1_2023": "4.1%",
+            "Q2_2023": "5.7%",
+            "Q3_2023": "7.8%",
+            "Q4_2023": "8.2%"
+          },
+          {
+            "company": "Tesla Inc",
+            "Q1_2022": "19.3%",
+            "Q2_2022": "14.6%",
+            "Q3_2022": "17.2%",
+            "Q4_2022": "16.8%",
+            "Q1_2023": "11.4%",
+            "Q2_2023": "9.6%",
+            "Q3_2023": "7.6%",
+            "Q4_2023": "8.2%"
+          },
+          {
+            "company": "Home Depot Inc",
+            "Q1_2022": "15.8%",
+            "Q2_2022": "15.4%",
+            "Q3_2022": "15.1%",
+            "Q4_2022": "13.9%",
+            "Q1_2023": "14.2%",
+            "Q2_2023": "13.8%",
+            "Q3_2023": "13.6%",
+            "Q4_2023": "12.4%"
+          },
+          {
+            "company": "Nike Inc",
+            "Q1_2022": "12.9%",
+            "Q2_2022": "12.1%",
+            "Q3_2022": "9.8%",
+            "Q4_2022": "11.7%",
+            "Q1_2023": "11.6%",
+            "Q2_2023": "12.8%",
+            "Q3_2023": "10.4%",
+            "Q4_2023": "12.3%"
+          },
+          {
+            "company": "McDonald's Corporation",
+            "Q1_2022": "43.2%",
+            "Q2_2022": "45.1%",
+            "Q3_2022": "46.8%",
+            "Q4_2022": "44.3%",
+            "Q1_2023": "45.7%",
+            "Q2_2023": "47.2%",
+            "Q3_2023": "48.1%",
+            "Q4_2023": "46.9%"
+          },
+          {
+            "company": "Target Corporation",
+            "Q1_2022": "5.3%",
+            "Q2_2022": "2.2%",
+            "Q3_2022": "3.9%",
+            "Q4_2022": "3.6%",
+            "Q1_2023": "3.8%",
+            "Q2_2023": "4.6%",
+            "Q3_2023": "4.2%",
+            "Q4_2023": "4.8%"
+          }
         ],
         "business_insight": "Consumer Discretionary companies exhibit pronounced seasonal and secular margin patterns reflecting diverse business models and market positioning. McDonald's demonstrates exceptional margin stability (43-48%) due to its asset-light franchise model, while Amazon shows dramatic margin expansion from 2.4% to 8.2% as cloud services scaled and logistics efficiency improved. Tesla experienced margin compression from peak levels in early 2022 due to price competition and production scaling challenges, illustrating the volatility of high-growth manufacturing models.",
         "key_findings": [
@@ -278,7 +523,11 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "8 quarters",
-        "required_metrics": ["operating_margin", "operating_income", "revenue"],
+        "required_metrics": [
+          "operating_margin",
+          "operating_income",
+          "revenue"
+        ],
         "sector_filter": "Consumer Discretionary",
         "min_companies": 8
       },
@@ -286,7 +535,7 @@
     },
     {
       "id": "TS_007",
-      "category": "ROE", 
+      "category": "ROE",
       "difficulty": "medium",
       "question": "Which Technology companies have shown declining ROE over the past 3 years despite revenue growth, and what are the underlying causes?",
       "expected_answer": {
@@ -294,11 +543,46 @@
         "visualization": "DuPont analysis charts showing ROE components",
         "sample_analysis": "WITH roe_analysis AS (\n  SELECT c.name,\n    EXTRACT(YEAR FROM f.period_end_date) as year,\n    AVG(f.revenues) / 1000000 as revenue_millions,\n    AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) as roe,\n    AVG(f.net_income_loss / NULLIF(f.revenues, 0)) as net_margin,\n    AVG(f.revenues / NULLIF(f.assets, 0)) as asset_turnover\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE c.gics_sector = 'Information Technology'\n    AND c.name IN ('Meta Platforms Inc', 'Intel Corporation', 'Cisco Systems Inc', 'Oracle Corporation', 'Adobe Inc')\n    AND f.period_end_date BETWEEN '2021-01-01' AND '2023-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n  GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\n)\nSELECT name, \n  MAX(CASE WHEN year = 2021 THEN roe END) as roe_2021,\n  MAX(CASE WHEN year = 2023 THEN roe END) as roe_2023,\n  ROUND((MAX(CASE WHEN year = 2023 THEN roe END) - MAX(CASE WHEN year = 2021 THEN roe END)) * 100, 1) as roe_change_pct\nFROM roe_analysis\nGROUP BY name\nORDER BY roe_change_pct;",
         "sample_data": [
-          {"company": "Meta Platforms Inc", "2021_roe": "31.5%", "2023_roe": "20.8%", "revenue_growth": "+19%", "roe_decline": "-10.7pp", "primary_cause": "Metaverse R&D investments"},
-          {"company": "Intel Corporation", "2021_roe": "26.7%", "2023_roe": "15.2%", "revenue_growth": "-12%", "roe_decline": "-11.5pp", "primary_cause": "Competitive pressure + manufacturing capex"},
-          {"company": "Cisco Systems Inc", "2021_roe": "29.8%", "2023_roe": "22.1%", "revenue_growth": "+3%", "roe_decline": "-7.7pp", "primary_cause": "Supply chain costs + transition investments"},
-          {"company": "Oracle Corporation", "2021_roe": "45.2%", "2023_roe": "41.8%", "revenue_growth": "+18%", "roe_decline": "-3.4pp", "primary_cause": "Cloud infrastructure investments"},
-          {"company": "Adobe Inc", "2021_roe": "35.1%", "2023_roe": "32.6%", "revenue_growth": "+23%", "roe_decline": "-2.5pp", "primary_cause": "AI integration costs"}
+          {
+            "company": "Meta Platforms Inc",
+            "2021_roe": "31.5%",
+            "2023_roe": "20.8%",
+            "revenue_growth": "+19%",
+            "roe_decline": "-10.7pp",
+            "primary_cause": "Metaverse R&D investments"
+          },
+          {
+            "company": "Intel Corporation",
+            "2021_roe": "26.7%",
+            "2023_roe": "15.2%",
+            "revenue_growth": "-12%",
+            "roe_decline": "-11.5pp",
+            "primary_cause": "Competitive pressure + manufacturing capex"
+          },
+          {
+            "company": "Cisco Systems Inc",
+            "2021_roe": "29.8%",
+            "2023_roe": "22.1%",
+            "revenue_growth": "+3%",
+            "roe_decline": "-7.7pp",
+            "primary_cause": "Supply chain costs + transition investments"
+          },
+          {
+            "company": "Oracle Corporation",
+            "2021_roe": "45.2%",
+            "2023_roe": "41.8%",
+            "revenue_growth": "+18%",
+            "roe_decline": "-3.4pp",
+            "primary_cause": "Cloud infrastructure investments"
+          },
+          {
+            "company": "Adobe Inc",
+            "2021_roe": "35.1%",
+            "2023_roe": "32.6%",
+            "revenue_growth": "+23%",
+            "roe_decline": "-2.5pp",
+            "primary_cause": "AI integration costs"
+          }
         ],
         "business_insight": "Technology companies experienced ROE compression from 2021-2023 despite revenue growth due to massive strategic investments in next-generation platforms. Meta's 10.7 percentage point ROE decline reflects $13.7B annual metaverse investments, while Intel's deterioration stems from both competitive pressure in CPUs and $20B+ foundry capital expenditures. This pattern illustrates the tension between maintaining short-term returns and investing in transformational technologies during industry transitions.",
         "key_findings": [
@@ -316,8 +600,13 @@
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "3 years", 
-        "required_metrics": ["roe", "net_margin", "asset_turnover", "equity_multiplier"],
+        "expected_data_span": "3 years",
+        "required_metrics": [
+          "roe",
+          "net_margin",
+          "asset_turnover",
+          "equity_multiplier"
+        ],
         "sector_filter": "Information Technology",
         "min_companies": 5
       },
@@ -333,18 +622,60 @@
         "visualization": "Multi-metric dashboard with cash conversion cycle trends",
         "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  AVG((f.assets_current - f.liabilities_current) / NULLIF(f.revenues, 0) * 365) as working_capital_days,\n  AVG((f.inventory / NULLIF(f.cost_of_revenue, 0)) * 365) as inventory_days,\n  AVG((f.accounts_receivable_net / NULLIF(f.revenues, 0)) * 365) as receivables_days\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Industrials'\n  AND c.name IN ('Caterpillar Inc', 'Boeing Company', '3M Company', 'General Electric Company', 'Lockheed Martin Corporation', 'Raytheon Technologies Corporation', 'Deere & Company')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
         "sample_data": [
-          {"company": "Caterpillar Inc", "2020_wc_days": "89", "2024_wc_days": "67", "improvement": "-22 days", "inventory_trend": "↓", "receivables_trend": "↓"},
-          {"company": "Boeing Company", "2020_wc_days": "156", "2024_wc_days": "118", "improvement": "-38 days", "inventory_trend": "↓", "receivables_trend": "→"},
-          {"company": "3M Company", "2020_wc_days": "78", "2024_wc_days": "72", "improvement": "-6 days", "inventory_trend": "→", "receivables_trend": "↓"},
-          {"company": "General Electric Company", "2020_wc_days": "145", "2024_wc_days": "95", "improvement": "-50 days", "inventory_trend": "↓", "receivables_trend": "↓"},
-          {"company": "Lockheed Martin Corporation", "2020_wc_days": "34", "2024_wc_days": "28", "improvement": "-6 days", "inventory_trend": "→", "receivables_trend": "↓"},
-          {"company": "Deere & Company", "2020_wc_days": "93", "2024_wc_days": "76", "improvement": "-17 days", "inventory_trend": "↓", "receivables_trend": "→"}
+          {
+            "company": "Caterpillar Inc",
+            "2020_wc_days": "89",
+            "2024_wc_days": "67",
+            "improvement": "-22 days",
+            "inventory_trend": "\u2193",
+            "receivables_trend": "\u2193"
+          },
+          {
+            "company": "Boeing Company",
+            "2020_wc_days": "156",
+            "2024_wc_days": "118",
+            "improvement": "-38 days",
+            "inventory_trend": "\u2193",
+            "receivables_trend": "\u2192"
+          },
+          {
+            "company": "3M Company",
+            "2020_wc_days": "78",
+            "2024_wc_days": "72",
+            "improvement": "-6 days",
+            "inventory_trend": "\u2192",
+            "receivables_trend": "\u2193"
+          },
+          {
+            "company": "General Electric Company",
+            "2020_wc_days": "145",
+            "2024_wc_days": "95",
+            "improvement": "-50 days",
+            "inventory_trend": "\u2193",
+            "receivables_trend": "\u2193"
+          },
+          {
+            "company": "Lockheed Martin Corporation",
+            "2020_wc_days": "34",
+            "2024_wc_days": "28",
+            "improvement": "-6 days",
+            "inventory_trend": "\u2192",
+            "receivables_trend": "\u2193"
+          },
+          {
+            "company": "Deere & Company",
+            "2020_wc_days": "93",
+            "2024_wc_days": "76",
+            "improvement": "-17 days",
+            "inventory_trend": "\u2193",
+            "receivables_trend": "\u2192"
+          }
         ],
         "business_insight": "Industrial companies achieved significant working capital optimization from 2020-2024, with aggregate improvements averaging 22 days of cash conversion cycle reduction. Boeing demonstrated the most dramatic improvement (-38 days) through 737 MAX production normalization and inventory optimization, while GE's transformation under Larry Culp delivered -50 days improvement through portfolio simplification and operational excellence. The sector collectively reduced working capital intensity by $180B+ through supply chain digitization, just-in-time manufacturing, and customer payment term optimization.",
         "key_findings": [
           "General Electric achieved most dramatic working capital improvement (-50 days) through business portfolio optimization",
           "Boeing recovered from production issues with -38 days improvement as 737 MAX deliveries normalized",
-          "Caterpillar improved -22 days through supply chain efficiency and dealer inventory optimization", 
+          "Caterpillar improved -22 days through supply chain efficiency and dealer inventory optimization",
           "Defense contractors (Lockheed) maintained tighter working capital cycles due to government contract structures",
           "Agricultural equipment (Deere) benefited from strong farmer cash flows enabling faster collections"
         ],
@@ -357,50 +688,14 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "5 years",
-        "required_metrics": ["working_capital", "cash_conversion_cycle"],
-        "sector_filter": "Industrials", 
+        "required_metrics": [
+          "working_capital",
+          "cash_conversion_cycle"
+        ],
+        "sector_filter": "Industrials",
         "min_companies": 7
       },
       "max_response_time_ms": 16000
-    },
-    {
-      "id": "TS_009",
-      "category": "Debt Analysis",
-      "difficulty": "hard",
-      "question": "Analyze the debt maturity profiles and interest coverage ratio trends for Utilities companies over the past 5 years, assessing refinancing risks.",
-      "expected_answer": {
-        "format": "Debt maturity schedule with coverage ratios",
-        "visualization": "Stacked timeline chart showing debt maturities and coverage trends",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  AVG(f.long_term_debt) / 1000000 as long_term_debt_millions,\n  AVG(f.operating_income_loss / NULLIF(f.interest_expense, 0)) as interest_coverage_ratio,\n  AVG(f.long_term_debt / NULLIF(f.stockholders_equity, 0)) as debt_to_equity,\n  AVG(f.interest_expense) / 1000000 as interest_expense_millions\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Utilities'\n  AND c.name IN ('NextEra Energy Inc', 'Dominion Energy Inc', 'Duke Energy Corporation', 'Southern Company', 'American Electric Power Company Inc')\n  AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\n  AND f.interest_expense > 0\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
-        "sample_data": [
-          {"company": "NextEra Energy Inc", "2019_coverage": "3.8x", "2024_coverage": "4.2x", "debt_trend": "↗", "avg_maturity": "15.2 years", "refinancing_risk": "Low"},
-          {"company": "Dominion Energy Inc", "2019_coverage": "3.2x", "2024_coverage": "3.6x", "debt_trend": "→", "avg_maturity": "12.8 years", "refinancing_risk": "Medium"},
-          {"company": "Duke Energy Corporation", "2019_coverage": "3.4x", "2024_coverage": "3.9x", "debt_trend": "↗", "avg_maturity": "14.5 years", "refinancing_risk": "Low"},
-          {"company": "Southern Company", "2019_coverage": "2.8x", "2024_coverage": "3.1x", "debt_trend": "↗", "avg_maturity": "13.7 years", "refinancing_risk": "Medium"},
-          {"company": "American Electric Power Company Inc", "2019_coverage": "3.5x", "2024_coverage": "4.0x", "debt_trend": "↗", "avg_maturity": "16.1 years", "refinancing_risk": "Low"}
-        ],
-        "business_insight": "Utilities companies strategically optimized their debt profiles from 2019-2024, taking advantage of historically low interest rates to extend maturities and improve coverage ratios. NextEra Energy and Duke Energy emerged as leaders with 4.0x+ interest coverage and 15+ year average maturities, creating substantial financial flexibility for renewable energy investments. The sector collectively refinanced $340B+ of debt at lower rates while extending weighted average maturities from 12.1 to 14.6 years, providing resilience against the current rising rate environment.",
-        "key_findings": [
-          "NextEra Energy achieved strongest financial position with 4.2x coverage and 15.2-year average maturity",
-          "All major utilities improved interest coverage ratios by 0.3-0.4x through operational efficiency and rate base growth",
-          "American Electric Power extended longest average maturity (16.1 years) providing maximum rate protection",
-          "Southern Company faces highest near-term refinancing pressure with lowest coverage ratio (3.1x)",
-          "Sector aggregate debt maturity extension of 2.5 years provides buffer against rate cycle volatility"
-        ],
-        "investment_implications": [
-          "Extended debt maturities provide utilities defensive characteristics during interest rate volatility periods",
-          "Companies with 4.0x+ coverage ratios (NextEra, Duke, AEP) offer superior financial stability for dividend sustainability",
-          "Longer average maturities (15+ years) indicate proactive financial management and lower refinancing risk",
-          "Utilities debt optimization creates capacity for renewable energy transition capital investments without financial stress"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
-        "required_metrics": ["interest_coverage_ratio", "debt_maturity", "total_debt"],
-        "sector_filter": "Utilities",
-        "min_companies": 5
-      },
-      "max_response_time_ms": 18000
     },
     {
       "id": "TS_010",
@@ -412,17 +707,53 @@
         "visualization": "Dual-axis chart showing margins vs. inflation rates",
         "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  ROUND(AVG((f.revenues - f.cost_of_revenue) / NULLIF(f.revenues, 0)) * 100, 1) as gross_margin_pct,\n  AVG(f.revenues) / 1000000 as revenue_millions,\n  ROUND(AVG(f.cost_of_revenue / NULLIF(f.revenues, 0)) * 100, 1) as cogs_as_pct_revenue\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Consumer Staples'\n  AND c.name IN ('Procter & Gamble Co', 'Coca-Cola Company', 'PepsiCo Inc', 'Walmart Inc', 'Costco Wholesale Corporation', 'Colgate-Palmolive Company')\n  AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\n  AND f.revenues > 0 AND f.cost_of_revenue > 0\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
         "sample_data": [
-          {"company": "Procter & Gamble Co", "2019": "49.2%", "2024": "51.1%", "change": "+1.9pp", "inflation_resilience": "Strong"},
-          {"company": "Coca-Cola Company", "2019": "60.8%", "2024": "59.4%", "change": "-1.4pp", "inflation_resilience": "Moderate"},
-          {"company": "PepsiCo Inc", "2019": "53.7%", "2024": "52.9%", "change": "-0.8pp", "inflation_resilience": "Moderate"},
-          {"company": "Walmart Inc", "2019": "24.1%", "2024": "24.6%", "change": "+0.5pp", "inflation_resilience": "Strong"},
-          {"company": "Costco Wholesale Corporation", "2019": "12.9%", "2024": "13.2%", "change": "+0.3pp", "inflation_resilience": "Strong"},
-          {"company": "Colgate-Palmolive Company", "2019": "59.1%", "2024": "58.3%", "change": "-0.8pp", "inflation_resilience": "Moderate"}
+          {
+            "company": "Procter & Gamble Co",
+            "2019": "49.2%",
+            "2024": "51.1%",
+            "change": "+1.9pp",
+            "inflation_resilience": "Strong"
+          },
+          {
+            "company": "Coca-Cola Company",
+            "2019": "60.8%",
+            "2024": "59.4%",
+            "change": "-1.4pp",
+            "inflation_resilience": "Moderate"
+          },
+          {
+            "company": "PepsiCo Inc",
+            "2019": "53.7%",
+            "2024": "52.9%",
+            "change": "-0.8pp",
+            "inflation_resilience": "Moderate"
+          },
+          {
+            "company": "Walmart Inc",
+            "2019": "24.1%",
+            "2024": "24.6%",
+            "change": "+0.5pp",
+            "inflation_resilience": "Strong"
+          },
+          {
+            "company": "Costco Wholesale Corporation",
+            "2019": "12.9%",
+            "2024": "13.2%",
+            "change": "+0.3pp",
+            "inflation_resilience": "Strong"
+          },
+          {
+            "company": "Colgate-Palmolive Company",
+            "2019": "59.1%",
+            "2024": "58.3%",
+            "change": "-0.8pp",
+            "inflation_resilience": "Moderate"
+          }
         ],
         "business_insight": "Consumer Staples companies demonstrated varied pricing power during the 2021-2023 inflation cycle, with clear winners and losers emerging based on brand strength and operational efficiency. Procter & Gamble achieved the strongest margin expansion (+1.9pp) through premium positioning and operational leverage, while retailers like Walmart and Costco maintained surprising resilience despite low absolute margins. The sector's response revealed fundamental differences in brand moats, with companies possessing stronger consumer loyalty maintaining pricing power better than commodity-oriented players.",
         "key_findings": [
           "Procter & Gamble demonstrated strongest pricing power with +1.9pp margin expansion during peak inflation period",
-          "Walmart achieved remarkable margin stability (+0.5pp) despite cost pressures through operational efficiency and scale advantages", 
+          "Walmart achieved remarkable margin stability (+0.5pp) despite cost pressures through operational efficiency and scale advantages",
           "Beverage leaders (Coca-Cola, Pepsi) faced margin pressure (-0.8 to -1.4pp) from aluminum and transportation cost inflation",
           "Membership models (Costco) showed resilience with +0.3pp improvement through fee income and supplier negotiations",
           "Personal care companies (Colgate) experienced modest pressure (-0.8pp) from raw material cost inflation"
@@ -436,7 +767,11 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "6 years",
-        "required_metrics": ["gross_margin", "gross_profit", "revenue"],
+        "required_metrics": [
+          "gross_margin",
+          "gross_profit",
+          "revenue"
+        ],
         "sector_filter": "Consumer Staples",
         "min_companies": 6
       },
@@ -452,12 +787,54 @@
         "visualization": "Bar chart race showing inventory turnover leaders",
         "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  EXTRACT(QUARTER FROM f.period_end_date) as quarter,\n  ROUND((f.cost_of_revenue * 4) / NULLIF(f.inventory, 0), 1) as inventory_turnover_ratio,\n  f.inventory / 1000000 as inventory_millions,\n  ROUND((f.inventory / NULLIF(f.cost_of_revenue, 0)) * 365, 0) as days_inventory_outstanding\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector IN ('Consumer Discretionary', 'Consumer Staples')\n  AND c.name IN ('Walmart Inc', 'Target Corporation', 'Home Depot Inc', 'Amazon.com Inc', 'Costco Wholesale Corporation', 'Best Buy Co Inc')\n  AND f.period_end_date >= '2022-07-01'\n  AND f.form_type = '10-Q'\n  AND f.inventory > 0 AND f.cost_of_revenue > 0\nORDER BY c.name, year, quarter;",
         "sample_data": [
-          {"company": "Walmart Inc", "Q3_2022": "8.1x", "Q2_2024": "8.9x", "improvement": "+0.8x", "DIO_improvement": "-6 days", "efficiency_rank": "#1"},
-          {"company": "Target Corporation", "Q3_2022": "6.2x", "Q2_2024": "7.1x", "improvement": "+0.9x", "DIO_improvement": "-8 days", "efficiency_rank": "#2"},
-          {"company": "Home Depot Inc", "Q3_2022": "4.8x", "Q2_2024": "5.2x", "improvement": "+0.4x", "DIO_improvement": "-4 days", "efficiency_rank": "#5"},
-          {"company": "Amazon.com Inc", "Q3_2022": "8.7x", "Q2_2024": "9.4x", "improvement": "+0.7x", "DIO_improvement": "-5 days", "efficiency_rank": "#1"},
-          {"company": "Costco Wholesale Corporation", "Q3_2022": "11.8x", "Q2_2024": "12.3x", "improvement": "+0.5x", "DIO_improvement": "-2 days", "efficiency_rank": "#1"},
-          {"company": "Best Buy Co Inc", "Q3_2022": "5.1x", "Q2_2024": "5.5x", "improvement": "+0.4x", "DIO_improvement": "-3 days", "efficiency_rank": "#6"}
+          {
+            "company": "Walmart Inc",
+            "Q3_2022": "8.1x",
+            "Q2_2024": "8.9x",
+            "improvement": "+0.8x",
+            "DIO_improvement": "-6 days",
+            "efficiency_rank": "#1"
+          },
+          {
+            "company": "Target Corporation",
+            "Q3_2022": "6.2x",
+            "Q2_2024": "7.1x",
+            "improvement": "+0.9x",
+            "DIO_improvement": "-8 days",
+            "efficiency_rank": "#2"
+          },
+          {
+            "company": "Home Depot Inc",
+            "Q3_2022": "4.8x",
+            "Q2_2024": "5.2x",
+            "improvement": "+0.4x",
+            "DIO_improvement": "-4 days",
+            "efficiency_rank": "#5"
+          },
+          {
+            "company": "Amazon.com Inc",
+            "Q3_2022": "8.7x",
+            "Q2_2024": "9.4x",
+            "improvement": "+0.7x",
+            "DIO_improvement": "-5 days",
+            "efficiency_rank": "#1"
+          },
+          {
+            "company": "Costco Wholesale Corporation",
+            "Q3_2022": "11.8x",
+            "Q2_2024": "12.3x",
+            "improvement": "+0.5x",
+            "DIO_improvement": "-2 days",
+            "efficiency_rank": "#1"
+          },
+          {
+            "company": "Best Buy Co Inc",
+            "Q3_2022": "5.1x",
+            "Q2_2024": "5.5x",
+            "improvement": "+0.4x",
+            "DIO_improvement": "-3 days",
+            "efficiency_rank": "#6"
+          }
         ],
         "business_insight": "Major retailers achieved significant inventory efficiency improvements from Q3 2022 to Q2 2024, with Costco leading at 12.3x turnover and Target showing the most dramatic improvement (+0.9x). The gains reflect widespread adoption of AI-driven demand forecasting, automated replenishment systems, and supply chain optimization following post-COVID disruptions. Amazon and Walmart leveraged their massive scale and technology investments to maintain high-efficiency operations while competitors struggled with traditional inventory management approaches.",
         "key_findings": [
@@ -476,89 +853,15 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "6 quarters",
-        "required_metrics": ["inventory_turnover", "inventory", "cost_of_goods_sold"],
+        "required_metrics": [
+          "inventory_turnover",
+          "inventory",
+          "cost_of_goods_sold"
+        ],
         "sector_filter": "Consumer Discretionary",
         "min_companies": 6
       },
       "max_response_time_ms": 15000
-    },
-    {
-      "id": "TS_012",
-      "category": "ROE",
-      "difficulty": "hard",
-      "question": "Analyze the ROE sustainability for high-growth Technology companies over 7 years (2017-2023), distinguishing between organic growth and financial leverage effects.",
-      "expected_answer": {
-        "format": "ROE decomposition with growth sustainability analysis",
-        "visualization": "Waterfall charts showing ROE drivers over time",
-        "sample_analysis": "WITH roe_components AS (\n  SELECT c.name,\n    EXTRACT(YEAR FROM f.period_end_date) as year,\n    AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) as roe,\n    AVG(f.net_income_loss / NULLIF(f.revenues, 0)) as net_margin,\n    AVG(f.revenues / NULLIF(f.assets, 0)) as asset_turnover,\n    AVG(f.assets / NULLIF(f.stockholders_equity, 0)) as equity_multiplier\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE c.gics_sector = 'Information Technology'\n    AND c.name IN ('NVIDIA Corporation', 'Apple Inc', 'Microsoft Corporation', 'Alphabet Inc', 'Meta Platforms Inc', 'Tesla Inc', 'Adobe Inc', 'Salesforce Inc')\n    AND f.period_end_date BETWEEN '2017-01-01' AND '2023-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n  GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\n)\nSELECT name,\n  MAX(CASE WHEN year = 2017 THEN roe END) as roe_2017,\n  MAX(CASE WHEN year = 2023 THEN roe END) as roe_2023,\n  MAX(CASE WHEN year = 2023 THEN net_margin END) - MAX(CASE WHEN year = 2017 THEN net_margin END) as margin_improvement\nFROM roe_components\nGROUP BY name\nORDER BY roe_2023 DESC;",
-        "sample_data": [
-          {"company": "NVIDIA Corporation", "2017_roe": "22.4%", "2023_roe": "48.1%", "growth_driver": "Operational leverage", "sustainability": "High"},
-          {"company": "Apple Inc", "2017_roe": "36.9%", "2023_roe": "42.8%", "growth_driver": "Asset efficiency", "sustainability": "High"},
-          {"company": "Microsoft Corporation", "2017_roe": "24.1%", "2023_roe": "34.7%", "growth_driver": "Margin expansion", "sustainability": "High"},
-          {"company": "Meta Platforms Inc", "2017_roe": "25.3%", "2023_roe": "20.8%", "growth_driver": "Investment drag", "sustainability": "Medium"},
-          {"company": "Tesla Inc", "2017_roe": "-23.1%", "2023_roe": "19.3%", "growth_driver": "Scale achievement", "sustainability": "Medium"},
-          {"company": "Adobe Inc", "2017_roe": "18.6%", "2023_roe": "32.6%", "growth_driver": "SaaS transition", "sustainability": "High"}
-        ],
-        "business_insight": "Technology ROE sustainability analysis reveals distinct patterns: NVIDIA achieved the most dramatic improvement (+25.7pp) through genuine operational leverage as AI demand drove massive margin expansion, while Apple maintained consistent high returns through superior capital efficiency. Microsoft and Adobe demonstrated sustainable ROE growth through recurring revenue models, whereas Meta's ROE decline reflects strategic metaverse investments. Tesla's transformation from negative to positive ROE illustrates manufacturing scale benefits, though sustainability depends on maintaining production efficiency amid competition.",
-        "key_findings": [
-          "NVIDIA showed highest ROE expansion (+25.7pp) driven by AI infrastructure demand and operational leverage",
-          "Apple maintained most consistent high ROE (36.9% to 42.8%) through superior asset utilization and capital returns",
-          "Microsoft achieved sustainable ROE growth (+10.6pp) via cloud transition and subscription revenue predictability",
-          "Meta's ROE decline (-4.5pp) reflects strategic investment phase rather than fundamental business deterioration",
-          "Tesla achieved remarkable turnaround from -23.1% to +19.3% ROE through manufacturing scale and efficiency gains"
-        ],
-        "investment_implications": [
-          "Companies with operational leverage-driven ROE gains (NVIDIA, Microsoft) offer more sustainable returns than leverage-based improvements",
-          "Platform businesses with network effects (Apple, Microsoft) demonstrate superior ROE consistency and predictability",
-          "Investment-phase companies (Meta, Tesla) require patient capital but may offer highest long-term return potential",
-          "SaaS transition companies (Adobe) provide visible ROE improvement roadmaps through recurring revenue conversion"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "7 years",
-        "required_metrics": ["roe", "asset_turnover", "net_margin", "equity_multiplier"],
-        "sector_filter": "Information Technology", 
-        "min_companies": 8
-      },
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "TS_013",
-      "category": "Cash Flow",
-      "difficulty": "medium",
-      "question": "Compare the capital expenditure intensity and free cash flow yields for Communication Services companies from 2020 to 2024.",
-      "expected_answer": {
-        "format": "CapEx intensity vs. FCF yield analysis",
-        "visualization": "Scatter plot matrix showing investment efficiency",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  AVG(-f.payments_to_acquire_property_plant_and_equipment / NULLIF(f.revenues, 0)) * 100 as capex_intensity_pct,\n  AVG((f.net_cash_provided_by_used_in_operating_activities + f.payments_to_acquire_property_plant_and_equipment) / NULLIF(f.revenues, 0)) * 100 as fcf_yield_pct\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Communication Services'\n  AND c.name IN ('Verizon Communications Inc', 'AT&T Inc', 'Walt Disney Co', 'Comcast Corporation', 'T-Mobile US Inc')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
-        "sample_data": [
-          {"company": "Verizon Communications Inc", "2020_capex": "17.2%", "2024_capex": "14.8%", "2020_fcf": "8.1%", "2024_fcf": "10.3%", "investment_focus": "5G infrastructure"},
-          {"company": "AT&T Inc", "2020_capex": "15.9%", "2024_capex": "13.2%", "2020_fcf": "6.4%", "2024_fcf": "8.7%", "investment_focus": "Fiber expansion"},
-          {"company": "Walt Disney Co", "2020_capex": "8.2%", "2024_capex": "6.1%", "2020_fcf": "-2.8%", "2024_fcf": "7.9%", "investment_focus": "Streaming + parks recovery"},
-          {"company": "Comcast Corporation", "2020_capex": "14.1%", "2024_capex": "11.8%", "2020_fcf": "9.7%", "2024_fcf": "12.4%", "investment_focus": "Broadband infrastructure"}
-        ],
-        "business_insight": "Communication Services companies demonstrated improving capital efficiency from 2020-2024, with traditional telecom operators (Verizon, AT&T) reducing CapEx intensity by 2-3 percentage points as 5G deployment peaked while maintaining healthy FCF yields. Disney showed the most dramatic recovery from negative FCF in 2020 to 7.9% yield by 2024 through streaming scale and parks reopening. The sector collectively optimized capital allocation between growth investments and cash generation as infrastructure buildouts matured.",
-        "key_findings": [
-          "Verizon achieved best capital efficiency improvement: CapEx down 2.4pp while FCF yield up 2.2pp",
-          "Disney demonstrated strongest FCF recovery (+10.7pp) through streaming profitability and parks normalization",
-          "Traditional telecoms maintained disciplined CapEx while improving cash generation through operational leverage",
-          "Cable companies (Comcast) showed consistent capital efficiency with stable high-teens CapEx and improving FCF",
-          "Sector aggregate FCF yield improved 2.8pp as infrastructure investments began generating returns"
-        ],
-        "investment_implications": [
-          "Telecom CapEx peak suggests improving FCF generation phases ahead for Verizon and AT&T",
-          "Disney's streaming profitability inflection creates sustainable cash flow growth trajectory",
-          "Communication Services companies transitioning from investment to cash harvesting phase",
-          "Broadband infrastructure leaders (Comcast) offer stable cash flow profiles with defensive characteristics"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
-        "required_metrics": ["capex_intensity", "free_cash_flow_yield"],
-        "sector_filter": "Communication Services",
-        "min_companies": 5
-      },
-      "max_response_time_ms": 16000
     },
     {
       "id": "TS_014",
@@ -570,10 +873,42 @@
         "visualization": "Area chart showing debt burden evolution",
         "sample_analysis": "WITH airline_metrics AS (\n  SELECT c.name,\n    EXTRACT(YEAR FROM f.period_end_date) as year,\n    AVG((f.long_term_debt + COALESCE(f.short_term_debt, 0) - f.cash_and_cash_equivalents) / NULLIF((f.operating_income_loss + f.depreciation_depletion_and_amortization), 0)) as net_debt_to_ebitda,\n    AVG(f.long_term_debt + COALESCE(f.short_term_debt, 0)) / 1000000 as total_debt_millions\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE c.name IN ('Delta Air Lines Inc', 'Southwest Airlines Co', 'American Airlines Group Inc', 'United Airlines Holdings Inc')\n    AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n  GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\n)\nSELECT * FROM airline_metrics ORDER BY name, year;",
         "sample_data": [
-          {"company": "Delta Air Lines Inc", "2019": "2.8x", "2020": "18.4x", "2021": "12.1x", "2022": "6.2x", "2024": "3.9x", "recovery_path": "Strong"},
-          {"company": "Southwest Airlines Co", "2019": "1.2x", "2020": "6.8x", "2021": "4.1x", "2022": "2.3x", "2024": "1.6x", "recovery_path": "Excellent"},
-          {"company": "American Airlines Group Inc", "2019": "4.1x", "2020": "NM", "2021": "15.7x", "2022": "8.9x", "2024": "5.8x", "recovery_path": "Moderate"},
-          {"company": "United Airlines Holdings Inc", "2019": "3.2x", "2020": "22.1x", "2021": "11.8x", "2022": "7.4x", "2024": "4.2x", "recovery_path": "Good"}
+          {
+            "company": "Delta Air Lines Inc",
+            "2019": "2.8x",
+            "2020": "18.4x",
+            "2021": "12.1x",
+            "2022": "6.2x",
+            "2024": "3.9x",
+            "recovery_path": "Strong"
+          },
+          {
+            "company": "Southwest Airlines Co",
+            "2019": "1.2x",
+            "2020": "6.8x",
+            "2021": "4.1x",
+            "2022": "2.3x",
+            "2024": "1.6x",
+            "recovery_path": "Excellent"
+          },
+          {
+            "company": "American Airlines Group Inc",
+            "2019": "4.1x",
+            "2020": "NM",
+            "2021": "15.7x",
+            "2022": "8.9x",
+            "2024": "5.8x",
+            "recovery_path": "Moderate"
+          },
+          {
+            "company": "United Airlines Holdings Inc",
+            "2019": "3.2x",
+            "2020": "22.1x",
+            "2021": "11.8x",
+            "2022": "7.4x",
+            "2024": "4.2x",
+            "recovery_path": "Good"
+          }
         ],
         "business_insight": "Airline leverage ratios demonstrated dramatic COVID impact and varied recovery trajectories, with Southwest's conservative pre-COVID balance sheet enabling the fastest deleveraging from 6.8x to 1.6x by 2024. Delta's disciplined approach to debt management during the crisis positioned it for strong recovery to near pre-pandemic levels, while American Airlines' higher starting leverage created a more challenging recovery path. The industry collectively improved from peak crisis levels but remains above historical norms, reflecting ongoing debt service from pandemic borrowings.",
         "key_findings": [
@@ -592,50 +927,15 @@
       },
       "retrieval_test_criteria": {
         "expected_data_span": "6 years",
-        "required_metrics": ["net_debt_to_ebitda", "total_debt", "ebitda"],
+        "required_metrics": [
+          "net_debt_to_ebitda",
+          "total_debt",
+          "ebitda"
+        ],
         "sector_filter": "Industrials",
         "min_companies": 4
       },
       "max_response_time_ms": 17000
-    },
-    {
-      "id": "TS_015",
-      "category": "Profitability",
-      "difficulty": "hard",
-      "question": "Analyze the ROIC (Return on Invested Capital) trends for Materials companies over the commodity cycle from 2018 to 2024.",
-      "expected_answer": {
-        "format": "ROIC vs. commodity price correlation analysis",
-        "visualization": "Multi-axis chart showing ROIC and commodity price cycles",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  AVG(f.operating_income_loss / NULLIF((f.assets - f.liabilities_current), 0)) * 100 as roic_pct,\n  AVG((f.assets - f.liabilities_current)) / 1000000 as invested_capital_millions,\n  AVG(f.operating_income_loss) / 1000000 as operating_income_millions\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Materials'\n  AND c.name IN ('Linde plc', 'Dow Inc', 'DuPont de Nemours Inc', '3M Company', 'Air Products and Chemicals Inc', 'Sherwin-Williams Company')\n  AND f.period_end_date BETWEEN '2018-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
-        "sample_data": [
-          {"company": "Linde plc", "2018": "8.9%", "2024": "12.4%", "cycle_resilience": "High", "business_model": "Specialty gases"},
-          {"company": "Dow Inc", "2018": "6.2%", "2024": "11.8%", "cycle_resilience": "Medium", "business_model": "Integrated chemicals"},
-          {"company": "Air Products and Chemicals Inc", "2018": "9.1%", "2024": "10.7%", "cycle_resilience": "High", "business_model": "Industrial gases"},
-          {"company": "3M Company", "2018": "18.2%", "2024": "14.1%", "cycle_resilience": "Medium", "business_model": "Diversified materials"},
-          {"company": "Sherwin-Williams Company", "2018": "14.6%", "2024": "16.2%", "cycle_resilience": "High", "business_model": "Specialty coatings"}
-        ],
-        "business_insight": "Materials companies demonstrated varying ROIC patterns through the 2018-2024 commodity cycle, with specialty-focused companies (Linde, Air Products, Sherwin-Williams) showing superior resilience and improvement. Industrial gas leaders benefited from long-term contracts and essential-use applications, while integrated chemical companies (Dow) experienced more cyclical volatility but ultimately improved through operational efficiency and portfolio optimization. The sector's ROIC improvement reflects strategic focus on higher-value applications and margin discipline during commodity upturns.",
-        "key_findings": [
-          "Linde achieved strongest ROIC improvement (+3.5pp) through specialty gas focus and operational excellence",
-          "Sherwin-Williams maintained highest absolute ROIC (16.2%) via premium positioning in architectural coatings",
-          "Industrial gas companies (Linde, Air Products) showed most consistent returns through cycle due to contracted revenue",
-          "3M faced ROIC pressure (-4.1pp) from litigation costs and portfolio restructuring challenges",
-          "Integrated chemicals (Dow) demonstrated cyclical recovery with +5.6pp ROIC improvement from 2018 trough"
-        ],
-        "investment_implications": [
-          "Specialty materials companies with pricing power (Linde, Sherwin-Williams) offer superior ROIC sustainability",
-          "Industrial gas businesses provide defensive ROIC characteristics through contracted revenue and essential applications",
-          "Integrated chemical companies offer cyclical ROIC upside but require commodity cycle timing for optimal returns",
-          "Materials companies with diversified end-markets and specialty focus demonstrate better through-cycle ROIC performance"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "7 years",
-        "required_metrics": ["roic", "invested_capital", "operating_profit"],
-        "sector_filter": "Materials",
-        "min_companies": 6
-      },
-      "max_response_time_ms": 19000
     },
     {
       "id": "TS_016",
@@ -647,10 +947,34 @@
         "visualization": "Line chart showing asset turnover leaders",
         "sample_analysis": "SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG(f.revenues / NULLIF(f.assets, 0)) as asset_turnover FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Information Technology' AND c.name IN ('Apple Inc', 'Intel Corporation', 'NVIDIA Corporation', 'Cisco Systems Inc', 'Qualcomm Inc', 'Broadcom Inc') AND f.period_end_date BETWEEN '2020-01-01' AND '2023-12-31' AND f.form_type IN ('10-K', '10-Q') GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date) ORDER BY c.name, year;",
         "sample_data": [
-          {"company": "Apple Inc", "2020": "1.18x", "2023": "1.24x", "trend": "↗", "efficiency_rank": "#1"},
-          {"company": "NVIDIA Corporation", "2020": "0.84x", "2023": "0.91x", "trend": "↗", "efficiency_rank": "#2"},
-          {"company": "Qualcomm Inc", "2020": "0.76x", "2023": "0.82x", "trend": "↗", "efficiency_rank": "#3"},
-          {"company": "Intel Corporation", "2020": "0.52x", "2023": "0.41x", "trend": "↓", "efficiency_rank": "#6"}
+          {
+            "company": "Apple Inc",
+            "2020": "1.18x",
+            "2023": "1.24x",
+            "trend": "\u2197",
+            "efficiency_rank": "#1"
+          },
+          {
+            "company": "NVIDIA Corporation",
+            "2020": "0.84x",
+            "2023": "0.91x",
+            "trend": "\u2197",
+            "efficiency_rank": "#2"
+          },
+          {
+            "company": "Qualcomm Inc",
+            "2020": "0.76x",
+            "2023": "0.82x",
+            "trend": "\u2197",
+            "efficiency_rank": "#3"
+          },
+          {
+            "company": "Intel Corporation",
+            "2020": "0.52x",
+            "2023": "0.41x",
+            "trend": "\u2193",
+            "efficiency_rank": "#6"
+          }
         ],
         "business_insight": "Technology hardware companies showed divergent asset efficiency trends, with Apple maintaining superior 1.24x turnover through asset-light manufacturing and inventory optimization, while Intel's efficiency declined to 0.41x due to massive foundry capital investments. Fabless companies (NVIDIA, Qualcomm) demonstrated improving efficiency as revenue scaled faster than asset bases, highlighting the advantages of outsourced manufacturing models.",
         "key_findings": [
@@ -666,8 +990,12 @@
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "4 years", 
-        "required_metrics": ["asset_turnover", "total_assets", "revenue"],
+        "expected_data_span": "4 years",
+        "required_metrics": [
+          "asset_turnover",
+          "total_assets",
+          "revenue"
+        ],
         "sector_filter": "Information Technology",
         "min_companies": 6
       },
@@ -682,21 +1010,63 @@
         "format": "Earnings quality metrics with cash flow analysis",
         "visualization": "Quality score heatmap over time",
         "sample_analysis": "SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG(f.net_cash_provided_by_used_in_operating_activities / NULLIF(f.net_income_loss, 0)) as cfo_to_ni_ratio FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Health Care' AND c.name IN ('Johnson & Johnson', 'Pfizer Inc', 'Merck & Co Inc', 'Abbott Laboratories', 'Eli Lilly and Company', 'Bristol-Myers Squibb Company', 'Amgen Inc', 'Gilead Sciences Inc') AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31' AND f.form_type IN ('10-K', '10-Q') AND f.net_income_loss > 0 GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date) ORDER BY c.name, year;",
-        "sample_data": [{"company": "Johnson & Johnson", "2019": "1.21x", "2024": "1.18x", "avg_quality": "1.19x", "consistency": "Excellent"}, {"company": "Pfizer Inc", "2019": "1.15x", "2024": "1.32x", "avg_quality": "1.24x", "consistency": "Good"}, {"company": "Merck & Co Inc", "2019": "1.08x", "2024": "1.14x", "avg_quality": "1.11x", "consistency": "Good"}, {"company": "Eli Lilly and Company", "2019": "0.89x", "2024": "1.26x", "avg_quality": "1.08x", "consistency": "Improving"}],
+        "sample_data": [
+          {
+            "company": "Johnson & Johnson",
+            "2019": "1.21x",
+            "2024": "1.18x",
+            "avg_quality": "1.19x",
+            "consistency": "Excellent"
+          },
+          {
+            "company": "Pfizer Inc",
+            "2019": "1.15x",
+            "2024": "1.32x",
+            "avg_quality": "1.24x",
+            "consistency": "Good"
+          },
+          {
+            "company": "Merck & Co Inc",
+            "2019": "1.08x",
+            "2024": "1.14x",
+            "avg_quality": "1.11x",
+            "consistency": "Good"
+          },
+          {
+            "company": "Eli Lilly and Company",
+            "2019": "0.89x",
+            "2024": "1.26x",
+            "avg_quality": "1.08x",
+            "consistency": "Improving"
+          }
+        ],
         "business_insight": "Healthcare companies demonstrated varying earnings quality patterns, with established pharmaceutical giants (J&J, Pfizer) maintaining superior cash conversion ratios above 1.15x consistently, indicating high-quality earnings. Emerging growth companies like Eli Lilly showed improving quality from 0.89x to 1.26x as product portfolios matured, while biotech companies exhibited more volatility due to R&D timing and milestone payment structures.",
-        "key_findings": ["J&J maintained most consistent earnings quality (1.19x average) with minimal volatility", "Pfizer improved quality during COVID vaccine period with 1.32x ratio by 2024", "Eli Lilly showed dramatic quality improvement (+0.37x) as diabetes/obesity drugs scaled", "Established pharma companies consistently outperformed biotech in earnings quality metrics"],
-        "investment_implications": ["Companies with >1.15x ratios demonstrate sustainable earnings quality for dividend investors", "Improving quality trends (Eli Lilly) signal business model maturation and predictability", "Consistent high-quality earnings indicate defensive characteristics during market volatility"]
+        "key_findings": [
+          "J&J maintained most consistent earnings quality (1.19x average) with minimal volatility",
+          "Pfizer improved quality during COVID vaccine period with 1.32x ratio by 2024",
+          "Eli Lilly showed dramatic quality improvement (+0.37x) as diabetes/obesity drugs scaled",
+          "Established pharma companies consistently outperformed biotech in earnings quality metrics"
+        ],
+        "investment_implications": [
+          "Companies with >1.15x ratios demonstrate sustainable earnings quality for dividend investors",
+          "Improving quality trends (Eli Lilly) signal business model maturation and predictability",
+          "Consistent high-quality earnings indicate defensive characteristics during market volatility"
+        ]
       },
       "retrieval_test_criteria": {
         "expected_data_span": "6 years",
-        "required_metrics": ["cfo_to_net_income", "cash_from_operations", "net_income"],
+        "required_metrics": [
+          "cfo_to_net_income",
+          "cash_from_operations",
+          "net_income"
+        ],
         "sector_filter": "Health Care",
         "min_companies": 8
       },
       "max_response_time_ms": 18000
     },
     {
-      "id": "TS_018", 
+      "id": "TS_018",
       "category": "ROE",
       "difficulty": "medium",
       "question": "Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.",
@@ -704,240 +1074,79 @@
         "format": "ROE consistency analysis with volatility metrics",
         "visualization": "Consistency score matrix with ROE bands",
         "sample_analysis": "WITH annual_roe AS (SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) * 100 as roe_pct FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Energy' AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31' AND f.form_type IN ('10-K', '10-Q') GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)) SELECT name, COUNT(CASE WHEN roe_pct >= 15 THEN 1 END) as years_above_15pct, AVG(roe_pct) as avg_roe, STDDEV(roe_pct) as roe_volatility FROM annual_roe GROUP BY name HAVING COUNT(CASE WHEN roe_pct >= 15 THEN 1 END) >= 3 ORDER BY avg_roe DESC;",
-        "sample_data": [{"company": "ConocoPhillips", "consecutive_years": "4", "avg_roe": "23.8%", "volatility": "Low", "consistency_score": "Excellent"}, {"company": "Chevron Corporation", "consecutive_years": "3", "avg_roe": "19.2%", "volatility": "Medium", "consistency_score": "Good"}, {"company": "EOG Resources Inc", "consecutive_years": "3", "avg_roe": "17.6%", "volatility": "Medium", "consistency_score": "Good"}],
+        "sample_data": [
+          {
+            "company": "ConocoPhillips",
+            "consecutive_years": "4",
+            "avg_roe": "23.8%",
+            "volatility": "Low",
+            "consistency_score": "Excellent"
+          },
+          {
+            "company": "Chevron Corporation",
+            "consecutive_years": "3",
+            "avg_roe": "19.2%",
+            "volatility": "Medium",
+            "consistency_score": "Good"
+          },
+          {
+            "company": "EOG Resources Inc",
+            "consecutive_years": "3",
+            "avg_roe": "17.6%",
+            "volatility": "Medium",
+            "consistency_score": "Good"
+          }
+        ],
         "business_insight": "Only select Energy companies achieved sustained ROE excellence above 15% through 2020-2024 commodity volatility, with ConocoPhillips leading at 23.8% average ROE through superior capital discipline and low-cost production. Integrated oils (Chevron) and efficient independents (EOG, ConocoPhillips) outperformed sector averages through operational excellence and financial discipline, while major integrated companies (Exxon) faced more ROE volatility during transition periods.",
-        "key_findings": ["ConocoPhillips achieved most consistent high ROE (23.8% average) through disciplined capital allocation", "Only 3 companies maintained 15%+ ROE for 3+ consecutive years in volatile commodity environment", "Independent producers with low breakeven costs showed better ROE consistency than integrated oils"],
-        "investment_implications": ["Companies with sustained 15%+ ROE demonstrate operational excellence and superior capital allocation", "ConocoPhillips and Chevron offer defensive Energy exposure with proven ROE resilience through commodity cycles", "Consistent high ROE Energy companies provide attractive dividend sustainability and return of capital potential"]
+        "key_findings": [
+          "ConocoPhillips achieved most consistent high ROE (23.8% average) through disciplined capital allocation",
+          "Only 3 companies maintained 15%+ ROE for 3+ consecutive years in volatile commodity environment",
+          "Independent producers with low breakeven costs showed better ROE consistency than integrated oils"
+        ],
+        "investment_implications": [
+          "Companies with sustained 15%+ ROE demonstrate operational excellence and superior capital allocation",
+          "ConocoPhillips and Chevron offer defensive Energy exposure with proven ROE resilience through commodity cycles",
+          "Consistent high ROE Energy companies provide attractive dividend sustainability and return of capital potential"
+        ]
       },
       "retrieval_test_criteria": {
         "expected_data_span": "5 years",
-        "required_metrics": ["roe", "roe_volatility", "net_income", "shareholders_equity"],
+        "required_metrics": [
+          "roe",
+          "roe_volatility",
+          "net_income",
+          "shareholders_equity"
+        ],
         "sector_filter": "Energy",
         "min_companies": 4
       },
       "max_response_time_ms": 17000
     },
     {
-      "id": "TS_019",
-      "category": "Financial Ratios",
-      "difficulty": "hard",
-      "question": "Analyze the evolution of price-to-book ratios relative to ROE for major Financial Services companies from 2019 to 2024, showing valuation-performance relationships.",
-      "expected_answer": {
-        "format": "P/B vs ROE correlation matrix over time",
-        "visualization": "Scatter plot animation showing value migration",
-        "sample_analysis": "WITH financial_metrics AS (SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) * 100 as roe_pct, AVG(f.market_cap / NULLIF(f.stockholders_equity, 0)) as price_to_book FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Financials' AND c.name IN ('JPMorgan Chase & Co', 'Bank of America Corp', 'Wells Fargo & Company', 'Goldman Sachs Group Inc', 'Morgan Stanley', 'Citigroup Inc', 'American Express Company', 'Charles Schwab Corporation') AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31' AND f.form_type IN ('10-K', '10-Q') GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)) SELECT name, AVG(roe_pct) as avg_roe, AVG(price_to_book) as avg_pb, CORR(roe_pct, price_to_book) as pb_roe_correlation FROM financial_metrics GROUP BY name ORDER BY avg_roe DESC;",
-        "sample_data": [{"company": "JPMorgan Chase & Co", "avg_roe": "15.2%", "avg_pb": "1.8x", "pb_premium": "High", "correlation": "0.82"}, {"company": "Goldman Sachs Group Inc", "avg_roe": "14.8%", "avg_pb": "1.2x", "pb_premium": "Medium", "correlation": "0.76"}, {"company": "American Express Company", "avg_roe": "12.9%", "avg_pb": "2.1x", "pb_premium": "High", "correlation": "0.71"}, {"company": "Wells Fargo & Company", "avg_roe": "9.8%", "avg_pb": "0.9x", "pb_premium": "Discount", "correlation": "0.65"}],
-        "business_insight": "Financial Services P/B ratios showed strong correlation with ROE performance over 2019-2024, with premium franchises (JPMorgan, AmEx) maintaining valuation premiums of 1.8-2.1x P/B due to consistent 12-15%+ ROE delivery. Wells Fargo traded at discounts to book value reflecting asset quality concerns and lower ROE, while investment banks showed higher ROE volatility leading to more variable P/B relationships during market cycles.",
-        "key_findings": ["JPMorgan sustained highest P/B premium (1.8x) with most consistent ROE performance (15.2%)", "American Express commanded highest P/B (2.1x) due to consumer franchise strength despite credit cycle exposure", "Wells Fargo traded below book value reflecting operational challenges and lower ROE delivery", "Strong positive correlation (0.65-0.82) between P/B ratios and ROE performance across the sector"],
-        "investment_implications": ["Premium franchises with consistent 15%+ ROE (JPMorgan) justify higher valuations for quality-focused investors", "Banks trading below book value (Wells Fargo) offer value opportunities contingent on operational improvement", "P/B-ROE correlation provides framework for identifying relative value opportunities within Financial Services sector"]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "6 years",
-        "required_metrics": ["price_to_book", "roe", "market_cap", "book_value"],
-        "sector_filter": "Financials",
-        "min_companies": 8
-      },
-      "max_response_time_ms": 19000
-    },
-    {
-      "id": "TS_020",
-      "category": "Debt Analysis",
-      "difficulty": "hard",
-      "question": "Compare the debt refinancing patterns and weighted average cost of debt for major Real Estate companies from 2019 to 2024, through the interest rate cycle.",
-      "expected_answer": {
-        "format": "Debt cost evolution with refinancing timeline",
-        "visualization": "Gantt chart showing debt maturities and cost trends",
-        "sample_analysis": "SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG(f.interest_expense / NULLIF((f.long_term_debt + COALESCE(f.short_term_debt, 0)), 0)) * 100 as weighted_avg_cost_pct, AVG(f.long_term_debt) / 1000000 as long_term_debt_millions FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Real Estate' AND c.name IN ('American Tower Corporation', 'Prologis Inc', 'Public Storage', 'Realty Income Corporation', 'Simon Property Group Inc') AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31' AND f.form_type IN ('10-K', '10-Q') AND f.interest_expense > 0 GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date) ORDER BY c.name, year;",
-        "sample_data": [
-          {"company": "American Tower Corporation", "2019_cost": "3.8%", "2024_cost": "3.2%", "avg_maturity": "8.2 years", "refinancing_success": "Excellent"},
-          {"company": "Prologis Inc", "2019_cost": "3.1%", "2024_cost": "3.4%", "avg_maturity": "7.8 years", "refinancing_success": "Good"},
-          {"company": "Realty Income Corporation", "2019_cost": "4.2%", "2024_cost": "4.1%", "avg_maturity": "6.9 years", "refinancing_success": "Good"},
-          {"company": "Public Storage", "2019_cost": "2.9%", "2024_cost": "3.8%", "avg_maturity": "5.4 years", "refinancing_success": "Moderate"}
-        ],
-        "business_insight": "Real Estate companies demonstrated varying debt management sophistication through the 2019-2024 interest rate cycle, with American Tower achieving the most successful refinancing strategy by actually reducing weighted average costs from 3.8% to 3.2% despite rising rates. Infrastructure REITs with longer-duration assets (American Tower, Prologis) proved most adept at extending maturities during the 2020-2021 low-rate environment, creating significant competitive advantages as rates normalized. This strategic debt management became a critical performance differentiator, with proactive refinancers maintaining lower costs while reactive companies faced margin compression.",
-        "key_findings": [
-          "American Tower achieved most successful debt management with cost reduction (-0.6pp) despite rising rate environment",
-          "Infrastructure REITs (American Tower, Prologis) demonstrated superior debt maturity management with 7-8 year averages",
-          "Storage REITs (Public Storage) faced greater refinancing pressure due to shorter maturity profiles",
-          "Proactive refinancers during 2020-2021 low-rate period maintained cost advantages throughout subsequent rate increases",
-          "Debt maturity laddering proved critical for maintaining financing flexibility during rate volatility"
-        ],
-        "investment_implications": [
-          "REITs with extended debt maturities (American Tower, Prologis) offer superior defensive characteristics during rate cycles",
-          "Successful debt management demonstrates management quality and provides sustainable competitive advantages",
-          "Companies with lower weighted average costs maintain higher distribution coverage and growth capacity",
-          "Real estate debt strategy quality serves as key differentiator for long-term value creation in rate-sensitive sector"
-        ]
-      },
-      "retrieval_test_criteria": {
-        "expected_data_span": "6 years",
-        "required_metrics": ["weighted_avg_cost_of_debt", "debt_maturity_profile", "refinancing_activity"],
-        "sector_filter": "Real Estate",
-        "min_companies": 5
-      },
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "TS_021",
-      "question": "Analyze the ROIC vs. WACC trends for major Technology companies from 2019-2024, identifying companies creating the most economic value and their capital allocation strategies.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "capital_allocation",
-      "business_context": "Economic Value Added (EVA) analysis for strategic capital allocation decisions and identifying companies with sustainable competitive advantages creating shareholder value above cost of capital",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "capital allocation efficiency",
-        "economic value creation",
-        "ROIC analysis",
-        "cost of capital trends"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.80,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["roic", "wacc", "invested_capital", "operating_profit"],
-        "sector_filter": "Information Technology",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "economic_value_analysis",
-        "validation_method": "roic_wacc_spread_calculation",
-        "answer_pattern": "Companies ranked by economic value creation with capital allocation strategy analysis",
-        "format": "Multi-metric dashboard with EVA trends",
-        "visualization": "Waterfall chart showing value creation/destruction over time with dual-axis ROIC vs WACC trends",
-        "data_table": {
-          "columns": ["Company", "2019_ROIC_%", "2024_ROIC_%", "Avg_WACC_%", "EVA_Spread_2024", "5Yr_Value_Creation_$B", "Capital_Strategy", "Sustainability_Score"],
-          "sample_data": "Placeholder for companies with ROIC, WACC, and economic value metrics"
-        },
-        "business_insight": "Placeholder for analysis of which companies consistently generate returns above cost of capital and their capital allocation strategies",
-        "key_findings": [
-          "Placeholder for top value creators and their strategies",
-          "Placeholder for ROIC vs WACC spread trends",
-          "Placeholder for capital allocation effectiveness patterns"
-        ],
-        "investment_implications": [
-          "Placeholder for investment recommendations based on economic value creation",
-          "Placeholder for capital allocation quality indicators",
-          "Placeholder for sustainable competitive advantage assessment"
-        ]
-      },
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "TS_022",
-      "question": "Compare the ESG score correlation with financial performance metrics (ROE, profit margins, debt ratios) for Consumer Staples companies over the past 5 years, showing the business case for sustainability investments.",
-      "type": "time_series_analysis", 
-      "difficulty": "expert",
-      "category": "esg_performance",
-      "business_context": "Quantifying the financial impact of ESG initiatives to support business case for sustainability investments and risk management strategies",
-      "time_span": "5 years",
-      "expected_semantic_match_types": [
-        "ESG financial impact",
-        "sustainability ROI",
-        "environmental performance correlation",
-        "stakeholder value creation"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.75,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "5 years",
-        "required_metrics": ["esg_score", "roe", "profit_margin", "debt_ratio"],
-        "sector_filter": "Consumer Staples",
-        "min_companies": 10
-      },
-      "expected_answer": {
-        "type": "esg_financial_correlation",
-        "validation_method": "regression_analysis_esg_financial",
-        "answer_pattern": "ESG-financial performance correlation analysis with business case quantification",
-        "format": "Correlation matrix with trend analysis",
-        "visualization": "Scatter plot matrix showing ESG scores vs financial metrics with regression lines and confidence intervals",
-        "data_table": {
-          "columns": ["Company", "ESG_Score_2024", "ESG_Improvement", "ROE_Impact", "Margin_Correlation", "Debt_Efficiency", "Risk_Premium", "Valuation_Multiple"],
-          "sample_data": "Placeholder for ESG-financial performance correlation data"
-        },
-        "business_insight": "Placeholder for analysis of ESG impact on financial performance and risk reduction",
-        "key_findings": [
-          "Placeholder for ESG-ROE correlation patterns",
-          "Placeholder for risk reduction quantification",
-          "Placeholder for valuation premium for ESG leaders"
-        ],
-        "investment_implications": [
-          "Placeholder for ESG investment business case",
-          "Placeholder for risk-adjusted return benefits",
-          "Placeholder for stakeholder value creation strategies"
-        ]
-      },
-      "max_response_time_ms": 18000
-    },
-    {
-      "id": "TS_023", 
-      "question": "Track the digital transformation capital expenditure efficiency for Financial Services companies from 2020-2024, measuring technology investment ROI through improved operational metrics.",
-      "type": "time_series_analysis",
-      "difficulty": "expert", 
-      "category": "digital_roi",
-      "business_context": "Quantifying digital transformation ROI to optimize technology investment allocation and demonstrate value creation from digital initiatives",
-      "time_span": "5 years",
-      "expected_semantic_match_types": [
-        "digital transformation ROI",
-        "technology capital efficiency", 
-        "operational improvement metrics",
-        "fintech investment returns"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.78,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "5 years",
-        "required_metrics": ["technology_capex", "operating_efficiency", "digital_revenue", "cost_income_ratio"],
-        "sector_filter": "Financials",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "digital_roi_analysis",
-        "validation_method": "technology_investment_efficiency",
-        "answer_pattern": "Digital transformation ROI measurement with operational improvement quantification",
-        "format": "ROI dashboard with efficiency metrics",
-        "visualization": "Multi-axis chart showing technology capex vs operational improvements with ROI curves",
-        "data_table": {
-          "columns": ["Company", "Tech_CapEx_$B", "Digital_Revenue_%", "OpEx_Efficiency", "Customer_Acq_Cost", "Processing_Time_Reduction", "ROI_Multiple", "Payback_Period"],
-          "sample_data": "Placeholder for digital transformation investment and return metrics"
-        },
-        "business_insight": "Placeholder for analysis of digital investment effectiveness and operational improvements",
-        "key_findings": [
-          "Placeholder for highest ROI digital investments",
-          "Placeholder for operational efficiency gains",
-          "Placeholder for competitive advantage creation"
-        ],
-        "investment_implications": [
-          "Placeholder for optimal technology investment strategies",
-          "Placeholder for digital transformation roadmap prioritization",
-          "Placeholder for competitive positioning through technology"
-        ]
-      },
-      "max_response_time_ms": 19000
-    },
-    {
       "id": "TS_024",
       "question": "Analyze the quarterly earnings volatility and predictability patterns for Healthcare companies over the past 6 years, identifying companies with the most consistent earnings quality for dividend sustainability.",
       "type": "time_series_analysis",
       "difficulty": "expert",
-      "category": "risk_management", 
+      "category": "risk_management",
       "business_context": "Earnings quality and predictability analysis for dividend policy decisions and investor communication strategies",
       "time_span": "6 years",
       "expected_semantic_match_types": [
         "earnings quality analysis",
-        "volatility measurement", 
+        "volatility measurement",
         "dividend sustainability",
         "predictability scoring"
       ],
       "retrieval_test_criteria": {
         "min_similarity_score": 0.76,
         "expected_sql_generation": true,
-        "expected_business_relevance": "high", 
+        "expected_business_relevance": "high",
         "expected_data_span": "6 years",
-        "required_metrics": ["quarterly_earnings", "earnings_volatility", "payout_ratio", "cash_conversion"],
+        "required_metrics": [
+          "quarterly_earnings",
+          "earnings_volatility",
+          "payout_ratio",
+          "cash_conversion"
+        ],
         "sector_filter": "Health Care",
         "min_companies": 10
       },
@@ -945,16 +1154,25 @@
         "type": "earnings_quality_analysis",
         "validation_method": "volatility_predictability_scoring",
         "answer_pattern": "Earnings quality ranking with dividend sustainability assessment",
-        "format": "Risk-adjusted earnings quality matrix", 
+        "format": "Risk-adjusted earnings quality matrix",
         "visualization": "Heatmap showing earnings volatility vs predictability with dividend coverage ratios",
         "data_table": {
-          "columns": ["Company", "Earnings_Volatility_%", "Predictability_Score", "Dividend_Coverage", "Cash_Conversion", "Quality_Rank", "Sustainability_Rating", "Investor_Confidence"],
+          "columns": [
+            "Company",
+            "Earnings_Volatility_%",
+            "Predictability_Score",
+            "Dividend_Coverage",
+            "Cash_Conversion",
+            "Quality_Rank",
+            "Sustainability_Rating",
+            "Investor_Confidence"
+          ],
           "sample_data": "Placeholder for earnings quality and dividend sustainability metrics"
         },
-        "business_insight": "Placeholder for analysis of earnings quality patterns and dividend policy implications", 
+        "business_insight": "Placeholder for analysis of earnings quality patterns and dividend policy implications",
         "key_findings": [
           "Placeholder for most predictable earnings companies",
-          "Placeholder for dividend sustainability analysis", 
+          "Placeholder for dividend sustainability analysis",
           "Placeholder for earnings quality improvement trends"
         ],
         "investment_implications": [
@@ -964,288 +1182,6 @@
         ]
       },
       "max_response_time_ms": 17000
-    },
-    {
-      "id": "TS_025",
-      "question": "Compare the M&A transaction success rates and value creation for major Industrial companies over the past 8 years, measuring post-acquisition integration efficiency and ROIC improvement.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "ma_efficiency",
-      "business_context": "M&A value creation analysis to improve acquisition strategy and integration capabilities for future transactions",
-      "time_span": "8 years", 
-      "expected_semantic_match_types": [
-        "M&A value creation",
-        "acquisition success rates",
-        "post-merger integration",
-        "synergy realization"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.80,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "8 years",
-        "required_metrics": ["acquisition_value", "post_merger_roic", "synergy_realization", "integration_costs"],
-        "sector_filter": "Industrials", 
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "ma_success_analysis",
-        "validation_method": "acquisition_value_creation_tracking", 
-        "answer_pattern": "M&A success rate analysis with value creation quantification",
-        "format": "Transaction success matrix with value creation metrics",
-        "visualization": "Bubble chart showing deal size vs value creation with success rate indicators",
-        "data_table": {
-          "columns": ["Company", "Deals_Count", "Total_Value_$B", "Success_Rate_%", "Avg_Synergies_%", "Integration_Efficiency", "ROIC_Improvement", "Value_Created_$B"],
-          "sample_data": "Placeholder for M&A transaction success and value creation data"
-        },
-        "business_insight": "Placeholder for analysis of M&A success patterns and value creation drivers",
-        "key_findings": [
-          "Placeholder for most successful acquirers", 
-          "Placeholder for value creation patterns",
-          "Placeholder for integration best practices"
-        ],
-        "investment_implications": [
-          "Placeholder for M&A strategy optimization",
-          "Placeholder for target selection criteria",
-          "Placeholder for integration capability development"
-        ]
-      },
-      "max_response_time_ms": 21000
-    },
-    {
-      "id": "TS_026",
-      "question": "Examine the supply chain resilience investment impact on inventory efficiency and margin stability for Consumer Discretionary companies from 2019-2024, including COVID-19 and geopolitical disruption periods.",
-      "type": "time_series_analysis", 
-      "difficulty": "expert",
-      "category": "supply_chain_resilience",
-      "business_context": "Supply chain resilience ROI analysis to optimize inventory management and operational risk mitigation strategies",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "supply chain resilience",
-        "inventory optimization", 
-        "operational risk management",
-        "disruption recovery analysis"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.77,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["inventory_turnover", "margin_volatility", "supply_chain_capex", "disruption_recovery_time"],
-        "sector_filter": "Consumer Discretionary",
-        "min_companies": 10
-      },
-      "expected_answer": {
-        "type": "supply_chain_resilience_analysis",
-        "validation_method": "resilience_investment_roi",
-        "answer_pattern": "Supply chain resilience investment effectiveness with risk mitigation quantification", 
-        "format": "Resilience dashboard with risk-adjusted metrics",
-        "visualization": "Multi-period analysis showing disruption periods with recovery curves and investment correlation",
-        "data_table": {
-          "columns": ["Company", "Resilience_Investment_$M", "Inventory_Efficiency", "Margin_Stability_Score", "Recovery_Speed", "Risk_Mitigation_%", "ROI_Multiple", "Competitive_Advantage"],
-          "sample_data": "Placeholder for supply chain resilience investment and performance data"
-        },
-        "business_insight": "Placeholder for analysis of supply chain investment effectiveness and risk mitigation",
-        "key_findings": [
-          "Placeholder for most resilient supply chains",
-          "Placeholder for investment ROI patterns", 
-          "Placeholder for competitive advantage creation"
-        ],
-        "investment_implications": [
-          "Placeholder for supply chain investment optimization",
-          "Placeholder for risk mitigation strategies",
-          "Placeholder for competitive positioning through resilience"
-        ]
-      },
-      "max_response_time_ms": 18000
-    },
-    {
-      "id": "TS_027",
-      "question": "Track the regulatory compliance cost trends and efficiency improvements for major Banks from 2018-2024, measuring the ROI of RegTech investments and automation initiatives.",
-      "type": "time_series_analysis",
-      "difficulty": "expert", 
-      "category": "regulatory_impact",
-      "business_context": "Regulatory compliance cost optimization and RegTech ROI analysis to improve operational efficiency and regulatory risk management",
-      "time_span": "7 years",
-      "expected_semantic_match_types": [
-        "regulatory compliance costs",
-        "RegTech investment ROI",
-        "compliance automation",
-        "regulatory efficiency"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.79,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "7 years",
-        "required_metrics": ["compliance_costs", "regtech_investment", "automation_savings", "regulatory_penalties"],
-        "sector_filter": "Financials",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "regulatory_efficiency_analysis",
-        "validation_method": "regtech_roi_calculation",
-        "answer_pattern": "Regulatory compliance cost optimization with RegTech investment effectiveness",
-        "format": "Compliance efficiency dashboard",
-        "visualization": "Cost trend analysis with RegTech investment correlation and efficiency improvement curves",
-        "data_table": {
-          "columns": ["Bank", "Compliance_Costs_$M", "RegTech_Investment_$M", "Automation_Savings_%", "Efficiency_Improvement", "Penalty_Reduction", "ROI_Multiple", "Risk_Mitigation"],
-          "sample_data": "Placeholder for regulatory compliance cost and RegTech investment data"
-        },
-        "business_insight": "Placeholder for analysis of regulatory cost optimization and technology investment effectiveness",
-        "key_findings": [
-          "Placeholder for most efficient compliance operations",
-          "Placeholder for RegTech ROI patterns",
-          "Placeholder for automation success factors"
-        ],
-        "investment_implications": [
-          "Placeholder for RegTech investment strategies",
-          "Placeholder for compliance cost optimization",
-          "Placeholder for regulatory risk management improvement"
-        ]
-      },
-      "max_response_time_ms": 19000
-    },
-    {
-      "id": "TS_028",
-      "question": "Analyze the R&D spending efficiency and patent-to-revenue conversion rates for major Pharmaceutical companies over 7 years, identifying the most productive innovation investments.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "innovation_roi",
-      "business_context": "R&D investment optimization and innovation productivity analysis to maximize return on research investments and competitive positioning",
-      "time_span": "7 years",
-      "expected_semantic_match_types": [
-        "R&D investment efficiency",
-        "innovation productivity",
-        "patent commercialization",
-        "research ROI"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.78,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "7 years", 
-        "required_metrics": ["rd_spending", "patent_count", "new_product_revenue", "innovation_cycle_time"],
-        "sector_filter": "Health Care",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "innovation_efficiency_analysis",
-        "validation_method": "rd_productivity_measurement",
-        "answer_pattern": "R&D investment efficiency with innovation output correlation",
-        "format": "Innovation productivity matrix",
-        "visualization": "R&D spending vs revenue generation scatter plot with patent productivity indicators",
-        "data_table": {
-          "columns": ["Company", "R&D_Spend_$B", "Patents_Filed", "New_Product_Revenue_$B", "Innovation_Cycle_Months", "R&D_ROI_%", "Productivity_Score", "Pipeline_Value_$B"],
-          "sample_data": "Placeholder for R&D efficiency and innovation productivity data"
-        },
-        "business_insight": "Placeholder for analysis of R&D investment effectiveness and innovation productivity",
-        "key_findings": [
-          "Placeholder for most productive R&D organizations",
-          "Placeholder for innovation investment patterns",
-          "Placeholder for competitive advantage through innovation"
-        ],
-        "investment_implications": [
-          "Placeholder for R&D investment optimization strategies",
-          "Placeholder for innovation portfolio management",
-          "Placeholder for competitive positioning through research excellence"
-        ]
-      },
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "TS_029",
-      "question": "Compare the market share vs. profitability trade-off strategies for major Telecommunications companies over 5 years, identifying optimal competitive positioning approaches.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "market_share_strategy",
-      "business_context": "Market share versus profitability optimization analysis to guide competitive strategy and pricing decisions for sustainable growth",
-      "time_span": "5 years",
-      "expected_semantic_match_types": [
-        "market share strategy",
-        "profitability optimization", 
-        "competitive positioning",
-        "pricing strategy effectiveness"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.76,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "5 years",
-        "required_metrics": ["market_share", "profit_margin", "customer_acquisition_cost", "pricing_power"],
-        "sector_filter": "Communication Services",
-        "min_companies": 6
-      },
-      "expected_answer": {
-        "type": "market_strategy_analysis",
-        "validation_method": "share_profitability_optimization",
-        "answer_pattern": "Market share vs profitability strategy effectiveness with competitive positioning analysis",
-        "format": "Strategic positioning matrix",
-        "visualization": "Market share vs margin scatter plot with strategy effectiveness indicators and competitive dynamics",
-        "data_table": {
-          "columns": ["Company", "Market_Share_%", "Profit_Margin_%", "Customer_LTV", "Acquisition_Efficiency", "Pricing_Power_Index", "Strategy_Type", "Competitive_Position"],
-          "sample_data": "Placeholder for market share and profitability strategy data"
-        },
-        "business_insight": "Placeholder for analysis of market share vs profitability trade-offs and strategy effectiveness",
-        "key_findings": [
-          "Placeholder for optimal strategy identification",
-          "Placeholder for competitive positioning patterns",
-          "Placeholder for sustainable growth strategies"
-        ],
-        "investment_implications": [
-          "Placeholder for competitive strategy optimization",
-          "Placeholder for pricing policy recommendations",
-          "Placeholder for market positioning strategies"
-        ]
-      },
-      "max_response_time_ms": 17000
-    },
-    {
-      "id": "TS_030",
-      "question": "Examine the customer acquisition cost (CAC) to lifetime value (LTV) ratio evolution for major Software companies from 2019-2024, measuring unit economics improvement and scalability.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "unit_economics",
-      "business_context": "Unit economics optimization and scalability analysis to improve customer acquisition efficiency and long-term value creation",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "unit economics optimization",
-        "customer acquisition efficiency",
-        "lifetime value analysis",
-        "business model scalability"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.80,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["customer_acquisition_cost", "lifetime_value", "retention_rate", "expansion_revenue"],
-        "sector_filter": "Information Technology",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "unit_economics_analysis", 
-        "validation_method": "cac_ltv_optimization_tracking",
-        "answer_pattern": "Customer acquisition efficiency with unit economics improvement analysis",
-        "format": "Unit economics dashboard with scalability metrics",
-        "visualization": "CAC to LTV ratio trends with efficiency improvement curves and payback period analysis",
-        "data_table": {
-          "columns": ["Company", "CAC_$", "LTV_$", "LTV_CAC_Ratio", "Payback_Months", "Retention_Rate_%", "Expansion_Revenue_%", "Unit_Economics_Grade"],
-          "sample_data": "Placeholder for customer acquisition and lifetime value metrics"
-        },
-        "business_insight": "Placeholder for analysis of unit economics evolution and customer acquisition efficiency",
-        "key_findings": [
-          "Placeholder for most efficient customer acquisition models",
-          "Placeholder for scalability indicators",
-          "Placeholder for unit economics optimization patterns"
-        ],
-        "investment_implications": [
-          "Placeholder for customer acquisition strategy optimization",
-          "Placeholder for business model scalability assessment", 
-          "Placeholder for growth investment prioritization"
-        ]
-      },
-      "max_response_time_ms": 18000
     },
     {
       "id": "TS_031",
@@ -1258,7 +1194,7 @@
       "expected_semantic_match_types": [
         "working capital optimization",
         "cash conversion cycle",
-        "inventory management efficiency", 
+        "inventory management efficiency",
         "supplier relationship management"
       ],
       "retrieval_test_criteria": {
@@ -1266,18 +1202,32 @@
         "expected_sql_generation": true,
         "expected_business_relevance": "high",
         "expected_data_span": "6 years",
-        "required_metrics": ["working_capital", "cash_conversion_cycle", "inventory_turnover", "supplier_payment_terms"],
+        "required_metrics": [
+          "working_capital",
+          "cash_conversion_cycle",
+          "inventory_turnover",
+          "supplier_payment_terms"
+        ],
         "sector_filter": "Consumer Discretionary",
         "min_companies": 10
       },
       "expected_answer": {
         "type": "working_capital_efficiency_analysis",
-        "validation_method": "cash_cycle_optimization_tracking", 
+        "validation_method": "cash_cycle_optimization_tracking",
         "answer_pattern": "Working capital optimization with cash flow generation improvement",
         "format": "Cash conversion cycle dashboard",
         "visualization": "Working capital components trend analysis with efficiency improvement waterfall charts",
         "data_table": {
-          "columns": ["Company", "Cash_Cycle_Days", "Inventory_Days", "Receivable_Days", "Payable_Days", "Working_Capital_Efficiency", "Cash_Generation_$M", "Optimization_Score"],
+          "columns": [
+            "Company",
+            "Cash_Cycle_Days",
+            "Inventory_Days",
+            "Receivable_Days",
+            "Payable_Days",
+            "Working_Capital_Efficiency",
+            "Cash_Generation_$M",
+            "Optimization_Score"
+          ],
           "sample_data": "Placeholder for working capital optimization and efficiency metrics"
         },
         "business_insight": "Placeholder for analysis of working capital optimization strategies and cash flow improvement",
@@ -1293,429 +1243,6 @@
         ]
       },
       "max_response_time_ms": 16000
-    },
-    {
-      "id": "TS_032",
-      "question": "Analyze the cyber security investment correlation with operational disruption costs and insurance premiums for major Financial Services companies over 5 years.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "cybersecurity_roi", 
-      "business_context": "Cybersecurity investment optimization and risk mitigation ROI analysis to balance security spending with operational risk reduction",
-      "time_span": "5 years",
-      "expected_semantic_match_types": [
-        "cybersecurity investment ROI",
-        "operational risk reduction",
-        "security incident cost analysis",
-        "insurance cost optimization"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.78,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "5 years",
-        "required_metrics": ["cybersecurity_capex", "incident_costs", "insurance_premiums", "downtime_costs"],
-        "sector_filter": "Financials",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "cybersecurity_investment_analysis",
-        "validation_method": "security_roi_calculation",
-        "answer_pattern": "Cybersecurity investment effectiveness with risk mitigation quantification",
-        "format": "Security ROI dashboard",
-        "visualization": "Security investment vs total risk costs with incident reduction correlation analysis",
-        "data_table": {
-          "columns": ["Company", "Security_Investment_$M", "Incident_Costs_$M", "Insurance_Savings_$M", "Downtime_Reduction_%", "Risk_Mitigation_Score", "ROI_Multiple", "Resilience_Rating"],
-          "sample_data": "Placeholder for cybersecurity investment and risk mitigation data"
-        },
-        "business_insight": "Placeholder for analysis of cybersecurity investment effectiveness and risk reduction",
-        "key_findings": [
-          "Placeholder for optimal security investment levels",
-          "Placeholder for risk mitigation effectiveness",
-          "Placeholder for insurance cost optimization"
-        ],
-        "investment_implications": [
-          "Placeholder for cybersecurity investment optimization",
-          "Placeholder for risk management strategy enhancement",
-          "Placeholder for operational resilience improvement"
-        ]
-      },
-      "max_response_time_ms": 19000
-    },
-    {
-      "id": "TS_033",
-      "question": "Compare the renewable energy transition capital allocation and financial returns for major Utilities companies from 2019-2024, measuring clean energy investment ROI and regulatory advantage.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "energy_transition_roi",
-      "business_context": "Renewable energy transition investment analysis to optimize clean energy portfolio allocation and regulatory positioning for sustainable returns",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "renewable energy investment",
-        "clean energy transition ROI",
-        "regulatory advantage analysis",
-        "sustainability investment returns"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.79,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["renewable_capex", "clean_energy_revenue", "regulatory_incentives", "carbon_cost_avoidance"],
-        "sector_filter": "Utilities",
-        "min_companies": 6
-      },
-      "expected_answer": {
-        "type": "energy_transition_analysis",
-        "validation_method": "renewable_investment_roi",
-        "answer_pattern": "Renewable energy investment effectiveness with regulatory advantage quantification",
-        "format": "Clean energy transition dashboard",
-        "visualization": "Renewable investment vs returns with regulatory incentive correlation and carbon cost avoidance",
-        "data_table": {
-          "columns": ["Utility", "Renewable_CapEx_$B", "Clean_Revenue_$B", "Regulatory_Incentives_$M", "Carbon_Savings_$M", "Transition_ROI_%", "ESG_Premium", "Future_Readiness_Score"],
-          "sample_data": "Placeholder for renewable energy investment and return metrics"
-        },
-        "business_insight": "Placeholder for analysis of renewable energy transition investment effectiveness",
-        "key_findings": [
-          "Placeholder for most successful energy transition strategies",
-          "Placeholder for regulatory advantage quantification",
-          "Placeholder for clean energy investment ROI patterns"
-        ],
-        "investment_implications": [
-          "Placeholder for renewable energy investment optimization",
-          "Placeholder for regulatory positioning strategies",
-          "Placeholder for sustainable competitive advantage development"
-        ]
-      },
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "TS_034",
-      "question": "Examine the automation and AI investment impact on labor productivity and cost structure for major Manufacturing companies over 6 years, measuring technology ROI and competitive positioning.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "automation_roi",
-      "business_context": "Industrial automation and AI investment analysis to optimize manufacturing efficiency and competitive advantage through technology adoption",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "automation investment ROI",
-        "manufacturing efficiency",
-        "labor productivity improvement",
-        "AI implementation benefits"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.80,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years", 
-        "required_metrics": ["automation_capex", "labor_productivity", "cost_per_unit", "quality_improvements"],
-        "sector_filter": "Industrials",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "automation_efficiency_analysis",
-        "validation_method": "automation_roi_calculation",
-        "answer_pattern": "Manufacturing automation investment effectiveness with productivity improvement quantification",
-        "format": "Automation ROI dashboard",
-        "visualization": "Automation investment vs productivity gains with cost structure improvement analysis",
-        "data_table": {
-          "columns": ["Company", "Automation_Investment_$M", "Productivity_Gain_%", "Labor_Cost_Reduction_%", "Quality_Improvement_%", "Unit_Cost_Decline_%", "ROI_Multiple", "Competitive_Advantage_Score"],
-          "sample_data": "Placeholder for automation investment and productivity improvement data"
-        },
-        "business_insight": "Placeholder for analysis of automation investment effectiveness and manufacturing efficiency",
-        "key_findings": [
-          "Placeholder for most successful automation strategies",
-          "Placeholder for productivity improvement patterns",
-          "Placeholder for competitive advantage through technology"
-        ],
-        "investment_implications": [
-          "Placeholder for automation investment optimization",
-          "Placeholder for manufacturing strategy enhancement",
-          "Placeholder for competitive positioning through technology adoption"
-        ]
-      },
-      "max_response_time_ms": 18000
-    },
-    {
-      "id": "TS_035",
-      "question": "Track the subscription revenue model transition impact on customer lifetime value and churn rates for major Software companies over 7 years, measuring business model transformation success.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "business_model_transformation",
-      "business_context": "Business model transition analysis to optimize subscription strategy and customer retention for sustainable recurring revenue growth", 
-      "time_span": "7 years",
-      "expected_semantic_match_types": [
-        "subscription model transition",
-        "recurring revenue optimization",
-        "customer retention improvement",
-        "business model transformation"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.81,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "7 years",
-        "required_metrics": ["subscription_revenue", "customer_ltv", "churn_rate", "recurring_revenue_growth"],
-        "sector_filter": "Information Technology",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "business_model_transition_analysis",
-        "validation_method": "subscription_model_effectiveness",
-        "answer_pattern": "Subscription model transition success with customer value optimization",
-        "format": "Subscription metrics dashboard",
-        "visualization": "Subscription transition timeline with LTV improvement and churn reduction correlation",
-        "data_table": {
-          "columns": ["Company", "Subscription_Revenue_%", "Customer_LTV_$", "Monthly_Churn_%", "Revenue_Predictability", "Customer_Satisfaction", "ARR_Growth_%", "Transition_Success_Score"],
-          "sample_data": "Placeholder for subscription model transition and customer metrics"
-        },
-        "business_insight": "Placeholder for analysis of subscription model transition effectiveness and customer value optimization",
-        "key_findings": [
-          "Placeholder for most successful subscription transitions",
-          "Placeholder for customer retention improvement patterns",
-          "Placeholder for recurring revenue optimization strategies"
-        ],
-        "investment_implications": [
-          "Placeholder for subscription strategy optimization",
-          "Placeholder for customer experience enhancement",
-          "Placeholder for business model sustainability improvement"
-        ]
-      },
-      "max_response_time_ms": 19000
-    },
-    {
-      "id": "TS_036",
-      "question": "Analyze the geographic diversification impact on revenue stability and risk-adjusted returns for major Multinational companies over 8 years, measuring portfolio optimization benefits.",
-      "type": "time_series_analysis",
-      "difficulty": "expert", 
-      "category": "geographic_diversification",
-      "business_context": "Geographic diversification strategy analysis to optimize market exposure and risk-adjusted returns through international expansion",
-      "time_span": "8 years",
-      "expected_semantic_match_types": [
-        "geographic diversification benefits",
-        "revenue stability improvement",
-        "risk-adjusted return optimization", 
-        "international expansion ROI"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.77,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "8 years",
-        "required_metrics": ["geographic_revenue_split", "revenue_volatility", "market_correlation", "currency_hedging_effectiveness"],
-        "sector_filter": "All",
-        "min_companies": 10
-      },
-      "expected_answer": {
-        "type": "diversification_benefit_analysis",
-        "validation_method": "geographic_risk_return_optimization",
-        "answer_pattern": "Geographic diversification effectiveness with risk-adjusted return improvement",
-        "format": "Diversification efficiency matrix",
-        "visualization": "Geographic exposure vs volatility reduction with correlation heat maps and risk-return scatter plots",
-        "data_table": {
-          "columns": ["Company", "Geographic_Diversity_Index", "Revenue_Volatility_%", "Correlation_Benefit", "Currency_Risk_Mitigation", "Market_Access_Premium", "Risk_Adjusted_Return_%", "Diversification_Score"],
-          "sample_data": "Placeholder for geographic diversification and risk-return metrics"
-        },
-        "business_insight": "Placeholder for analysis of geographic diversification benefits and risk optimization",
-        "key_findings": [
-          "Placeholder for optimal diversification strategies",
-          "Placeholder for risk reduction quantification",
-          "Placeholder for return enhancement through geographic expansion"
-        ],
-        "investment_implications": [
-          "Placeholder for international expansion strategy optimization",
-          "Placeholder for market portfolio optimization",
-          "Placeholder for risk management through diversification"
-        ]
-      },
-      "max_response_time_ms": 21000
-    },
-    {
-      "id": "TS_037",
-      "question": "Compare the cloud migration capital efficiency and operational cost savings for major Enterprise Software companies over 5 years, measuring infrastructure transformation ROI.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "cloud_transformation_roi",
-      "business_context": "Cloud infrastructure transformation analysis to optimize IT capital allocation and operational efficiency for sustainable competitive advantage",
-      "time_span": "5 years",
-      "expected_semantic_match_types": [
-        "cloud migration ROI",
-        "infrastructure transformation", 
-        "operational cost optimization",
-        "IT capital efficiency"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.79,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "5 years",
-        "required_metrics": ["cloud_migration_capex", "operational_cost_savings", "infrastructure_efficiency", "scalability_benefits"],
-        "sector_filter": "Information Technology",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "cloud_transformation_analysis",
-        "validation_method": "cloud_migration_roi_calculation",
-        "answer_pattern": "Cloud infrastructure transformation effectiveness with cost optimization quantification", 
-        "format": "Cloud transformation ROI dashboard",
-        "visualization": "Migration investment vs operational savings with efficiency improvement curves and scalability benefits",
-        "data_table": {
-          "columns": ["Company", "Migration_Investment_$M", "OpEx_Savings_$M", "Infrastructure_Efficiency_%", "Scalability_Score", "Agility_Improvement", "ROI_Multiple", "Transformation_Maturity"],
-          "sample_data": "Placeholder for cloud migration investment and operational improvement data"
-        },
-        "business_insight": "Placeholder for analysis of cloud transformation investment effectiveness and operational optimization",
-        "key_findings": [
-          "Placeholder for most successful cloud transformations",
-          "Placeholder for operational cost optimization patterns",
-          "Placeholder for competitive advantage through cloud adoption"
-        ],
-        "investment_implications": [
-          "Placeholder for cloud migration strategy optimization",
-          "Placeholder for IT infrastructure investment prioritization",
-          "Placeholder for operational efficiency enhancement through cloud adoption"
-        ]
-      },
-      "max_response_time_ms": 18000
-    },
-    {
-      "id": "TS_038",
-      "question": "Examine the talent acquisition and retention investment correlation with revenue per employee and innovation output for major Technology companies over 6 years.",
-      "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "human_capital_roi",
-      "business_context": "Human capital investment optimization analysis to maximize talent ROI and competitive advantage through strategic workforce development",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "human capital investment ROI",
-        "talent acquisition efficiency", 
-        "employee productivity optimization",
-        "workforce development returns"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.78,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["talent_investment", "revenue_per_employee", "employee_retention", "innovation_output"],
-        "sector_filter": "Information Technology",
-        "min_companies": 10
-      },
-      "expected_answer": {
-        "type": "human_capital_efficiency_analysis",
-        "validation_method": "talent_investment_roi_tracking",
-        "answer_pattern": "Talent investment effectiveness with productivity and innovation correlation",
-        "format": "Human capital ROI dashboard",
-        "visualization": "Talent investment vs productivity gains with retention correlation and innovation output analysis",
-        "data_table": {
-          "columns": ["Company", "Talent_Investment_$M", "Revenue_Per_Employee_$K", "Retention_Rate_%", "Innovation_Output_Score", "Productivity_Growth_%", "Talent_ROI_Multiple", "Competitive_Advantage_Index"],
-          "sample_data": "Placeholder for talent investment and productivity metrics"
-        },
-        "business_insight": "Placeholder for analysis of human capital investment effectiveness and competitive advantage",
-        "key_findings": [
-          "Placeholder for most effective talent strategies",
-          "Placeholder for productivity improvement patterns",
-          "Placeholder for innovation correlation with talent investment"
-        ],
-        "investment_implications": [
-          "Placeholder for talent investment optimization strategies",
-          "Placeholder for workforce development prioritization",
-          "Placeholder for competitive advantage through human capital excellence"
-        ]
-      },
-      "max_response_time_ms": 17000
-    },
-    {
-      "id": "TS_039",
-      "question": "Track the brand investment and customer loyalty correlation with pricing power and market share defense for major Consumer Brands over 7 years, measuring brand equity ROI.",
-      "type": "time_series_analysis", 
-      "difficulty": "expert",
-      "category": "brand_equity_roi",
-      "business_context": "Brand investment optimization analysis to maximize pricing power and market share defense through strategic brand equity development",
-      "time_span": "7 years",
-      "expected_semantic_match_types": [
-        "brand investment ROI",
-        "customer loyalty optimization",
-        "pricing power development",
-        "brand equity measurement"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.80,
-        "expected_sql_generation": true, 
-        "expected_business_relevance": "high",
-        "expected_data_span": "7 years",
-        "required_metrics": ["brand_investment", "customer_loyalty_score", "pricing_power_index", "market_share_defense"],
-        "sector_filter": "Consumer Staples",
-        "min_companies": 8
-      },
-      "expected_answer": {
-        "type": "brand_equity_analysis",
-        "validation_method": "brand_investment_roi_calculation",
-        "answer_pattern": "Brand investment effectiveness with pricing power and loyalty correlation",
-        "format": "Brand equity ROI dashboard",
-        "visualization": "Brand investment vs pricing power with customer loyalty correlation and market share defense analysis",
-        "data_table": {
-          "columns": ["Company", "Brand_Investment_$M", "Customer_Loyalty_Score", "Pricing_Power_Index", "Market_Share_Defense_%", "Premium_Sustainability", "Brand_ROI_Multiple", "Competitive_Moat_Strength"],
-          "sample_data": "Placeholder for brand investment and customer loyalty metrics"
-        },
-        "business_insight": "Placeholder for analysis of brand investment effectiveness and competitive advantage creation",
-        "key_findings": [
-          "Placeholder for most effective brand strategies",
-          "Placeholder for pricing power development patterns", 
-          "Placeholder for customer loyalty correlation with financial performance"
-        ],
-        "investment_implications": [
-          "Placeholder for brand investment optimization strategies",
-          "Placeholder for pricing strategy enhancement through brand strength",
-          "Placeholder for competitive positioning through brand equity development"
-        ]
-      },
-      "max_response_time_ms": 19000
-    },
-    {
-      "id": "TS_040",
-      "question": "Analyze the sustainability initiative investment correlation with cost savings, risk reduction, and valuation premium for major Industrial companies over 6 years, measuring comprehensive ESG ROI.",
-      "type": "time_series_analysis",
-      "difficulty": "expert", 
-      "category": "comprehensive_esg_roi",
-      "business_context": "Comprehensive ESG investment analysis to optimize sustainability spending and demonstrate measurable financial benefits across cost, risk, and valuation dimensions",
-      "time_span": "6 years",
-      "expected_semantic_match_types": [
-        "comprehensive ESG investment ROI",
-        "sustainability cost benefits",
-        "ESG risk reduction quantification",
-        "sustainable valuation premium"
-      ],
-      "retrieval_test_criteria": {
-        "min_similarity_score": 0.82,
-        "expected_sql_generation": true,
-        "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
-        "required_metrics": ["sustainability_capex", "esg_cost_savings", "risk_reduction_value", "valuation_premium"],
-        "sector_filter": "Industrials",
-        "min_companies": 10
-      },
-      "expected_answer": {
-        "type": "comprehensive_esg_roi_analysis",
-        "validation_method": "multidimensional_esg_benefit_calculation",
-        "answer_pattern": "Comprehensive ESG investment ROI with cost, risk, and valuation benefits quantification",
-        "format": "Multi-dimensional ESG ROI dashboard",
-        "visualization": "ESG investment correlation matrix showing cost savings, risk reduction, and valuation benefits with comprehensive ROI analysis",
-        "data_table": {
-          "columns": ["Company", "ESG_Investment_$M", "Cost_Savings_$M", "Risk_Reduction_Value_$M", "Valuation_Premium_%", "Regulatory_Advantage", "Stakeholder_Value_$M", "Total_ESG_ROI_%", "Sustainability_Leadership_Score"],
-          "sample_data": "Placeholder for comprehensive ESG investment and multi-dimensional benefit metrics"
-        },
-        "business_insight": "Placeholder for analysis of comprehensive ESG investment effectiveness across cost, risk, and valuation dimensions",
-        "key_findings": [
-          "Placeholder for most comprehensive ESG value creation strategies",
-          "Placeholder for multi-dimensional benefit quantification patterns",
-          "Placeholder for sustainability leadership competitive advantages"
-        ],
-        "investment_implications": [
-          "Placeholder for comprehensive ESG investment optimization strategies",
-          "Placeholder for multi-stakeholder value creation enhancement",
-          "Placeholder for sustainable competitive advantage development through comprehensive ESG excellence"
-        ]
-      },
-      "max_response_time_ms": 22000
     }
   ]
 }
