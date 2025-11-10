@@ -27,6 +27,7 @@ from src.sql_validator import SQLValidator
 from src.entity_extractor import normalize_company_name
 from src.query_engine import quick_query
 from src.query_engine import QueryEngine
+from src.hybrid_retrieval import TemplateIntentRetriever
 
 
 class SQLGenerator:
@@ -64,6 +65,10 @@ class SQLGenerator:
                 "SQLGenerator initialized (deterministic template selection only)"
             )
 
+        self.template_retriever = TemplateIntentRetriever.create_default()
+        if self.template_retriever:
+            self.logger.info("Template intent retriever enabled")
+
         self.validator = SQLValidator(use_llm=self.use_llm)
 
     def generate(
@@ -88,12 +93,29 @@ class SQLGenerator:
         with log_component_timing(context, "sql_generation"):
             # Step 1: Deterministic matching
             intelligence_match = self.intelligence.match_pattern(question)
+            use_llm_available = bool(self.azure_client) and self.use_llm
+
+            if (
+                intelligence_match.template is None
+                and self.template_retriever is not None
+            ):
+                recovered = self._retrieve_template_with_embeddings(
+                    question, entities, context
+                )
+                if recovered:
+                    intelligence_match = recovered
+                    context.add_metadata(
+                        "template_selection_method", "embedding_retriever"
+                    )
 
             # Step 2: If LLM path unavailable, stay deterministic
-            if not self.azure_client or not self.use_llm:
+            if not use_llm_available:
                 if intelligence_match.template:
                     context.add_metadata(
-                        "template_selection_method", "deterministic_only"
+                        "template_selection_method",
+                        context.metadata.get(
+                            "template_selection_method", "deterministic_only"
+                        ),
                     )
                     return self._generate_from_template(intelligence_match, entities)
 
@@ -782,6 +804,35 @@ class SQLGenerator:
         except Exception as exc:  # noqa: BLE001
             self.logger.error(f"Unexpected error generating custom SQL: {exc}")
             return None
+
+    def _retrieve_template_with_embeddings(
+        self,
+        question: str,
+        entities: ExtractedEntities,
+        context: RequestContext,
+    ) -> Optional[IntelligenceMatch]:
+        if not self.template_retriever:
+            return None
+
+        result = self.template_retriever.retrieve(question)
+        if not result:
+            return None
+
+        template = self.intelligence.get_template_by_id(result.template_id)
+        if not template:
+            return None
+
+        matched_params = self.intelligence.extract_parameters_for_template(
+            question, template
+        )
+        context.add_metadata("template_retriever_score", f"{result.score:.3f}")
+
+        return IntelligenceMatch(
+            template=template,
+            match_confidence=result.score,
+            matched_parameters=matched_params,
+            fallback_to_llm=False,
+        )
 
     def validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
         """

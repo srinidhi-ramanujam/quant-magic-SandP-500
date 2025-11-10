@@ -575,6 +575,12 @@ class IntelligenceLoader:
         self.logger.debug(f"Extracted parameters: {params}")
         return params
 
+    def extract_parameters_for_template(
+        self, question: str, template: QueryTemplate
+    ) -> Dict[str, str]:
+        """Public helper to extract template parameters from a question."""
+        return self._extract_template_parameters(question, template)
+
     @staticmethod
     def _normalize_company_param(company_value: str) -> str:
         """Normalize company parameters to match canonical aliases."""

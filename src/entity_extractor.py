@@ -17,6 +17,7 @@ from src.xbrl_mapper import get_xbrl_mapper
 from src.azure_client import AzureOpenAIClient
 from src.prompts import get_entity_extraction_prompt
 from src.config import get_config, Config
+from src.hybrid_retrieval import HybridEntityRetriever
 
 
 # Known sectors (GICS classification)
@@ -288,6 +289,11 @@ class EntityExtractor:
             self.azure_client = None
             self.logger.info("EntityExtractor initialized (deterministic mode)")
 
+        # Hybrid retriever (FAISS-based). Optional.
+        self.hybrid_retriever = HybridEntityRetriever.create_default()
+        if self.hybrid_retriever:
+            self.logger.info("Hybrid entity retriever enabled")
+
     def extract(self, question: str, context: RequestContext) -> ExtractedEntities:
         """
         Extract entities from a natural language question using LLM.
@@ -300,6 +306,21 @@ class EntityExtractor:
             ExtractedEntities with extracted information
         """
         with log_component_timing(context, "entity_extraction"):
+            if self.hybrid_retriever:
+                entities = self._extract_entities(question)
+                coverage = self.hybrid_retriever.enrich(question, entities)
+                entities.confidence = self._calculate_confidence(
+                    entities.companies,
+                    entities.metrics,
+                    entities.sectors,
+                    entities.time_periods,
+                    entities.question_type,
+                )
+                context.add_metadata("entity_extraction_method", "hybrid")
+                if coverage:
+                    context.add_metadata("entity_retriever_slots", coverage)
+                return entities
+
             if self.use_llm and self.azure_client:
                 try:
                     return self._extract_with_llm(question, context)
