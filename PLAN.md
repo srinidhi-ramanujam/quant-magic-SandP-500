@@ -226,6 +226,26 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 
 ---
 
+### Time-Series Template Roadmap (NEW)
+
+**Goal**: Land reusable parameterized SQL templates that unlock the curated 25-question time-series suite without ad-hoc LLM work.
+
+| Template Family | Template IDs | Scope / Notes |
+|-----------------|--------------|---------------|
+| Profitability trends | `profit_margin_consistency_trend`, `consumer_staples_gross_margin_trend`, `hardware_gross_margin_trend`, `cross_sector_gross_margin_spread`, `ebitda_margin_improvement_rank`, `roe_trend_named_semis`, `bank_roe_consecutive_threshold`, `roe_vs_revenue_growth_flag` | Multi-year margin/ROE deltas leveraging revenue, cost, and equity tags plus cohort filters. |
+| Cash flow & capital allocation | `sector_free_cash_flow_trend`, `top_tech_cfo_trend`, `cfo_to_net_income_ratio_trend`, `healthcare_cfo_to_capex_ratio_trend`, `operating_cf_volatility_sector` | Operating cash flow contrasted with capex or net income to gauge quality of earnings and reinvestment. |
+| Balance sheet health | `current_ratio_trend`, `cash_to_assets_ratio_trend`, `equity_to_assets_ratio_trend`, `working_capital_cash_cycle_trend`, `retail_cash_conversion_cycle_trend` | Liquidity metrics derived from assets/liabilities plus CCC decomposition (DSO/DIO/DPO). |
+| Leverage & debt motion | `debt_reduction_progression`, `net_debt_to_ebitda_trend`, `energy_roe_threshold_detector` | Tracks leverage changes, approximated EBITDA, and high-ROE streaks for capital-intensive sectors. |
+| Efficiency metrics | `operating_margin_trend`, `inventory_turnover_trend`, `asset_turnover_trend` | Ratio trends based on inventory, revenue, and asset balances; reusable across cohorts. |
+
+**Next Actions**
+1. Implement slot extractors + SQL builders for the profitability and cash-flow families (highest coverage impact).
+2. Register each template in `data/template_intents.json` with clear natural-language exemplars for FAISS retrieval.
+3. Add focused unit tests per family that validate metric math against DuckDB snapshots.
+4. Re-run `scripts/run_eval_suite.py --suite time_series` and append telemetry to `evaluation/EVAL_WORKBOOK.csv`.
+
+---
+
 ### Phase 2D: Hybrid Retrieval Initiative (Next)
 
 **Goal**: Replace LLM-heavy entity extraction and template selection with hybrid (keyword + embedding) retrieval while demonstrating measurable gains.

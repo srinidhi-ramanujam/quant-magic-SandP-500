@@ -4,64 +4,56 @@
     "description": "Advanced time series analysis questions for multi-period financial trend evaluation and visualization, enhanced with CFO strategic focus areas",
     "version": "2.0",
     "created_date": "2025-01-28",
-    "total_questions": 25,
+    "total_questions": 46,
     "difficulty_level": "advanced",
     "expected_max_response_time_ms": 20000,
     "categories": [
-      "ROE",
-      "Financial Ratios",
-      "Profitability",
-      "Cash Flow",
-      "Debt Analysis",
-      "Capital Allocation",
-      "ESG Performance",
-      "Digital ROI",
-      "Risk Management",
-      "M&A Efficiency",
-      "Supply Chain Resilience",
-      "Regulatory Impact",
-      "Market Share Strategy"
+      "profitability",
+      "cash_flow",
+      "liquidity",
+      "leverage",
+      "efficiency",
+      "capital_allocation",
+      "sector_comparison",
+      "quality_of_earnings"
     ],
     "visualization_types": [
-      "Line charts",
-      "Bar charts",
-      "Trend analysis",
-      "Comparative analysis",
-      "Heat maps",
-      "Waterfall charts",
-      "Heatmaps",
-      "Scatter plots",
-      "Multi-axis charts",
-      "Dashboard matrices",
-      "Correlation matrices",
-      "Risk-return bubbles",
-      "Portfolio optimization frontiers"
+      "Line chart (trend)",
+      "Stacked bar (cash flow components)",
+      "Area chart (multi-series)",
+      "Ratio table",
+      "Heatmap (volatility view)",
+      "Waterfall bridge",
+      "Scatter (efficiency vs growth)",
+      "Ranking table"
     ],
     "time_spans": [
-      "YoY",
-      "QoQ",
-      "Multi-year trends",
-      "5-year analysis",
-      "3-5 years",
-      "7-10 years",
-      "Full cycle analysis",
-      "Pre/post event analysis"
+      "Rolling 8 quarters",
+      "Rolling 12 quarters",
+      "FY2019-FY2024",
+      "FY2020-FY2023",
+      "FY2021-FY2024",
+      "2019-2024 multi-year",
+      "Quarterly 2021-2023",
+      "Five-year trend",
+      "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "Lockdown vs reopening (2020-2021 vs 2022-2023)",
+      "2018-2023 segmented trend"
     ],
     "business_focus": [
-      "Long-term trend analysis",
-      "Cyclical pattern identification",
-      "Competitive performance tracking",
-      "Risk assessment over time",
-      "Investment decision support",
-      "Strategic planning",
-      "Capital allocation optimization",
-      "Risk-adjusted performance measurement",
-      "ESG integration impact assessment",
-      "Digital transformation ROI validation",
-      "Regulatory compliance cost management",
-      "Supply chain resilience quantification",
-      "M&A value creation tracking",
-      "Portfolio optimization strategies"
+      "Margin resilience",
+      "Cash discipline",
+      "Liquidity runway visibility",
+      "Capital deployment efficiency",
+      "Leverage risk monitoring",
+      "Working capital optimization",
+      "Sector benchmarking for CFO staff",
+      "Quality of earnings validation",
+      "Shareholder return durability",
+      "Investment planning support",
+      "Pandemic resilience tracking",
+      "Operational recovery diagnostics",
+      "Sector-specific investor memos"
     ]
   },
   "questions": [
@@ -70,7 +62,7 @@
       "question": "Which Technology companies have shown the most consistent profitability improvement over the last 5 years (2019-2023)?",
       "type": "time_series_analysis",
       "difficulty": "medium",
-      "category": "profitability_trends",
+      "category": "profitability",
       "business_context": "Long-term profitability analysis for technology investment strategy and competitive positioning assessment",
       "time_span": "5 years",
       "expected_semantic_match_types": [
@@ -180,10 +172,10 @@
       "max_response_time_ms": 15000
     },
     {
-      "id": "TS_003",
-      "category": "Cash Flow",
+      "id": "TS_002",
+      "category": "cash_flow",
       "difficulty": "medium",
-      "question": "Analyze the free cash flow generation trends for Energy sector companies over the past 4 years (2020-2023), highlighting the impact of oil price volatility.",
+      "question": "Analyze free cash flow generation trends for Energy sector companies from 2020 through 2023, showing how swings in operating cash and capex affected free cash flow.",
       "expected_answer": {
         "format": "Quarterly cash flow progression table",
         "visualization": "Stacked bar chart showing cash flow components",
@@ -242,11 +234,13 @@
         "sector_filter": "Energy",
         "min_companies": 4
       },
-      "max_response_time_ms": 15000
+      "max_response_time_ms": 15000,
+      "time_span": "2020-2023",
+      "business_context": "Quantify energy free cash flow swings tied to oil price volatility."
     },
     {
-      "id": "TS_004",
-      "category": "Debt Analysis",
+      "id": "TS_003",
+      "category": "leverage",
       "difficulty": "hard",
       "question": "Which companies across all sectors have shown the most significant debt reduction over the past 3 years (2021-2023), and what was the quarterly progression?",
       "expected_answer": {
@@ -335,11 +329,13 @@
         "sector_filter": "All",
         "min_companies": 10
       },
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "time_span": "2021-2023",
+      "business_context": "Assess company deleveraging momentum in the post-pandemic recovery."
     },
     {
-      "id": "TS_005",
-      "category": "Financial Ratios",
+      "id": "TS_004",
+      "category": "liquidity",
       "difficulty": "medium",
       "question": "Compare the current ratio trends for Healthcare companies from 2019 to 2023, identifying companies with improving liquidity positions.",
       "expected_answer": {
@@ -427,11 +423,13 @@
         "sector_filter": "Health Care",
         "min_companies": 6
       },
-      "max_response_time_ms": 15000
+      "max_response_time_ms": 15000,
+      "time_span": "2019-2023",
+      "business_context": "Track healthcare liquidity improvements for CFO risk reviews."
     },
     {
-      "id": "TS_006",
-      "category": "Profitability",
+      "id": "TS_005",
+      "category": "profitability",
       "difficulty": "hard",
       "question": "Analyze the quarterly operating margin progression for Consumer Discretionary companies over the last 8 quarters, highlighting seasonal patterns.",
       "expected_answer": {
@@ -531,13 +529,15 @@
         "sector_filter": "Consumer Discretionary",
         "min_companies": 8
       },
-      "max_response_time_ms": 18000
+      "max_response_time_ms": 18000,
+      "time_span": "Rolling 8 quarters",
+      "business_context": "Spot operating margin seasonality for consumer discretionary names."
     },
     {
-      "id": "TS_007",
-      "category": "ROE",
+      "id": "TS_006",
+      "category": "profitability",
       "difficulty": "medium",
-      "question": "Which Technology companies have shown declining ROE over the past 3 years despite revenue growth, and what are the underlying causes?",
+      "question": "Which Technology companies have shown declining ROE over the past 3 years even as revenue kept growing, and how large is the divergence between the two trends?",
       "expected_answer": {
         "format": "ROE decomposition analysis over 3 years",
         "visualization": "DuPont analysis charts showing ROE components",
@@ -610,11 +610,13 @@
         "sector_filter": "Information Technology",
         "min_companies": 5
       },
-      "max_response_time_ms": 17000
+      "max_response_time_ms": 17000,
+      "time_span": "Rolling 3 years",
+      "business_context": "Surface ROE deterioration despite revenue growth to flag efficiency risks."
     },
     {
-      "id": "TS_008",
-      "category": "Cash Flow",
+      "id": "TS_007",
+      "category": "liquidity",
       "difficulty": "medium",
       "question": "Show the working capital trends for Industrial companies from 2020 to 2024, identifying companies with improving cash conversion cycles.",
       "expected_answer": {
@@ -695,11 +697,13 @@
         "sector_filter": "Industrials",
         "min_companies": 7
       },
-      "max_response_time_ms": 16000
+      "max_response_time_ms": 16000,
+      "time_span": "2020-2024",
+      "business_context": "Monitor industrial working capital and cash conversion cycle improvements."
     },
     {
-      "id": "TS_010",
-      "category": "Profitability",
+      "id": "TS_008",
+      "category": "profitability",
       "difficulty": "medium",
       "question": "Compare the gross margin evolution for major Consumer Staples companies from 2019 to 2024, showing the impact of inflation and pricing power.",
       "expected_answer": {
@@ -775,11 +779,13 @@
         "sector_filter": "Consumer Staples",
         "min_companies": 6
       },
-      "max_response_time_ms": 16000
+      "max_response_time_ms": 16000,
+      "time_span": "2019-2024",
+      "business_context": "Measure staples pricing power and margin resilience amid inflation."
     },
     {
-      "id": "TS_011",
-      "category": "Financial Ratios",
+      "id": "TS_009",
+      "category": "efficiency",
       "difficulty": "medium",
       "question": "Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",
       "expected_answer": {
@@ -861,11 +867,13 @@
         "sector_filter": "Consumer Discretionary",
         "min_companies": 6
       },
-      "max_response_time_ms": 15000
+      "max_response_time_ms": 15000,
+      "time_span": "Rolling 6 quarters",
+      "business_context": "Evaluate retailer supply chain efficiency via inventory turnover."
     },
     {
-      "id": "TS_014",
-      "category": "Debt Analysis",
+      "id": "TS_010",
+      "category": "leverage",
       "difficulty": "medium",
       "question": "Track the net debt-to-EBITDA progression for major Airlines companies from pre-COVID (2019) through recovery (2024).",
       "expected_answer": {
@@ -935,11 +943,13 @@
         "sector_filter": "Industrials",
         "min_companies": 4
       },
-      "max_response_time_ms": 17000
+      "max_response_time_ms": 17000,
+      "time_span": "2019-2024",
+      "business_context": "Understand airline leverage normalization after COVID shocks."
     },
     {
-      "id": "TS_016",
-      "category": "Financial Ratios",
+      "id": "TS_011",
+      "category": "efficiency",
       "difficulty": "medium",
       "question": "Compare the asset turnover efficiency trends for major Technology hardware companies over the past 4 years (2020-2023).",
       "expected_answer": {
@@ -999,11 +1009,13 @@
         "sector_filter": "Information Technology",
         "min_companies": 6
       },
-      "max_response_time_ms": 15000
+      "max_response_time_ms": 15000,
+      "time_span": "2020-2023",
+      "business_context": "Benchmark hardware asset efficiency as demand cycles shift."
     },
     {
-      "id": "TS_017",
-      "category": "Cash Flow",
+      "id": "TS_012",
+      "category": "quality_of_earnings",
       "difficulty": "hard",
       "question": "Show the cash flow from operations to net income ratio trends for Healthcare companies from 2019 to 2024, identifying quality of earnings patterns.",
       "expected_answer": {
@@ -1063,11 +1075,13 @@
         "sector_filter": "Health Care",
         "min_companies": 8
       },
-      "max_response_time_ms": 18000
+      "max_response_time_ms": 18000,
+      "time_span": "2019-2024",
+      "business_context": "Assess healthcare earnings quality by comparing cash vs accrual trends."
     },
     {
-      "id": "TS_018",
-      "category": "ROE",
+      "id": "TS_013",
+      "category": "profitability",
       "difficulty": "medium",
       "question": "Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.",
       "expected_answer": {
@@ -1120,14 +1134,16 @@
         "sector_filter": "Energy",
         "min_companies": 4
       },
-      "max_response_time_ms": 17000
+      "max_response_time_ms": 17000,
+      "time_span": "2020-2024",
+      "business_context": "Identify energy firms maintaining high ROE through commodity swings."
     },
     {
-      "id": "TS_024",
+      "id": "TS_014",
       "question": "Analyze the quarterly earnings volatility and predictability patterns for Healthcare companies over the past 6 years, identifying companies with the most consistent earnings quality for dividend sustainability.",
       "type": "time_series_analysis",
       "difficulty": "expert",
-      "category": "risk_management",
+      "category": "quality_of_earnings",
       "business_context": "Earnings quality and predictability analysis for dividend policy decisions and investor communication strategies",
       "time_span": "6 years",
       "expected_semantic_match_types": [
@@ -1184,11 +1200,11 @@
       "max_response_time_ms": 17000
     },
     {
-      "id": "TS_031",
+      "id": "TS_015",
       "question": "Track the working capital optimization and cash conversion cycle improvements for major Retail companies over 6 years, measuring inventory management and supplier relationship efficiency.",
       "type": "time_series_analysis",
       "difficulty": "expert",
-      "category": "working_capital_optimization",
+      "category": "efficiency",
       "business_context": "Working capital efficiency analysis to optimize cash flow generation and supplier relationship management for improved financial performance",
       "time_span": "6 years",
       "expected_semantic_match_types": [
@@ -1257,7 +1273,7 @@
           "NetCashProvidedByUsedInOperatingActivities"
         ]
       },
-      "id": "TS_051"
+      "id": "TS_016"
     },
     {
       "question": "Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?",
@@ -1274,13 +1290,13 @@
           "Revenues"
         ]
       },
-      "id": "TS_052"
+      "id": "TS_017"
     },
     {
       "question": "Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024.",
       "type": "time_series_analysis",
       "difficulty": "easy",
-      "category": "balance_sheet",
+      "category": "liquidity",
       "business_context": "Monitor liquidity of major cloud providers",
       "time_span": "2019-2024",
       "expected_answer": {
@@ -1290,7 +1306,7 @@
           "Assets"
         ]
       },
-      "id": "TS_053"
+      "id": "TS_018"
     },
     {
       "question": "Show year-over-year ROE for NVIDIA, AMD, Intel, and Texas Instruments from 2019 to 2024.",
@@ -1306,7 +1322,7 @@
           "StockholdersEquity"
         ]
       },
-      "id": "TS_054"
+      "id": "TS_019"
     },
     {
       "question": "Compare quarterly gross margin trends for Apple, Dell, and HP over the past 8 quarters.",
@@ -1322,7 +1338,7 @@
           "CostOfRevenue"
         ]
       },
-      "id": "TS_055"
+      "id": "TS_020"
     },
     {
       "question": "Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?",
@@ -1338,13 +1354,13 @@
           "StockholdersEquity"
         ]
       },
-      "id": "TS_056"
+      "id": "TS_021"
     },
     {
       "question": "Track the equity-to-total-assets ratio for JPMorgan, Bank of America, Citigroup, and Wells Fargo from 2019 to 2024.",
       "type": "time_series_analysis",
       "difficulty": "medium",
-      "category": "balance_sheet",
+      "category": "leverage",
       "business_context": "Monitor leverage for major banks",
       "time_span": "2019-2024",
       "expected_answer": {
@@ -1354,7 +1370,7 @@
           "Assets"
         ]
       },
-      "id": "TS_057"
+      "id": "TS_022"
     },
     {
       "question": "Show quarterly operating cash flow volatility (coefficient of variation) for Financial sector companies from 2021 to 2023.",
@@ -1369,39 +1385,387 @@
           "NetCashProvidedByUsedInOperatingActivities"
         ]
       },
-      "id": "TS_058"
+      "id": "TS_023"
     },
     {
-      "question": "Compare quarterly gross margin evolution for major Consumer Staples companies from 2019 to 2024, showing inflation impact.",
+      "question": "Compare quarterly gross margin divergence between Consumer Staples and Consumer Discretionary leaders from 2019 to 2024.",
       "type": "time_series_analysis",
       "difficulty": "medium",
-      "category": "profitability",
-      "business_context": "Understand margin resilience under inflation",
+      "category": "sector_comparison",
+      "business_context": "Quantify how defensible staples margins are versus discretionary peers under inflation",
       "time_span": "2019-2024",
       "expected_answer": {
         "type": "sector_comparison",
+        "comparison_scope": [
+          "Consumer Staples",
+          "Consumer Discretionary"
+        ],
         "metrics": [
           "Revenues",
           "CostOfRevenue"
         ]
       },
-      "id": "TS_059"
+      "id": "TS_024"
     },
     {
-      "question": "Analyze cash flow from operations to net income ratios for Healthcare companies from 2019 to 2024.",
+      "question": "Analyze cash flow from operations to capital expenditure ratios for Healthcare companies from 2019 to 2024.",
       "type": "time_series_analysis",
       "difficulty": "medium",
-      "category": "quality_of_earnings",
-      "business_context": "Identify earnings quality trends in healthcare",
+      "category": "capital_allocation",
+      "business_context": "Measure how efficiently healthcare firms reinvest operating cash into long-term assets",
       "time_span": "2019-2024",
       "expected_answer": {
         "type": "ratio_trend",
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities",
+          "PaymentsToAcquirePropertyPlantAndEquipment"
+        ]
+      },
+      "id": "TS_025"
+    },
+    {
+      "question": "Which large-cap cloud software companies (Microsoft, Adobe, Salesforce) accelerated operating margin expansion in the two years after COVID (2021-2022) versus the two years before (2018-2019)?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Assess SaaS profitability resilience for CFO scenario planning.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "OperatingIncomeLoss",
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_026"
+    },
+    {
+      "question": "How did quarterly gross margins for Apple, Dell, and HP differ between the pre-COVID period (2018-2019) and the peak supply-chain disruption window (2020-2021)?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Understand hardware margin pressure under logistics shocks.",
+      "time_span": "Lockdown vs reopening (2020-2021 vs 2022-2023)",
+      "expected_answer": {
+        "type": "line_chart",
+        "metrics": [
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_027"
+    },
+    {
+      "question": "For Exxon, Chevron, and ConocoPhillips, how did free cash flow (operating cash minus capex) swing from the 2018-2019 baseline to the post-reopening surge (2021-2022)?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "cash_flow",
+      "business_context": "Measure Energy cash discipline through the oil price cycle.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities",
+          "PaymentsToAcquirePropertyPlantAndEquipment"
+        ]
+      },
+      "id": "TS_028"
+    },
+    {
+      "question": "Which U.S. airlines reduced net-debt-to-EBITDA ratios back toward pre-COVID levels by 2023 after the spike seen in 2020?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "leverage",
+      "business_context": "Track capital structure repair for airlines.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "ratio_trend",
+        "metrics": [
+          "LongTermDebtNoncurrent",
+          "ShortTermDebt",
+          "CashAndCashEquivalentsAtCarryingValue",
+          "OperatingIncomeLoss",
+          "DepreciationAndAmortization"
+        ]
+      },
+      "id": "TS_029"
+    },
+    {
+      "question": "How did inventory turnover and cash conversion cycles for Walmart, Target, and Costco shift between the pre-COVID window (2018-2019), lockdown years (2020-2021), and normalization phase (2022-2023)?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "efficiency",
+      "business_context": "Evaluate big-box working capital discipline through demand shocks.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "AccountsReceivableNetCurrent",
+          "InventoryNet",
+          "AccountsPayableCurrent",
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_030"
+    },
+    {
+      "question": "Did large U.S. banks (JPMorgan, Bank of America, Citigroup, Wells Fargo) keep equity-to-assets ratios within pre-pandemic bands during 2020-2021, and how quickly did they revert by 2023?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "leverage",
+      "business_context": "Monitor balance-sheet buffers for systemically important banks.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "StockholdersEquity",
+          "Assets"
+        ]
+      },
+      "id": "TS_031"
+    },
+    {
+      "question": "Compare cash-to-total-assets ratios for Pfizer, Johnson & Johnson, and Merck before COVID (2018-2019) versus the vaccine scale-up years (2020-2021).",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "liquidity",
+      "business_context": "Gauge healthcare liquidity cushions through vaccine ramp-up.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "CashAndCashEquivalentsAtCarryingValue",
+          "Assets"
+        ]
+      },
+      "id": "TS_032"
+    },
+    {
+      "question": "Which semiconductor leaders (NVIDIA, AMD, Intel, Texas Instruments) delivered higher ROE growth in the 2021-2023 demand boom than in the 2018-2019 baseline?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Assess ROE momentum for semiconductor capital allocation.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "ranking",
+        "metrics": [
+          "NetIncomeLoss",
+          "StockholdersEquity"
+        ]
+      },
+      "id": "TS_033"
+    },
+    {
+      "question": "How much did consumer staples giants (Procter & Gamble, Coca-Cola, PepsiCo) compress or expand gross margins from the pre-COVID average to the inflationary 2022 period?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "sector_comparison",
+      "business_context": "Quantify staples pricing power under inflation.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_034"
+    },
+    {
+      "question": "Across Technology, Energy, and Industrials leaders, which companies increased the cash-from-operations to capex ratio after COVID (2021-2023) compared with 2018-2019?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "capital_allocation",
+      "business_context": "Highlight capital deployment discipline across sectors.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "ratio_trend",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities",
+          "PaymentsToAcquirePropertyPlantAndEquipment"
+        ]
+      },
+      "id": "TS_035"
+    },
+    {
+      "question": "How did Walmart, Target, and Costco's quarterly revenue growth and inventory turnover differ between the lockdown span (2020-2021) and the restocking phase (2022-2023)?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "efficiency",
+      "business_context": "Blend top-line momentum with inventory agility for big-box retailers.",
+      "time_span": "Lockdown vs reopening (2020-2021 vs 2022-2023)",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "Revenues",
+          "InventoryNet",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_036"
+    },
+    {
+      "question": "Which specialty retailers (Home Depot, Lowe's, Best Buy) preserved or improved operating margins post-COVID (2021-2023) versus pre-COVID (2018-2019) despite cost inflation?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Check margin defense for discretionary retail names.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "ranking",
+        "metrics": [
+          "OperatingIncomeLoss",
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_037"
+    },
+    {
+      "question": "How quickly did UPS, FedEx, and XPO restore operating cash flow levels to pre-COVID benchmarks, and which year showed the steepest recovery?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "cash_flow",
+      "business_context": "Track parcel/logistics cash recovery timing.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities"
+        ]
+      },
+      "id": "TS_038"
+    },
+    {
+      "question": "How did interest coverage ratios (operating income vs interest expense) evolve for Delta, United, American, and Southwest Airlines from 2018 through 2023?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "leverage",
+      "business_context": "Assess airline ability to service debt post-pandemic.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "ratio_trend",
+        "metrics": [
+          "OperatingIncomeLoss",
+          "InterestExpense"
+        ]
+      },
+      "id": "TS_039"
+    },
+    {
+      "question": "Compare gross margin trajectories for trucking and logistics leaders (J.B. Hunt, Old Dominion, Knight-Swift) between the demand spike of 2021 and the normalization of 2023.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Understand freight margin normalization pace.",
+      "time_span": "Lockdown vs reopening (2020-2021 vs 2022-2023)",
+      "expected_answer": {
+        "type": "line_chart",
+        "metrics": [
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_040"
+    },
+    {
+      "question": "Which healthcare providers or device makers (UnitedHealth, HCA, Medtronic, Abbott) expanded operating cash flow faster than net income post-COVID, signaling improved earnings quality?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "quality_of_earnings",
+      "business_context": "Evaluate cash conversion for healthcare operators.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities",
           "NetIncomeLoss"
         ]
       },
-      "id": "TS_060"
+      "id": "TS_041"
+    },
+    {
+      "question": "Examine capital expenditure intensity (capex divided by operating cash flow) for Pfizer, Moderna, and Johnson & Johnson during 2020-2022 versus the pre-COVID baseline.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "capital_allocation",
+      "business_context": "Surface vaccine investment surges vs historical norms.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "ratio_trend",
+        "metrics": [
+          "PaymentsToAcquirePropertyPlantAndEquipment",
+          "NetCashProvidedByUsedInOperatingActivities"
+        ]
+      },
+      "id": "TS_042"
+    },
+    {
+      "question": "Show how cash-to-total-assets ratios evolved for biotech majors (Amgen, Gilead, Biogen) from 2018-2019 through the 2020-2021 liquidity build-up.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "liquidity",
+      "business_context": "Track biotech liquidity reserves under uncertainty.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "CashAndCashEquivalentsAtCarryingValue",
+          "Assets"
+        ]
+      },
+      "id": "TS_043"
+    },
+    {
+      "question": "Identify which top U.S. banks maintained ROE within \u00b1200 bps of pre-COVID averages during 2020-2021 and how quickly they reverted by 2023.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Benchmark ROE stability for money-center banks.",
+      "time_span": "Pre vs post COVID (2018-2019 vs 2021-2023)",
+      "expected_answer": {
+        "type": "filtered_list",
+        "metrics": [
+          "NetIncomeLoss",
+          "StockholdersEquity"
+        ]
+      },
+      "id": "TS_044"
+    },
+    {
+      "question": "Track quarterly loan-loss provision expense for JPMorgan, Bank of America, Citigroup, and Wells Fargo across 2018-2023 to highlight spikes and normalization.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "quality_of_earnings",
+      "business_context": "Quantify credit cost swings for major banks.",
+      "time_span": "2018-2023 segmented trend",
+      "expected_answer": {
+        "type": "line_chart",
+        "metrics": [
+          "ProvisionForLoanLosses"
+        ]
+      },
+      "id": "TS_045"
+    },
+    {
+      "question": "Compare net interest income and interest expense trajectories for large regional banks (PNC, Truist, U.S. Bancorp) across the zero-rate period (2020-2021) and the rate-hike era (2022-2023).",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "sector_comparison",
+      "business_context": "Assess rate-sensitivity for regional bank earnings.",
+      "time_span": "Lockdown vs reopening (2020-2021 vs 2022-2023)",
+      "expected_answer": {
+        "type": "comparison_table",
+        "metrics": [
+          "InterestIncome",
+          "InterestExpense",
+          "InterestIncomeExpenseNet"
+        ]
+      },
+      "id": "TS_046"
     }
   ]
 }
