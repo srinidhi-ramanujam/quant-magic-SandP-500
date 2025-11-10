@@ -1521,5 +1521,35 @@
       ],
       "intent_category": "filing_patterns"
     }
+  },
+  {
+    "template_id": "debt_reduction_progression",
+    "intent_text": "Rank companies by multi-year debt reduction",
+    "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
+    "example_questions": [
+      "Which companies across all sectors cut debt the most between 2021 and 2023?",
+      "Show Technology leaders that reduced total debt over the past three fiscal years."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "leverage"
+    }
+  },
+  {
+    "template_id": "current_ratio_trend",
+    "intent_text": "Rank healthcare companies by improving current ratio",
+    "pattern": "(?i)(current ratio|liquidity).*(trend|improv|strength).*(healthcare|pharma|medical)",
+    "example_questions": [
+      "Which Healthcare companies improved their current ratios the most between 2019 and 2023?",
+      "Show liquidity trends for Health Care suppliers across the last five years."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector"
+      ],
+      "intent_category": "liquidity"
+    }
   }
 ]

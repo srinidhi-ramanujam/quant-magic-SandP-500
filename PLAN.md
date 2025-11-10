@@ -248,6 +248,7 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Ground-truthed TS_001 using a DuckDB profit-margin consistency query; JSON + validator entries now include the exact SQL, sample data, and insights, so the `profit_margin_consistency_trend` template has a concrete reference implementation.
 - Registered `profit_margin_consistency_trend` in the template catalog / metadata / FAISS store so hybrid retrieval can route Technology profit-margin questions without falling back to the LLM.
 - Ground-truthed TS_003 with FY2021-FY2023 total-debt reductions (AT&T, AIG, US Bancorp, Deere, Apple) and shipped the `debt_reduction_progression` template for leverage questions.
+- Ground-truthed TS_004 with FY2019-FY2023 Healthcare current-ratio trends (Hologic, ResMed, Zoetis, Cooper, STERIS, IDEXX) and added the `current_ratio_trend` template to the catalog/FAISS store.
 
 ---
 

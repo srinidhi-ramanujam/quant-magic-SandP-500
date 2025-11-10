@@ -271,84 +271,82 @@
       "id": "TS_004",
       "category": "liquidity",
       "difficulty": "medium",
-      "question": "Compare the current ratio trends for Healthcare companies from 2019 to 2023, identifying companies with improving liquidity positions.",
+      "question": "Which Healthcare companies improved their current ratios the most between FY2019 and FY2023?",
       "expected_answer": {
         "format": "Annual current ratio comparison table",
         "visualization": "Line chart with trend indicators",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  ROUND(AVG(f.assets_current / NULLIF(f.liabilities_current, 0)), 2) as current_ratio\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Health Care'\n  AND c.name IN ('Johnson & Johnson', 'Pfizer Inc', 'Merck & Co Inc', 'Abbott Laboratories', 'Eli Lilly and Company', 'Bristol-Myers Squibb Company')\n  AND f.period_end_date BETWEEN '2019-01-01' AND '2023-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\n  AND f.assets_current > 0 AND f.liabilities_current > 0\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
+        "sample_analysis": "WITH healthcare AS (\n    SELECT cik,\n           name,\n           REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Health Care'\n),\nfilings AS (\n    SELECT s.adsh,\n           s.cik,\n           CAST(s.fy AS INTEGER) AS fiscal_year,\n           s.period,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN healthcare h USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nlatest AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM filings WHERE rn = 1\n),\nratios AS (\n    SELECT h.canonical_name,\n           h.name,\n           lf.fiscal_year,\n           (MAX(CASE WHEN n.tag = 'AssetsCurrent' THEN n.value END) /\n            NULLIF(MAX(CASE WHEN n.tag = 'LiabilitiesCurrent' THEN n.value END), 0)) AS current_ratio\n    FROM latest lf\n    JOIN read_parquet('data/parquet/num.parquet') n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    JOIN healthcare h USING (cik)\n    WHERE n.tag IN ('AssetsCurrent','LiabilitiesCurrent')\n    GROUP BY h.canonical_name, h.name, lf.fiscal_year\n),\npivoted AS (\n    SELECT canonical_name,\n           ANY_VALUE(name) AS display_name,\n           ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN current_ratio END), 2) AS ratio_2019,\n           ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN current_ratio END), 2) AS ratio_2020,\n           ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN current_ratio END), 2) AS ratio_2021,\n           ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN current_ratio END), 2) AS ratio_2022,\n           ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN current_ratio END), 2) AS ratio_2023,\n           COUNT(DISTINCT fiscal_year) AS year_count\n    FROM ratios\n    GROUP BY canonical_name\n    HAVING year_count = 5\n)\nSELECT display_name AS name,\n       ratio_2019,\n       ratio_2020,\n       ratio_2021,\n       ratio_2022,\n       ratio_2023,\n       ROUND(ratio_2023 - ratio_2019, 2) AS improvement\nFROM pivoted\nWHERE ratio_2019 IS NOT NULL AND ratio_2023 IS NOT NULL\nORDER BY improvement DESC\nLIMIT 10;",
         "sample_data": [
           {
-            "company": "Johnson & Johnson",
-            "2019": "1.32",
-            "2020": "1.45",
-            "2021": "1.61",
-            "2022": "1.58",
-            "2023": "1.74",
-            "trend": "\u2197"
+            "company": "Hologic Inc",
+            "2019": "1.68",
+            "2020": "1.93",
+            "2021": "2.37",
+            "2022": "3.15",
+            "2023": "3.47",
+            "improvement_pp": "+1.79"
           },
           {
-            "company": "Pfizer Inc",
-            "2019": "1.18",
-            "2020": "1.28",
-            "2021": "2.11",
-            "2022": "1.89",
-            "2023": "1.95",
-            "trend": "\u2197"
+            "company": "ResMed Inc",
+            "2019": "2.06",
+            "2020": "2.75",
+            "2021": "3.15",
+            "2022": "3.09",
+            "2023": "3.12",
+            "improvement_pp": "+1.06"
           },
           {
-            "company": "Merck & Co Inc",
-            "2019": "1.25",
-            "2020": "1.31",
-            "2021": "1.44",
-            "2022": "1.52",
-            "2023": "1.67",
-            "trend": "\u2197"
+            "company": "Zoetis Inc.",
+            "2019": "2.63",
+            "2020": "3.02",
+            "2021": "3.09",
+            "2022": "3.08",
+            "2023": "3.36",
+            "improvement_pp": "+0.73"
           },
           {
-            "company": "Abbott Laboratories",
-            "2019": "0.98",
-            "2020": "1.15",
-            "2021": "1.28",
-            "2022": "1.41",
-            "2023": "1.38",
-            "trend": "\u2197"
+            "company": "Cooper Companies Inc",
+            "2019": "1.05",
+            "2020": "1.18",
+            "2021": "1.30",
+            "2022": "1.66",
+            "2023": "1.76",
+            "improvement_pp": "+0.71"
           },
           {
-            "company": "Eli Lilly and Company",
-            "2019": "1.09",
-            "2020": "1.22",
-            "2021": "1.35",
-            "2022": "1.48",
-            "2023": "1.52",
-            "trend": "\u2197"
+            "company": "STERIS plc",
+            "2019": "2.40",
+            "2020": "2.74",
+            "2021": "2.67",
+            "2022": "2.94",
+            "2023": "3.08",
+            "improvement_pp": "+0.68"
           },
           {
-            "company": "Bristol-Myers Squibb Company",
-            "2019": "1.41",
-            "2020": "1.38",
-            "2021": "1.55",
+            "company": "IDEXX Laboratories Inc /DE",
+            "2019": "0.94",
+            "2020": "1.20",
+            "2021": "1.34",
             "2022": "1.47",
-            "2023": "1.59",
-            "trend": "\u2197"
+            "2023": "1.57",
+            "improvement_pp": "+0.63"
           }
         ],
-        "business_insight": "Healthcare companies demonstrated remarkable liquidity strengthening from 2019-2023, driven by COVID-19 vaccine revenues, accelerated drug approvals, and conservative cash management during uncertainty. Pfizer showed the most dramatic improvement with current ratios jumping from 1.18x to 2.11x in 2021 due to COVID vaccine cash generation, while maintaining elevated levels through 2023. Diversified healthcare leaders like J&J and Merck exhibited steady liquidity improvements, reflecting strong operational cash flows and prudent working capital management during supply chain disruptions.",
+        "business_insight": "Medical device and animal health specialists posted the sharpest liquidity gains between FY2019 and FY2023 as pandemic demand, premium pricing, and disciplined inventory management expanded current ratios by 60\u2013180 bps. Leaders such as Hologic and ResMed now operate with more than 3x coverage of short-term liabilities, giving CFO teams ample headroom for M&A and R&D without relying on external credit.",
         "key_findings": [
-          "All major healthcare companies improved current ratios by 20-65% from 2019 to 2023",
-          "Pfizer achieved highest absolute current ratio (2.11x in 2021) driven by COVID vaccine revenue surge",
-          "Johnson & Johnson showed most consistent improvement trajectory with 32% cumulative gain",
-          "Abbott transformed from below-adequate liquidity (0.98x in 2019) to healthy 1.38x by 2023",
-          "Eli Lilly demonstrated steady 39% improvement reflecting strong diabetes and oncology drug portfolio success"
+          "Hologic\u2019s current ratio nearly doubled (1.68\u21923.47) thanks to diagnostic cash inflows and leaner receivables.",
+          "ResMed maintained >3x liquidity while scaling ventilation capacity, showing sustained working-capital agility.",
+          "Zoetis and IDEXX grew ratios by 60\u201375 bps as pet-health demand accelerated and inventory turns improved.",
+          "Cooper Companies and STERIS moved from near-1.0x to well above 1.5x, removing prior liquidity constraints."
         ],
         "investment_implications": [
-          "Strong liquidity positions provide healthcare companies flexibility for R&D investments and acquisitions",
-          "Improved current ratios signal operational efficiency gains and cash flow optimization post-COVID",
-          "Healthcare liquidity strength offers defensive characteristics for portfolio allocation during market volatility",
-          "Companies with ratios >1.5x (J&J, Pfizer, Merck) demonstrate superior financial stability for long-term drug development cycles"
+          "Device makers with >3x current ratios can self-fund tuck-in deals and platform upgrades even if rates stay elevated.",
+          "Improved working-capital cushions lower refinancing risk and provide shock absorbers for supply-chain disruptions.",
+          "Liquidity expansion highlights the health of recurring-revenue models in diagnostics, animal health, and vision care."
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
+        "expected_data_span": "FY2019-FY2023",
         "required_metrics": [
           "current_ratio",
           "current_assets",
@@ -358,8 +356,8 @@
         "min_companies": 6
       },
       "max_response_time_ms": 15000,
-      "time_span": "2019-2023",
-      "business_context": "Track healthcare liquidity improvements for CFO risk reviews."
+      "time_span": "FY2019-FY2023",
+      "business_context": "Identify Health Care names whose working-capital liquidity strengthened the most since FY2019."
     },
     {
       "id": "TS_005",

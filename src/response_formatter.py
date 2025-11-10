@@ -299,6 +299,35 @@ class ResponseFormatter:
                 bullets
             )
 
+        if template_id == "current_ratio_trend":
+            if query_result.row_count == 0:
+                return "No companies met the five-year current-ratio coverage requirement."
+            data = query_result.data
+            if not isinstance(data, pd.DataFrame):
+                return None
+
+            rows = data.head(5)
+            bullets = []
+            for idx, row in rows.iterrows():
+                name = row.get("name", "Unknown company")
+                ratio_2019 = self._format_percentage(
+                    self._get_first_value(row, ["ratio_2019"]), signed=False
+                )
+                ratio_2023 = self._format_percentage(
+                    self._get_first_value(row, ["ratio_2023"]), signed=False
+                )
+                improvement = self._format_percentage(
+                    self._get_first_value(row, ["improvement"]), signed=True
+                )
+                bullets.append(
+                    f"{len(bullets)+1}) {name}: {ratio_2019} (2019) → "
+                    f"{ratio_2023} (2023) {improvement}"
+                )
+
+            return "Top Healthcare liquidity improvers (FY2019-FY2023):\n" + "\n".join(
+                bullets
+            )
+
         return None
 
     @staticmethod
