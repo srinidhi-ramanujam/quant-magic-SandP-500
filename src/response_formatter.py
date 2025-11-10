@@ -8,6 +8,8 @@ For Phase 0, handles:
 """
 
 from datetime import datetime
+from typing import Optional
+
 import pandas as pd
 
 from src.models import QueryResult, ExtractedEntities, FormattedResponse
@@ -53,13 +55,28 @@ class ResponseFormatter:
     ) -> FormattedResponse:
         """Internal formatting logic."""
 
-        # Determine response type based on question type
-        if entities.question_type == "count":
-            answer = self._format_count_response(query_result, entities)
-        elif entities.question_type == "lookup":
-            answer = self._format_lookup_response(query_result, entities)
+        template_id = (
+            context.metadata.get("template_id")
+            if context and context.metadata
+            else None
+        )
+
+        specialized_answer = self._format_template_specific(
+            template_id, query_result
+        )
+
+        if specialized_answer:
+            answer = specialized_answer
         else:
-            answer = self._format_generic_response(query_result, entities)
+            # Determine response type based on question type
+            if entities.question_type == "count":
+                answer = self._format_count_response(query_result, entities)
+            elif entities.question_type == "lookup":
+                answer = self._format_lookup_response(query_result, entities)
+            else:
+                answer = self._format_generic_response(
+                    query_result, entities, context
+                )
 
         # Build metadata
         metadata = {
@@ -205,8 +222,82 @@ class ResponseFormatter:
 
         return "Result found but unable to format."
 
+    def _format_template_specific(
+        self, template_id: Optional[str], query_result: QueryResult
+    ) -> Optional[str]:
+        """Format known template responses."""
+        if not template_id:
+            return None
+
+        if template_id == "debt_reduction_progression":
+            if query_result.row_count == 0:
+                return "No debt reductions found for the requested period."
+            data = query_result.data
+            if not isinstance(data, pd.DataFrame):
+                return None
+
+            rows = data.head(5)
+            bullets = []
+            for idx, row in rows.iterrows():
+                name = row.get("name", "Unknown company")
+                sector = row.get("gics_sector", "Unknown sector")
+                start_debt_value = self._get_first_value(
+                    row, ["debt_2021_m", "debt_2021"]
+                )
+                end_debt_value = self._get_first_value(
+                    row, ["debt_2023_m", "debt_2023"]
+                )
+                delta_value = self._get_first_value(
+                    row, ["reduction_m", "debt_reduction"]
+                )
+                pct_value = self._get_first_value(
+                    row, ["reduction_pct", "reduction_ratio"]
+                )
+
+                start_debt = self._format_millions(start_debt_value)
+                end_debt = self._format_millions(end_debt_value)
+                delta_signed = -abs(delta_value) if delta_value is not None else None
+                pct_signed = -abs(pct_value) if pct_value is not None else None
+                delta = self._format_millions(delta_signed, signed=True)
+                pct_str = self._format_percentage(pct_signed, signed=True)
+                bullets.append(
+                    f"{len(bullets)+1}) {name} ({sector}) cut debt from "
+                    f"{start_debt} to {end_debt} "
+                    f"({delta}, {pct_str})."
+                )
+
+            return "Top FY2021-FY2023 deleveragers:\n" + "\n".join(bullets)
+
+        return None
+
+    @staticmethod
+    def _get_first_value(row, keys) -> Optional[float]:
+        for key in keys:
+            if key in row and row[key] is not None:
+                return row[key]
+        return None
+
+    @staticmethod
+    def _format_millions(value, signed: bool = False) -> str:
+        if value is None:
+            return "n/a"
+        if signed:
+            return f"{value:+,.0f}M"
+        return f"${value:,.0f}M"
+
+    @staticmethod
+    def _format_percentage(value, signed: bool = False) -> str:
+        if value is None:
+            return "n/a"
+        if signed:
+            return f"{value:+.2f}%"
+        return f"{value:.2f}%"
+
     def _format_generic_response(
-        self, query_result: QueryResult, entities: ExtractedEntities
+        self,
+        query_result: QueryResult,
+        entities: ExtractedEntities,
+        context: RequestContext | None = None,
     ) -> str:
         """Format a generic response when specific formatting not available."""
         if query_result.row_count == 0:
@@ -222,8 +313,10 @@ class ResponseFormatter:
                 parts = [f"{col}: {row[col]}" for col in data.columns]
                 return " | ".join(parts)
             else:
-                # Multiple rows - just report count
-                return f"Found {query_result.row_count} results."
+                # Multiple rows - show count and first few entries
+                preview = data.head(5)
+                summary = preview.to_dict(orient="records")
+                return f"Found {query_result.row_count} results. Sample: {summary}"
 
         return f"Query returned {query_result.row_count} rows."
 

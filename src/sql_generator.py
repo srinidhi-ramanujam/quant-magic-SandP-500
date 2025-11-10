@@ -198,8 +198,13 @@ class SQLGenerator:
             # Check again
             missing_params = set(template.parameters) - set(params.keys())
             if missing_params:
-                self.logger.error(f"Still missing parameters: {missing_params}")
-                return None
+                params = self._apply_default_parameters(
+                    params, missing_params, template
+                )
+                missing_params = set(template.parameters) - set(params.keys())
+                if missing_params:
+                    self.logger.error(f"Still missing parameters: {missing_params}")
+                    return None
 
         params = self._apply_entity_overrides(params, entities, template)
 
@@ -327,6 +332,17 @@ class SQLGenerator:
                     or canonical_sector.lower() not in current_sector.lower()
                 ):
                     updated["sector"] = canonical_sector
+        if "sector" in template.parameters:
+            sector_value = updated.get("sector")
+            if sector_value:
+                cleaned = sector_value.strip().lower()
+                if (
+                    cleaned in {"all", "all sector", "all sectors"}
+                    or "all sector" in cleaned
+                    or "which" in cleaned
+                    or "what" in cleaned
+                ):
+                    updated["sector"] = "ALL"
 
         if "metric" in template.parameters and entities.metrics:
             canonical_metric = next((m for m in entities.metrics if m), "")
@@ -343,6 +359,28 @@ class SQLGenerator:
                 ):
                     updated["time_period"] = canonical_period
 
+        return updated
+
+    def _apply_default_parameters(
+        self, params: Dict[str, str], missing_params: set, template: QueryTemplate
+    ) -> Dict[str, str]:
+        """Provide fallback values for optional template parameters."""
+        defaults: Dict[str, str] = {}
+
+        if "sector" in missing_params:
+            defaults["sector"] = "ALL"
+
+        if not defaults:
+            return params
+
+        self.logger.debug(
+            "Applying default parameters for %s: %s",
+            template.template_id,
+            defaults,
+        )
+
+        updated = params.copy()
+        updated.update(defaults)
         return updated
 
     @staticmethod
