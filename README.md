@@ -361,6 +361,15 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 - Mark slow/external coverage with `@pytest.mark.integration`; use `python -m pytest -m "not integration"` for fast verification.
 - Preserve or raise the current 100/104 baseline and store shared DuckDB fixtures in `tests/fixtures/`.
 
+### Upcoming Hybrid Retrieval Metrics
+- Phase 2D will introduce keyword + embedding retrieval for entity extraction and template selection (FAISS/Chroma + `sentence-transformers`).
+- We’ll compare baseline RUN_020 metrics against the hybrid path:
+  - Entity extraction accuracy (slot match rate on evaluation suite).
+  - Template hit rate (questions resolved without fallback).
+  - LLM reliance (calls per question) and median latency.
+  - Validator pass rate for true custom SQL calls.
+- See `PLAN.md` for detailed deliverables and thresholds; embedding refresh instructions will land once the feature is implemented.
+
 ### Commit & PR Expectations
 - Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise present-tense summaries under 72 characters.
 - Document scope, verification commands (`pytest ...`, CLI demos), and link roadmap items or issues.

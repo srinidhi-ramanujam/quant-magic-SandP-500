@@ -226,6 +226,33 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 
 ---
 
+### Phase 2D: Hybrid Retrieval Initiative (Next)
+
+**Goal**: Replace LLM-heavy entity extraction and template selection with hybrid (keyword + embedding) retrieval while demonstrating measurable gains.
+
+#### Metrics to Track (Baseline vs. Hybrid)
+- **Entity Extraction Accuracy** – % of evaluation questions where all required slots match the expected context (derived from workbook + entity diff script). Target ≥98%.
+- **Template Hit Rate** – % of questions routed to the correct template without fallback. Target ≥95%.
+- **LLM Reliance** – Average number of LLM calls per question (entity + template + custom SQL). Target near-zero for template-backed queries.
+- **Latency** – Median end-to-end time per question (captured in workbook metadata). Target ≥30% improvement vs RUN_020 baseline.
+- **Custom SQL Success** – Semantic validator pass rate and latency for the remaining LLM-generated SQL cases to ensure no regressions.
+
+#### Deliverables
+- [ ] **Entity Catalog + Embeddings** – Curated dictionaries (sectors, jurisdictions, metrics, time phrases, question types) embedded via `sentence-transformers` and stored in FAISS/Chroma.
+- [ ] **HybridEntityRetriever** – Combines existing regex/threshold hints with embedding similarity to produce canonical slot values with confidence.
+- [ ] **TemplateIntentRetriever** – Keyword-filter + embedding similarity over template intent cards to select the template without hitting the LLM.
+- [ ] **Telemetry & Metrics Script** – Log retrieval confidences/result and ship a notebook/script that compares baseline vs. hybrid runs.
+- [ ] **Runbook Updates** – README/PLAN instructions on refreshing embeddings, tuning thresholds, and interpreting the metrics dashboard.
+
+#### Exit Criteria
+- [ ] ≥95% of simple-tier questions resolved without LLM entity/template calls.
+- [ ] Entity extraction accuracy ≥98% on the evaluation suite.
+- [ ] Template hit rate ≥95% with no quality regression.
+- [ ] Median latency improvement ≥30% vs. RUN_020.
+- [ ] Metrics dashboard attached to PRs demonstrating the improvement.
+
+---
+
 ## Phase 3: Advanced Features (FUTURE)
 
 **Goal**: Support medium questions and time series analysis
