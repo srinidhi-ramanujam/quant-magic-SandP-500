@@ -4,7 +4,7 @@
     "description": "Advanced time series analysis questions for multi-period financial trend evaluation and visualization, enhanced with CFO strategic focus areas",
     "version": "2.0",
     "created_date": "2025-01-28",
-    "total_questions": 15,
+    "total_questions": 25,
     "difficulty_level": "advanced",
     "expected_max_response_time_ms": 20000,
     "categories": [
@@ -1243,6 +1243,165 @@
         ]
       },
       "max_response_time_ms": 16000
+    },
+    {
+      "question": "How have quarterly cash flows from operations evolved for the top 10 Technology companies by market cap from 2022 to 2024?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "cash_flow",
+      "business_context": "Assess operating cash health for technology leaders",
+      "time_span": "2022-2024",
+      "expected_answer": {
+        "type": "time_series_table",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities"
+        ]
+      },
+      "id": "TS_051"
+    },
+    {
+      "question": "Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Identify capital-efficient tech franchises",
+      "time_span": "2021-2024",
+      "expected_answer": {
+        "type": "ranking",
+        "metrics": [
+          "OperatingIncomeLoss",
+          "DepreciationAndAmortization",
+          "Revenues"
+        ]
+      },
+      "id": "TS_052"
+    },
+    {
+      "question": "Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024.",
+      "type": "time_series_analysis",
+      "difficulty": "easy",
+      "category": "balance_sheet",
+      "business_context": "Monitor liquidity of major cloud providers",
+      "time_span": "2019-2024",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "CashAndCashEquivalentsAtCarryingValue",
+          "Assets"
+        ]
+      },
+      "id": "TS_053"
+    },
+    {
+      "question": "Show year-over-year ROE for NVIDIA, AMD, Intel, and Texas Instruments from 2019 to 2024.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Evaluate semiconductor capital efficiency",
+      "time_span": "2019-2024",
+      "expected_answer": {
+        "type": "line_chart",
+        "metrics": [
+          "NetIncomeLoss",
+          "StockholdersEquity"
+        ]
+      },
+      "id": "TS_054"
+    },
+    {
+      "question": "Compare quarterly gross margin trends for Apple, Dell, and HP over the past 8 quarters.",
+      "type": "time_series_analysis",
+      "difficulty": "easy",
+      "category": "profitability",
+      "business_context": "Understand hardware margin dynamics",
+      "time_span": "8 quarters",
+      "expected_answer": {
+        "type": "line_chart",
+        "metrics": [
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_055"
+    },
+    {
+      "question": "Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Identify resilient financial franchises",
+      "time_span": "2021-2023",
+      "expected_answer": {
+        "type": "filtered_list",
+        "metrics": [
+          "NetIncomeLoss",
+          "StockholdersEquity"
+        ]
+      },
+      "id": "TS_056"
+    },
+    {
+      "question": "Track the equity-to-total-assets ratio for JPMorgan, Bank of America, Citigroup, and Wells Fargo from 2019 to 2024.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "balance_sheet",
+      "business_context": "Monitor leverage for major banks",
+      "time_span": "2019-2024",
+      "expected_answer": {
+        "type": "multi_series",
+        "metrics": [
+          "StockholdersEquity",
+          "Assets"
+        ]
+      },
+      "id": "TS_057"
+    },
+    {
+      "question": "Show quarterly operating cash flow volatility (coefficient of variation) for Financial sector companies from 2021 to 2023.",
+      "type": "time_series_analysis",
+      "difficulty": "hard",
+      "category": "cash_flow",
+      "business_context": "Assess cash stability of financials",
+      "time_span": "2021-2023",
+      "expected_answer": {
+        "type": "summary_table",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities"
+        ]
+      },
+      "id": "TS_058"
+    },
+    {
+      "question": "Compare quarterly gross margin evolution for major Consumer Staples companies from 2019 to 2024, showing inflation impact.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "profitability",
+      "business_context": "Understand margin resilience under inflation",
+      "time_span": "2019-2024",
+      "expected_answer": {
+        "type": "sector_comparison",
+        "metrics": [
+          "Revenues",
+          "CostOfRevenue"
+        ]
+      },
+      "id": "TS_059"
+    },
+    {
+      "question": "Analyze cash flow from operations to net income ratios for Healthcare companies from 2019 to 2024.",
+      "type": "time_series_analysis",
+      "difficulty": "medium",
+      "category": "quality_of_earnings",
+      "business_context": "Identify earnings quality trends in healthcare",
+      "time_span": "2019-2024",
+      "expected_answer": {
+        "type": "ratio_trend",
+        "metrics": [
+          "NetCashProvidedByUsedInOperatingActivities",
+          "NetIncomeLoss"
+        ]
+      },
+      "id": "TS_060"
     }
   ]
 }
