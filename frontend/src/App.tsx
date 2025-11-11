@@ -1,6 +1,33 @@
 import { useState, useRef, useEffect } from "react";
 import type { FormEvent } from "react";
 
+type PresentationTable = {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  truncated?: boolean;
+};
+
+type PresentationPayload = {
+  narrative: string;
+  highlights?: string[];
+  table?: PresentationTable | null;
+  warnings?: string[];
+};
+
+type ReasoningTrace = {
+  template_id?: string | null;
+  generation_method?: string | null;
+  row_count?: number | null;
+  summary?: string | null;
+  warnings?: string[];
+};
+
+type ConversationTurnPayload = {
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: string;
+};
+
 type Message = {
   id: string;
   type: "user" | "assistant";
@@ -10,6 +37,9 @@ type Message = {
     sql?: string | null;
     total_time_seconds?: number;
     row_count?: number;
+    presentation?: PresentationPayload | null;
+    reasoning_trace?: ReasoningTrace | null;
+    sql_hint?: string | null;
   };
 };
 
@@ -26,10 +56,26 @@ type QueryResponse = {
   metadata: Record<string, unknown>;
   sources?: string[] | null;
   error?: string | null;
+  presentation?: PresentationPayload | null;
+  reasoning_trace?: ReasoningTrace | null;
+  sql_collapsible_hint?: string | null;
 };
 
 const logInfo = (label: string, payload: unknown) => {
   console.info(`[ui] ${label}`, payload);
+};
+
+const buildHistoryPayload = (
+  thread: Message[],
+  limit = 6,
+): ConversationTurnPayload[] => {
+  if (!thread.length) return [];
+  const recent = thread.slice(-limit);
+  return recent.map((message) => ({
+    role: message.type,
+    content: message.content,
+    timestamp: message.timestamp,
+  }));
 };
 
 function App() {
@@ -38,6 +84,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [sqlPanelOpen, setSqlPanelOpen] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -61,6 +108,13 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const toggleSqlPanel = (id: string) => {
+    setSqlPanelOpen((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -69,6 +123,7 @@ function App() {
     }
 
     const trimmedQuestion = question.trim();
+    const historyPayload = buildHistoryPayload(messages);
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -98,7 +153,11 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: trimmedQuestion }),
+        body: JSON.stringify({
+          question: trimmedQuestion,
+          history: historyPayload,
+          include_formatted_answer: true,
+        }),
       });
 
       if (!response.ok) {
@@ -126,6 +185,9 @@ function App() {
           total_time_seconds: payload.metadata
             ?.total_time_seconds as number,
           row_count: payload.metadata?.row_count as number,
+          presentation: payload.presentation ?? null,
+          reasoning_trace: payload.reasoning_trace ?? null,
+          sql_hint: payload.sql_collapsible_hint ?? null,
         },
       };
 
@@ -435,86 +497,265 @@ function App() {
             </div>
           ) : (
             <div className="space-y-6 max-w-4xl mx-auto">
-              {messages.map((message) => (
-                <div key={message.id}>
-                  {message.type === "user" ? (
-                    <div className="flex justify-end">
-                      <div className="max-w-3xl">
-                        <div className="bg-gradient-to-r from-chat-user-from to-chat-user-to rounded-2xl px-6 py-4 shadow-lg">
-                          <p className="text-white text-base leading-relaxed">
-                            {message.content}
-                          </p>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-2 text-right">
-                          {message.timestamp}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex gap-4">
-                      <div className="w-8 h-8 bg-gradient-to-br from-brand-dark to-brand rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-bold text-sm">
-                          A
-                        </span>
-                      </div>
-                      <div className="flex-1 max-w-3xl">
-                        <div className="bg-[#1e293b] rounded-2xl px-6 py-4 shadow-lg border border-slate-700/50">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="w-6 h-6 bg-brand rounded flex-shrink-0 mt-1">
-                              {/* Icon placeholder */}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="text-white font-semibold mb-2">
-                                Business Summary & Key Findings:
-                              </h3>
-                              <p className="text-slate-200 text-base leading-relaxed">
-                                {message.content}
-                              </p>
-                            </div>
+              {messages.map((message) => {
+                const presentation = message.metadata?.presentation;
+                const reasoningTrace = message.metadata?.reasoning_trace;
+                const narrative = presentation?.narrative ?? message.content;
+                const highlights = presentation?.highlights ?? [];
+                const table = presentation?.table ?? null;
+                const tableColumns =
+                  table && table.rows.length
+                    ? table.columns && table.columns.length > 0
+                      ? table.columns
+                      : Object.keys(table.rows[0] as Record<string, unknown>)
+                    : [];
+                const formatterWarnings = presentation?.warnings ?? [];
+                const durationSeconds =
+                  typeof message.metadata?.total_time_seconds === "number"
+                    ? (message.metadata.total_time_seconds as number)
+                    : null;
+                const rowCount =
+                  typeof message.metadata?.row_count === "number"
+                    ? (message.metadata.row_count as number)
+                    : null;
+                const sqlExpanded = Boolean(sqlPanelOpen[message.id]);
+                const sqlHint =
+                  message.metadata?.sql_hint ||
+                  reasoningTrace?.summary ||
+                  "View generated SQL";
+
+                return (
+                  <div key={message.id}>
+                    {message.type === "user" ? (
+                      <div className="flex justify-end">
+                        <div className="max-w-3xl">
+                          <div className="bg-gradient-to-r from-chat-user-from to-chat-user-to rounded-2xl px-6 py-4 shadow-lg">
+                            <p className="text-white text-base leading-relaxed">
+                              {message.content}
+                            </p>
                           </div>
-
-                          {message.metadata?.sql && (
-                            <div className="mt-4 pt-4 border-t border-slate-700">
-                              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">
-                                SQL Query
-                              </h4>
-                              <pre className="bg-[#0a0a0a] rounded-lg p-4 text-sm text-slate-300 overflow-x-auto border border-slate-800">
-                                <code>{message.metadata.sql}</code>
-                              </pre>
-                            </div>
-                          )}
-
-                          {(message.metadata?.total_time_seconds ||
-                            message.metadata?.row_count) && (
-                            <div className="mt-4 flex gap-6 text-sm text-slate-400">
-                              {message.metadata.total_time_seconds && (
-                                <div>
-                                  <span className="font-semibold">
-                                    Total time:
-                                  </span>{" "}
-                                  {message.metadata.total_time_seconds.toFixed(
-                                    3
-                                  )}{" "}
-                                  seconds
-                                </div>
-                              )}
-                              {message.metadata.row_count !== undefined && (
-                                <div>
-                                  <span className="font-semibold">Rows:</span>{" "}
-                                  {message.metadata.row_count}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-2">
-                          {message.timestamp}
+                          <div className="text-xs text-slate-500 mt-2 text-right">
+                            {message.timestamp}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <div className="flex gap-4">
+                        <div className="w-8 h-8 bg-gradient-to-br from-brand-dark to-brand rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-sm">
+                            A
+                          </span>
+                        </div>
+                        <div className="flex-1 max-w-3xl">
+                          <div className="bg-[#1e293b] rounded-2xl px-6 py-4 shadow-lg border border-slate-700/50">
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className="w-6 h-6 bg-brand rounded flex-shrink-0 mt-1" />
+                              <div className="flex-1">
+                                <h3 className="text-white font-semibold mb-2">
+                                  Business Summary & Key Findings
+                                </h3>
+                                <p className="text-slate-200 text-base leading-relaxed">
+                                  {narrative}
+                                </p>
+                              </div>
+                            </div>
+
+                            {highlights.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">
+                                  Highlights
+                                </h4>
+                                <ul className="list-disc list-inside text-slate-200 text-sm space-y-1">
+                                  {highlights.map((item, idx) => (
+                                    <li key={`${message.id}-highlight-${idx}`}>
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {table && table.rows.length > 0 && (
+                              <div className="mt-4">
+                                <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-2">
+                                  Top rows
+                                </h4>
+                                <div className="overflow-x-auto rounded-lg border border-slate-700">
+                                  <table className="min-w-full divide-y divide-slate-700 text-sm text-slate-200">
+                                    <thead className="bg-slate-800/50">
+                                      <tr>
+                                        {tableColumns.map((column) => (
+                                          <th
+                                            key={`${message.id}-col-${column}`}
+                                            className="px-3 py-2 text-left font-semibold uppercase text-[10px] tracking-wide text-slate-400"
+                                          >
+                                            {column}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {table.rows.map((row, rowIdx) => (
+                                        <tr
+                                          key={`${message.id}-row-${rowIdx}`}
+                                          className="odd:bg-slate-800/25"
+                                        >
+                                          {tableColumns.map((column) => {
+                                            const cell =
+                                              (row as Record<string, unknown>)[
+                                                column
+                                              ];
+                                            const displayValue =
+                                              cell === null ||
+                                              cell === undefined
+                                                ? "—"
+                                                : String(cell);
+                                            return (
+                                              <td
+                                                key={`${message.id}-${column}-${rowIdx}`}
+                                                className="px-3 py-2 whitespace-nowrap align-top"
+                                              >
+                                                {displayValue}
+                                              </td>
+                                            );
+                                          })}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                {table.truncated && (
+                                  <p className="text-xs text-amber-300 mt-2">
+                                    Displaying only the first{" "}
+                                    {table.rows.length} rows for brevity.
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {formatterWarnings.length > 0 && (
+                              <div className="mt-4 text-xs text-amber-300">
+                                {formatterWarnings.map((warning, idx) => (
+                                  <p key={`${message.id}-warning-${idx}`}>
+                                    ⚠️ {warning}
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+
+                            {message.metadata?.sql && (
+                              <div className="mt-4 border border-slate-700 rounded-xl overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSqlPanel(message.id)}
+                                  className="w-full flex items-center justify-between px-4 py-3 bg-slate-800/40 text-left text-sm text-slate-200"
+                                >
+                                  <div>
+                                    <p className="font-semibold">
+                                      Reasoning & SQL
+                                    </p>
+                                    <p className="text-xs text-slate-400">
+                                      {sqlHint}
+                                    </p>
+                                  </div>
+                                  <svg
+                                    className={`w-4 h-4 transition-transform ${
+                                      sqlExpanded ? "rotate-90" : ""
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                </button>
+                                {sqlExpanded && (
+                                  <div className="px-4 py-3 space-y-3">
+                                    {reasoningTrace && (
+                                      <div className="text-xs text-slate-300 space-y-1">
+                                        <p>
+                                          <span className="font-semibold">
+                                            Template:
+                                          </span>{" "}
+                                          {reasoningTrace.template_id ??
+                                            "Not provided"}
+                                        </p>
+                                        <p>
+                                          <span className="font-semibold">
+                                            Method:
+                                          </span>{" "}
+                                          {reasoningTrace.generation_method ??
+                                            "Unknown"}
+                                        </p>
+                                        {reasoningTrace.row_count !== null &&
+                                          reasoningTrace.row_count !==
+                                            undefined && (
+                                            <p>
+                                              <span className="font-semibold">
+                                                Rows:
+                                              </span>{" "}
+                                              {reasoningTrace.row_count}
+                                            </p>
+                                          )}
+                                        {reasoningTrace.warnings &&
+                                          reasoningTrace.warnings.length > 0 && (
+                                            <div className="text-amber-300">
+                                              {reasoningTrace.warnings.map(
+                                                (warning, idx) => (
+                                                  <p
+                                                    key={`${message.id}-trace-warning-${idx}`}
+                                                  >
+                                                    ⚠️ {warning}
+                                                  </p>
+                                                )
+                                              )}
+                                            </div>
+                                          )}
+                                      </div>
+                                    )}
+                                    <pre className="bg-[#0a0a0a] rounded-lg p-4 text-xs text-slate-300 overflow-x-auto border border-slate-800">
+                                      <code>{message.metadata.sql}</code>
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {(durationSeconds !== null || rowCount !== null) && (
+                              <div className="mt-4 flex gap-6 text-sm text-slate-400">
+                                {durationSeconds !== null && (
+                                  <div>
+                                    <span className="font-semibold">
+                                      Total time:
+                                    </span>{" "}
+                                    {durationSeconds.toFixed(3)} seconds
+                                  </div>
+                                )}
+                                {rowCount !== null && (
+                                  <div>
+                                    <span className="font-semibold">
+                                      Rows:
+                                    </span>{" "}
+                                    {rowCount}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-2">
+                            {message.timestamp}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {loading && (
                 <div className="flex gap-4">
                   <div className="w-8 h-8 bg-gradient-to-br from-brand-dark to-brand rounded-lg flex items-center justify-center flex-shrink-0">

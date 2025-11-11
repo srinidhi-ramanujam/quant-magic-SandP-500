@@ -59,7 +59,11 @@ class FinancialCLI:
         Returns:
             FormattedResponse with answer and metadata
         """
-        result = self.query_service.run(question, debug_mode=debug_mode)
+        result = self.query_service.run(
+            question,
+            debug_mode=debug_mode,
+            include_presentation=False,
+        )
 
         log_interaction(
             channel="cli",

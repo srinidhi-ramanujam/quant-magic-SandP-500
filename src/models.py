@@ -4,7 +4,7 @@ Pydantic models for type-safe data contracts across all components.
 These models ensure consistent data structures throughout the query pipeline.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -15,6 +15,20 @@ from dotenv import load_dotenv
 
 # Ensure .env values are available even when models are imported standalone
 load_dotenv(Path(__file__).parent.parent / ".env", override=False)
+
+
+class ConversationTurn(BaseModel):
+    """Single conversation turn supplied by the UI."""
+
+    role: Literal["user", "assistant"] = Field(
+        ..., description="Role of the speaker in the chat history"
+    )
+    content: str = Field(
+        ..., min_length=1, description="Content of the chat message (plain text)"
+    )
+    timestamp: Optional[str] = Field(
+        default=None, description="Original timestamp string from the UI"
+    )
 
 
 class QueryRequest(BaseModel):
@@ -31,6 +45,17 @@ class QueryRequest(BaseModel):
     )
     debug_mode: bool = Field(
         default=False, description="Whether to return debug information"
+    )
+    include_formatted_answer: bool = Field(
+        default=True,
+        description=(
+            "Whether to run the optional LLM-powered formatter pass "
+            "for presentation-ready answers"
+        ),
+    )
+    history: List[ConversationTurn] = Field(
+        default_factory=list,
+        description="Recent chat history used to give the formatter more context",
     )
     timestamp: datetime = Field(
         default_factory=datetime.now, description="When the request was made"
@@ -167,6 +192,14 @@ class FormattedResponse(BaseModel):
     debug_info: Optional[Dict[str, Any]] = Field(
         default=None, description="Debug information (entities, SQL, timings)"
     )
+    presentation: Optional["PresentationPayload"] = Field(
+        default=None,
+        description="Optional polished presentation payload produced by the formatter",
+    )
+    reasoning_trace: Optional["ReasoningTrace"] = Field(
+        default=None,
+        description="Optional reasoning trace describing how SQL/answer were produced",
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -184,7 +217,78 @@ class FormattedResponse(BaseModel):
         if self.debug_info:
             result["debug_info"] = self.debug_info
 
+        if self.presentation:
+            result["presentation"] = self.presentation.model_dump()
+
+        if self.reasoning_trace:
+            result["reasoning_trace"] = self.reasoning_trace.model_dump()
+
         return result
+
+
+class PresentationTable(BaseModel):
+    """Tabular payload returned by the answer formatter."""
+
+    columns: List[str] = Field(
+        default_factory=list, description="Column headers for the table"
+    )
+    rows: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Row data aligned to the declared columns"
+    )
+    truncated: bool = Field(
+        default=False,
+        description="Whether the table rows were truncated to respect token limits",
+    )
+
+
+class PresentationPayload(BaseModel):
+    """Structured payload produced by the LLM formatter."""
+
+    narrative: str = Field(
+        ..., min_length=1, description="Business-ready narrative answer"
+    )
+    highlights: List[str] = Field(
+        default_factory=list,
+        description="Short bullet points summarizing the primary insights",
+    )
+    table: Optional[PresentationTable] = Field(
+        default=None,
+        description="Optional tabular data reflecting the most salient rows",
+    )
+    warnings: List[str] = Field(
+        default_factory=list,
+        description="Non-blocking warnings (e.g., truncation, low confidence)",
+    )
+
+
+class ReasoningTrace(BaseModel):
+    """Summary of how the SQL/answer was derived for UI display."""
+
+    template_id: Optional[str] = Field(
+        default=None, description="Template identifier used for SQL generation"
+    )
+    generation_method: Optional[str] = Field(
+        default=None,
+        description="Whether SQL came from a template, hybrid, or custom generation",
+    )
+    row_count: Optional[int] = Field(
+        default=None, description="Number of rows returned by the SQL execution"
+    )
+    elapsed_seconds: Optional[float] = Field(
+        default=None,
+        description="Approximate end-to-end processing time for the answer",
+    )
+    summary: Optional[str] = Field(
+        default=None, description="Human-readable hint shown in the UI toggle header"
+    )
+    warnings: List[str] = Field(
+        default_factory=list,
+        description="Warnings related to SQL generation or reasoning trace",
+    )
+
+
+# Refresh forward refs now that dependent models are declared
+FormattedResponse.model_rebuild()
 
 
 class TelemetryData(BaseModel):

@@ -41,6 +41,16 @@ def _serialize_response(response: FormattedResponse) -> dict:
         "metadata": response.metadata,
         "debug_info": response.debug_info,
         "sources": response.sources,
+        "presentation": (
+            response.presentation.model_dump()
+            if getattr(response, "presentation", None)
+            else None
+        ),
+        "reasoning_trace": (
+            response.reasoning_trace.model_dump()
+            if getattr(response, "reasoning_trace", None)
+            else None
+        ),
     }
 
 

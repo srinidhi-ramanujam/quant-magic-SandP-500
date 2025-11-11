@@ -24,6 +24,8 @@ def test_query_request_validation():
     request = QueryRequest(question="What is Apple's CIK?")
     assert request.question == "What is Apple's CIK?"
     assert request.debug_mode is False
+    assert request.include_formatted_answer is True
+    assert request.history == []
     assert isinstance(request.timestamp, datetime)
 
     # Test with empty question (should fail)

@@ -8,7 +8,15 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.app import app, set_query_service_override
-from src.models import FormattedResponse, GeneratedSQL, QueryRequest, QueryResult
+from src.models import (
+    FormattedResponse,
+    GeneratedSQL,
+    PresentationPayload,
+    PresentationTable,
+    QueryRequest,
+    QueryResult,
+    ReasoningTrace,
+)
 from src.services import QueryServiceResult
 from src.telemetry import create_request_context
 
@@ -20,8 +28,20 @@ class _StubQueryService:
         self._result = result
         self.called_with: Optional[QueryRequest] = None
 
-    def run(self, question: str, *, debug_mode: bool = False):
-        self.called_with = QueryRequest(question=question, debug_mode=debug_mode)
+    def run(
+        self,
+        question: str,
+        *,
+        debug_mode: bool = False,
+        history=None,
+        include_presentation: bool = True,
+    ):
+        self.called_with = QueryRequest(
+            question=question,
+            debug_mode=debug_mode,
+            history=history or [],
+            include_formatted_answer=include_presentation,
+        )
         return self._result
 
 
@@ -159,3 +179,39 @@ def test_query_endpoint_surfaces_errors():
     assert payload["error"] == "unable to process"
     assert payload["answer"].startswith("An error occurred")
     assert payload["sql"] is None
+
+
+def test_query_endpoint_exposes_presentation_payload():
+    result = _success_result()
+    result.response.presentation = PresentationPayload(
+        narrative="LLM-polished narrative",
+        highlights=["Highlight 1"],
+        table=PresentationTable(
+            columns=["name", "count"],
+            rows=[{"name": "Sample", "count": 11}],
+            truncated=False,
+        ),
+        warnings=["Formatter warning"],
+    )
+    result.response.reasoning_trace = ReasoningTrace(
+        template_id="sector_count",
+        generation_method="template",
+        row_count=1,
+        summary="template `sector_count` · template",
+        warnings=["Formatter warning"],
+    )
+
+    stub = _StubQueryService(result)
+    set_query_service_override(stub)
+
+    client = TestClient(app)
+    try:
+        response = client.post("/query", json={"question": "How many?"})
+    finally:
+        set_query_service_override(None)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["presentation"]["narrative"] == "LLM-polished narrative"
+    assert payload["reasoning_trace"]["template_id"] == "sector_count"
+    assert "template" in payload["sql_collapsible_hint"]

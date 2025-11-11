@@ -96,6 +96,34 @@ class Config(BaseModel):
         default=10, ge=1, description="Timeout for LLM template selection (seconds)"
     )
 
+    # Answer formatter settings
+    formatter_enabled: bool = Field(
+        default_factory=lambda: os.getenv("ANSWER_FORMATTER_ENABLED", "true").lower()
+        == "true",
+        description="Enable LLM-powered answer formatter pass",
+    )
+    formatter_max_rows: int = Field(
+        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_ROWS", "5")),
+        ge=1,
+        description="Maximum rows to send to the formatter prompt",
+    )
+    formatter_history_limit: int = Field(
+        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_HISTORY_LIMIT", "3")),
+        ge=0,
+        description="How many prior conversation turns to include in formatter prompt",
+    )
+    formatter_max_tokens: int = Field(
+        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_TOKENS", "900")),
+        ge=100,
+        description="Max output tokens for formatter completion",
+    )
+    formatter_temperature: float = Field(
+        default_factory=lambda: float(os.getenv("ANSWER_FORMATTER_TEMPERATURE", "0.2")),
+        ge=0.0,
+        le=2.0,
+        description="LLM temperature for formatter responses",
+    )
+
     # Application settings
     log_level: str = Field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
     enable_telemetry: bool = Field(

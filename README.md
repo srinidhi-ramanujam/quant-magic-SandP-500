@@ -60,6 +60,12 @@ The new chat interface features:
 - **Real-time API status**: Green indicator when backend is connected
 - **Auto-resizing input**: Textarea grows with content, Enter to send
 
+### Formatted Answers & SQL Toggle
+- **Answer formatter**: The API/UI now request an LLM polishing pass by default. Set `include_formatted_answer=false` (e.g., CLI) to skip it.
+- **Presentation payload**: Responses include `presentation.narrative`, optional highlights, tables, and warnings captured in telemetry/session logs.
+- **Conversation aware**: The UI sends the last three Q&A pairs as `history` so the formatter can reference recent context without re-asking.
+- **Reasoning & SQL panel**: Assistant messages expose a collapsible panel summarizing the template, generation method, row counts, and the exact SQL with copy-to-clipboard-friendly formatting.
+
 ---
 
 ## Current Status - November 6, 2025
@@ -407,6 +413,20 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
   4. **Template SQL** is populated with extracted parameters, validated by `SQLValidator` (static + semantic passes).
   5. **Query execution** happens in DuckDB via `QueryEngine`, returning a pandas DataFrame.
   6. **ResponseFormatter** formats the result (count, lookup, table) and attaches telemetry (latency, validator result). The CLI or API returns the final answer.
+
+### Time-Series Asset Turnover Template
+- `sql_templates/asset_turnover_trend.sql` powers TS_011 and any future asset-efficiency cohorts. It accepts:
+  - `sector` (default `Information Technology`) to scope by GICS sector, set to `ALL` for cross-sector runs.
+  - `sic_filter_enabled`, `sic_min`, `sic_max` to optionally gate results to a SIC range (defaults 3570–3699 for hardware).
+  - `start_year`, `year_2`, `year_3`, `end_year`, `min_years` to define the fiscal window and minimum coverage.
+  - `min_revenue` (default $10B) to exclude subscale names and `limit` (default 6) to control ranking length.
+- After editing the template or its metadata, rerun `python scripts/build_vector_store.py` so hybrid retrieval learns the new intent.
+- Validation commands:
+  ```bash
+  python -m src.cli "Compare the asset turnover efficiency trends for major Technology hardware companies from FY2020 through FY2023." --debug
+  python scripts/run_eval_suite.py --question "Compare the asset turnover efficiency trends for major Technology hardware companies from FY2020 through FY2023." --no-json
+  ```
+- Expected FY2020–FY2023 output with the default SIC and revenue filters: NVIDIA (+0.35x), Dell/Denali (+0.31x), Apple (+0.24x), Otis (+0.21x), Broadcom (+0.18x).
 
 ### Commit & PR Expectations
 - Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise present-tense summaries under 72 characters.
