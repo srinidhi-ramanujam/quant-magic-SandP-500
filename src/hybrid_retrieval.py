@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -53,7 +54,11 @@ def _load_manifest() -> Dict[str, Any]:
 @lru_cache(maxsize=1)
 def _load_encoder(model_name: str) -> SentenceTransformer:
     LOGGER.info("Loading embedding model: %s", model_name)
-    return SentenceTransformer(model_name)
+    try:
+        return SentenceTransformer(model_name)
+    except Exception as exc:  # pragma: no cover - safety for offline envs
+        LOGGER.warning("Unable to load embedding model %s: %s", model_name, exc)
+        raise RuntimeError(f"Failed to load embedding model: {model_name}") from exc
 
 
 def _encode_texts(encoder: SentenceTransformer, texts: List[str]) -> np.ndarray:
@@ -106,6 +111,9 @@ class HybridEntityRetriever:
 
     @classmethod
     def create_default(cls) -> Optional["HybridEntityRetriever"]:
+        if _is_flag_enabled("DISABLE_HYBRID_RETRIEVER"):
+            LOGGER.info("Hybrid entity retriever disabled via env flag")
+            return None
         try:
             manifest = _load_manifest()
             encoder = _load_encoder(manifest["model"])
@@ -184,6 +192,9 @@ class TemplateIntentRetriever:
 
     @classmethod
     def create_default(cls) -> Optional["TemplateIntentRetriever"]:
+        if _is_flag_enabled("DISABLE_TEMPLATE_RETRIEVER"):
+            LOGGER.info("Template intent retriever disabled via env flag")
+            return None
         try:
             manifest = _load_manifest()
             encoder = _load_encoder(manifest["model"])
@@ -227,3 +238,5 @@ class TemplateIntentRetriever:
             normalize_embeddings=False,
         )
         return _normalize(vec)
+def _is_flag_enabled(flag_name: str) -> bool:
+    return os.getenv(flag_name, "").strip().lower() in {"1", "true", "yes"}

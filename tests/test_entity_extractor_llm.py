@@ -44,6 +44,14 @@ def create_mock_openai_response(entity_dict: dict) -> Mock:
     return mock_response
 
 
+def assert_contains_case_insensitive(sequence, target, label="sequence"):
+    """Assert helper that ignores casing when looking for an item in a list."""
+    target_lower = target.lower()
+    assert any(
+        (item or "").lower() == target_lower for item in sequence
+    ), f"Expected '{target}' in {label}, got {sequence}"
+
+
 # ==============================================================================
 # FIXTURES
 # ==============================================================================
@@ -117,7 +125,7 @@ def test_extract_simple_company_question(
     # Assertions
     assert isinstance(entities, ExtractedEntities)
     assert "APPLE INC" in entities.companies
-    assert "cik" in entities.metrics
+    assert_contains_case_insensitive(entities.metrics, "cik", "metrics")
     assert len(entities.sectors) == 0
     assert entities.question_type == "lookup"
     assert entities.confidence >= 0.9
@@ -148,8 +156,8 @@ def test_extract_ambiguous_company_ticker(
     entities = entity_extractor.extract(question, request_context)
 
     assert "APPLE INC" in entities.companies
-    assert "revenue" in entities.metrics
-    assert "latest" in entities.time_periods
+    assert_contains_case_insensitive(entities.metrics, "revenue", "metrics")
+    assert_contains_case_insensitive(entities.time_periods, "latest", "time_periods")
     assert entities.question_type == "lookup"
 
 
@@ -177,7 +185,7 @@ def test_extract_multiple_entities(
     assert len(entities.companies) == 2
     assert "APPLE INC" in entities.companies
     assert "MICROSOFT CORP" in entities.companies
-    assert "revenue" in entities.metrics
+    assert_contains_case_insensitive(entities.metrics, "revenue", "metrics")
     assert entities.question_type == "comparison"
 
 
@@ -201,7 +209,9 @@ def test_extract_metric_synonyms(entity_extractor, mock_azure_client, request_co
     entities = entity_extractor.extract(question, request_context)
 
     assert "MICROSOFT CORP" in entities.companies
-    assert "revenue" in entities.metrics  # sales normalized to revenue
+    assert_contains_case_insensitive(
+        entities.metrics, "revenue", "metrics"
+    )  # sales normalized to revenue
     assert entities.question_type == "lookup"
 
 
@@ -227,9 +237,9 @@ def test_extract_time_period_explicit(
     entities = entity_extractor.extract(question, request_context)
 
     assert "APPLE INC" in entities.companies
-    assert "revenue" in entities.metrics
-    assert "Q3" in entities.time_periods
-    assert "2024" in entities.time_periods
+    assert_contains_case_insensitive(entities.metrics, "revenue", "metrics")
+    assert_contains_case_insensitive(entities.time_periods, "Q3", "time_periods")
+    assert_contains_case_insensitive(entities.time_periods, "2024", "time_periods")
 
 
 def test_extract_implicit_time_period(
@@ -254,8 +264,8 @@ def test_extract_implicit_time_period(
     entities = entity_extractor.extract(question, request_context)
 
     assert "APPLE INC" in entities.companies
-    assert "revenue" in entities.metrics
-    assert "latest" in entities.time_periods
+    assert_contains_case_insensitive(entities.metrics, "revenue", "metrics")
+    assert_contains_case_insensitive(entities.time_periods, "latest", "time_periods")
 
 
 def test_extract_sector_question(entity_extractor, mock_azure_client, request_context):

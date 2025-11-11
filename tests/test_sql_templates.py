@@ -10,6 +10,7 @@ from src.query_engine import QueryEngine
 
 TEMPLATE_PATH = "data/parquet/query_intelligence.parquet"
 TEMPLATE_DF = pd.read_parquet(TEMPLATE_PATH).set_index("template_id")
+DEFAULT_TEMPLATE_PARAMS = {"rank": "1"}
 
 
 TEMPLATE_CASES = {
@@ -41,6 +42,10 @@ def render_template(template_id: str, params: dict[str, str]) -> str:
     sql = TEMPLATE_DF.loc[template_id, "sql_template"]
     for key, value in params.items():
         sql = sql.replace(f"{{{key}}}", value)
+    for key, value in DEFAULT_TEMPLATE_PARAMS.items():
+        placeholder = f"{{{key}}}"
+        if placeholder in sql:
+            sql = sql.replace(placeholder, value)
     return sql
 
 

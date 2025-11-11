@@ -386,6 +386,9 @@ class SQLGenerator:
         if "limit" in missing_params:
             defaults["limit"] = "10"
 
+        if "rank" in missing_params:
+            defaults["rank"] = "1"
+
         if not defaults:
             return params
 
