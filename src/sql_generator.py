@@ -29,6 +29,7 @@ from src.entity_extractor import normalize_company_name
 from src.query_engine import quick_query
 from src.query_engine import QueryEngine
 from src.hybrid_retrieval import TemplateIntentRetriever
+from src.llm_guard import LLMAvailabilityError
 
 
 class SQLGenerator:
@@ -51,16 +52,18 @@ class SQLGenerator:
                 from src.azure_client import AzureOpenAIClient
 
                 client = AzureOpenAIClient()
-                if not client.is_available():
-                    raise RuntimeError("Azure OpenAI client not available")
-                self.azure_client = client
-                self.logger.info("SQLGenerator initialized with LLM template selection")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize Azure OpenAI client: {e}")
-                self.logger.warning(
-                    "Falling back to deterministic template selection only"
+            except Exception as exc:
+                raise LLMAvailabilityError(
+                    f"SQLGenerator: failed to initialize Azure OpenAI client ({exc})"
+                ) from exc
+
+            if not client.is_available():
+                raise LLMAvailabilityError(
+                    "SQLGenerator: Azure OpenAI client is not available."
                 )
-                self.use_llm = False
+
+            self.azure_client = client
+            self.logger.info("SQLGenerator initialized with LLM template selection")
         else:
             self.logger.info(
                 "SQLGenerator initialized (deterministic template selection only)"
@@ -646,19 +649,9 @@ class SQLGenerator:
         self.logger.error(
             f"LLM template selection failed after {max_retries} attempts: {last_error}"
         )
-        self.use_llm = False
-        self.azure_client = None
-        self.logger.warning(
-            "Disabling LLM template selection after repeated failures; "
-            "falling back to deterministic matching"
+        raise LLMAvailabilityError(
+            f"LLM template selection failed after {max_retries} attempts: {last_error}"
         )
-
-        # Fallback to deterministic if available
-        if candidate_templates and len(candidate_templates) > 0:
-            self.logger.warning("Falling back to first candidate template")
-            return (candidate_templates[0], {})
-
-        return None
 
     def _parse_llm_response(self, content: str) -> dict:
         """

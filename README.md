@@ -18,6 +18,10 @@ python -m src.cli "How many companies are in Technology?"
 python -m pytest tests/ -v
 ```
 
+> ℹ️ The CLI and API require Azure OpenAI credentials by default. If you see
+> `API not available...`, re-run commands with `--allow-offline` to use the
+> deterministic fallback mode.
+
 ---
 
 ## GitHub Codespaces

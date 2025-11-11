@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any, Dict, Optional
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
+from src.llm_guard import (
+    LLMAvailabilityError,
+    OFFLINE_FALLBACK_HELP,
+    ensure_llm_available,
+)
 from src.models import FormattedResponse, QueryRequest
 from src.services import QueryService, QueryServiceResult
 
@@ -78,31 +83,91 @@ app = FastAPI(
     version="0.1.0",
 )
 
-
-@lru_cache(maxsize=1)
-def get_cached_query_service() -> QueryService:
-    """Ensure a singleton QueryService for the API lifespan."""
-    return QueryService()
+_service_instance: Optional[QueryService] = None
+_service_override: Optional[QueryService] = None
 
 
-def get_query_service() -> QueryService:
-    """FastAPI dependency for retrieving the query service."""
-    return get_cached_query_service()
+def _resolve_query_service() -> QueryService:
+    """Resolve cached service, honoring test overrides."""
+    global _service_instance, _service_override
+    if _service_override is not None:
+        return _service_override
+
+    if _service_instance is None:
+        _service_instance = QueryService()
+    return _service_instance
+
+
+def set_query_service_override(service: Optional[QueryService]) -> None:
+    """Allow tests to inject a custom QueryService."""
+    global _service_override, _service_instance
+    _service_override = service
+    if service is None:
+        _service_instance = None
+
+
+def _llm_health_status() -> tuple[bool, str]:
+    """Check Azure OpenAI availability for health endpoints."""
+    try:
+        ensure_llm_available("FastAPI health check")
+    except LLMAvailabilityError as exc:
+        return False, f"{exc}. {OFFLINE_FALLBACK_HELP}"
+    return True, "LLM available"
 
 
 @app.get("/health", tags=["system"])
-async def healthcheck() -> Dict[str, str]:
-    """Simple health endpoint for readiness probes."""
-    return {"status": "ok"}
+async def healthcheck() -> Dict[str, Any]:
+    """Return JSON health + LLM availability information."""
+    available, message = _llm_health_status()
+    status = "ok" if available else "degraded"
+    return {
+        "status": status,
+        "llm_available": available,
+        "message": message,
+    }
+
+
+@app.get("/health/snippet", response_class=HTMLResponse, tags=["system"])
+async def healthcheck_snippet() -> str:
+    """Return an HTML snippet consumed by the UI via HTMX."""
+    available, message = _llm_health_status()
+    label = "API available" if available else "API unavailable"
+    badge_color = "bg-emerald-400" if available else "bg-red-500"
+    text_color = "text-emerald-300" if available else "text-red-200"
+    detail = "" if available else message
+    indicator = (
+        f'<span class="h-2.5 w-2.5 rounded-full {badge_color} animate-pulse"></span>'
+    )
+    content = (
+        f'<div class="flex flex-col gap-1 text-sm {text_color}">'
+        f"<div class='flex items-center gap-2'>{indicator}"
+        f"<span class='font-semibold tracking-wide uppercase'>{label}</span>"
+        "</div>"
+        f"<p class='text-xs text-slate-400'>{detail}</p>"
+        "</div>"
+    )
+    return content
 
 
 @app.post("/query", response_model=QueryResponseModel, tags=["query"])
-async def run_query(
-    request: QueryRequest, service: QueryService = Depends(get_query_service)
-) -> QueryResponseModel:
+async def run_query(request: QueryRequest) -> QueryResponseModel:
     """Execute the core pipeline via HTTP."""
+    try:
+        service = _resolve_query_service()
+    except LLMAvailabilityError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{exc}. {OFFLINE_FALLBACK_HELP}",
+        ) from exc
 
-    result = service.run(request.question, debug_mode=request.debug_mode)
+    try:
+        result = service.run(request.question, debug_mode=request.debug_mode)
+    except LLMAvailabilityError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{exc}. {OFFLINE_FALLBACK_HELP}",
+        ) from exc
+
     response = result.response
 
     debug_payload = response.debug_info if request.debug_mode else None
@@ -112,7 +177,10 @@ async def run_query(
 @app.on_event("shutdown")
 def _shutdown() -> None:  # pragma: no cover - FastAPI lifecycle hook
     """Close resources when the application exits."""
-    get_cached_query_service().close()
+    global _service_instance
+    if _service_instance:
+        _service_instance.close()
+        _service_instance = None
 
 
-__all__ = ["app", "get_query_service"]
+__all__ = ["app", "set_query_service_override"]

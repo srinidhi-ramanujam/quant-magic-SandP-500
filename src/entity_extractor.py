@@ -17,6 +17,7 @@ from src.xbrl_mapper import get_xbrl_mapper
 from src.azure_client import AzureOpenAIClient
 from src.prompts import get_entity_extraction_prompt
 from src.config import get_config, Config
+from src.llm_guard import LLMAvailabilityError
 from src.hybrid_retrieval import HybridEntityRetriever
 
 
@@ -277,14 +278,17 @@ class EntityExtractor:
         if self.use_llm:
             try:
                 self.azure_client = AzureOpenAIClient()
-                if not self.azure_client.is_available():
-                    raise RuntimeError("Azure OpenAI client not available")
-                self.logger.info("EntityExtractor initialized (LLM mode)")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize Azure OpenAI client: {e}")
-                self.azure_client = None
-                self.use_llm = False
-                self.logger.warning("Falling back to deterministic mode")
+            except Exception as exc:
+                raise LLMAvailabilityError(
+                    f"EntityExtractor: failed to initialize Azure OpenAI client ({exc})"
+                ) from exc
+
+            if not self.azure_client.is_available():
+                raise LLMAvailabilityError(
+                    "EntityExtractor: Azure OpenAI client is not available."
+                )
+
+            self.logger.info("EntityExtractor initialized (LLM mode)")
         else:
             self.azure_client = None
             self.logger.info("EntityExtractor initialized (deterministic mode)")
@@ -309,16 +313,19 @@ class EntityExtractor:
             extraction_method = None
             entities: Optional[ExtractedEntities] = None
 
-            if self.use_llm and self.azure_client:
+            if self.use_llm:
+                if not self.azure_client:
+                    raise LLMAvailabilityError(
+                        "EntityExtractor: Azure OpenAI client unavailable"
+                    )
                 try:
                     entities = self._extract_with_llm(question, context)
                     extraction_method = "llm"
-                except Exception as e:  # noqa: BLE001
-                    self.logger.error(
-                        f"LLM extraction failed: {e}, using deterministic fallback"
-                    )
-                    entities = self._extract_entities(question)
-                    extraction_method = "deterministic"
+                except Exception as exc:  # noqa: BLE001
+                    self.logger.error(f"LLM extraction failed: {exc}")
+                    raise LLMAvailabilityError(
+                        f"LLM entity extraction failed: {exc}"
+                    ) from exc
             else:
                 entities = self._extract_entities(question)
                 extraction_method = "deterministic"
@@ -327,9 +334,7 @@ class EntityExtractor:
             if self.hybrid_retriever:
                 coverage = self.hybrid_retriever.enrich(question, entities)
                 extraction_method = (
-                    f"{extraction_method}+hybrid"
-                    if extraction_method
-                    else "hybrid"
+                    f"{extraction_method}+hybrid" if extraction_method else "hybrid"
                 )
 
             baseline_confidence = self._calculate_confidence(

@@ -77,7 +77,7 @@ POC_QUESTIONS = [
 @pytest.fixture(scope="module")
 def cli():
     """Create a CLI instance for all tests."""
-    cli_instance = FinancialCLI()
+    cli_instance = FinancialCLI(allow_offline=True)
     yield cli_instance
     cli_instance.close()
 

@@ -86,7 +86,9 @@ class VectorIndex:
         self.index = faiss.read_index(str(index_path))
         self.metadata: List[Dict[str, Any]] = _load_json(metadata_path)
 
-    def search(self, query_vector: np.ndarray, top_k: int) -> Tuple[np.ndarray, np.ndarray]:
+    def search(
+        self, query_vector: np.ndarray, top_k: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
         return self.index.search(query_vector, top_k)
 
 
@@ -118,7 +120,10 @@ class HybridEntityRetriever:
             manifest = _load_manifest()
             encoder = _load_encoder(manifest["model"])
             index = VectorIndex(ENTITY_INDEX_PATH, ENTITY_METADATA_PATH)
-            LOGGER.info("Hybrid entity retriever enabled (vectors=%s)", manifest["entity_vectors"])
+            LOGGER.info(
+                "Hybrid entity retriever enabled (vectors=%s)",
+                manifest["entity_vectors"],
+            )
             return cls(encoder, index)
         except FileNotFoundError:
             LOGGER.warning("Hybrid entity retriever artifacts not found; skipping")
@@ -210,7 +215,9 @@ class TemplateIntentRetriever:
             LOGGER.warning("Failed to initialize template retriever: %s", exc)
         return None
 
-    def retrieve(self, question: str, top_k: int = TOP_K) -> Optional[TemplateRetrievalResult]:
+    def retrieve(
+        self, question: str, top_k: int = TOP_K
+    ) -> Optional[TemplateRetrievalResult]:
         if not question.strip():
             return None
         vector = self._encode_question(question)
@@ -238,5 +245,7 @@ class TemplateIntentRetriever:
             normalize_embeddings=False,
         )
         return _normalize(vec)
+
+
 def _is_flag_enabled(flag_name: str) -> bool:
     return os.getenv(flag_name, "").strip().lower() in {"1", "true", "yes"}

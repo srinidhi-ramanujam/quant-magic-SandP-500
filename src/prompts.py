@@ -495,7 +495,9 @@ CUSTOM_SQL_FEW_SHOT_EXAMPLES = [
 
 
 def _render_domain_hints(
-    question: str, entities: Dict[str, Any], domain_hints: Optional[Dict[str, Any]] = None
+    question: str,
+    entities: Dict[str, Any],
+    domain_hints: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Render domain-specific hints for the custom SQL prompt."""
     hints: List[str] = []
@@ -525,9 +527,13 @@ def _render_domain_hints(
 
     lowercase_q = question.lower()
     if any(keyword in lowercase_q for keyword in ["latest", "recent", "most recent"]):
-        hints.append("Use latest filings (ORDER BY period DESC, filed DESC) when applicable.")
+        hints.append(
+            "Use latest filings (ORDER BY period DESC, filed DESC) when applicable."
+        )
 
-    if any(keyword in lowercase_q for keyword in ["top", "largest", "highest", "biggest"]):
+    if any(
+        keyword in lowercase_q for keyword in ["top", "largest", "highest", "biggest"]
+    ):
         hints.append("Likely need ORDER BY metric DESC with LIMIT clause.")
 
     if any(keyword in lowercase_q for keyword in ["lowest", "smallest", "least"]):
@@ -542,11 +548,19 @@ def _render_domain_hints(
             f"Threshold detected: {threshold_match.group(2)} {threshold_match.group(3) or ''}".strip()
         )
 
-    currency_match = re.search(r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", lowercase_q)
+    currency_match = re.search(
+        r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", lowercase_q
+    )
     if currency_match:
-        hints.append(f"Filter unit of measure (`num.uom`) for '{currency_match.group(1).upper()}'.")
+        hints.append(
+            f"Filter unit of measure (`num.uom`) for '{currency_match.group(1).upper()}'."
+        )
 
-    return "\n".join(f"- {hint}" for hint in hints) if hints else "- No additional hints detected."
+    return (
+        "\n".join(f"- {hint}" for hint in hints)
+        if hints
+        else "- No additional hints detected."
+    )
 
 
 def _render_few_shot_examples() -> str:

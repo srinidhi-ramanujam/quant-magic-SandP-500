@@ -2,13 +2,21 @@
 Tests for entity extraction from natural language questions.
 """
 
+import pytest
+
 from src.entity_extractor import EntityExtractor
 from src.telemetry import create_request_context
 
 
-def test_extract_company_name():
+@pytest.fixture
+def deterministic_extractor():
+    """Provide a deterministic extractor for offline testing."""
+    return EntityExtractor(use_llm=False)
+
+
+def test_extract_company_name(deterministic_extractor):
     """Test extracting company names from questions."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     # Test with capitalized company name
@@ -21,9 +29,9 @@ def test_extract_company_name():
     assert len(entities2.companies) > 0
 
 
-def test_extract_sector():
+def test_extract_sector(deterministic_extractor):
     """Test extracting sector names from questions."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     # Test Technology sector
@@ -42,9 +50,9 @@ def test_extract_sector():
     assert "Financials" in entities3.sectors
 
 
-def test_extract_multiple_entities():
+def test_extract_multiple_entities(deterministic_extractor):
     """Test extracting multiple entities from a single question."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     question = "What is Apple's CIK in the Technology sector?"
@@ -56,9 +64,9 @@ def test_extract_multiple_entities():
     assert any(metric.lower() == "cik" for metric in entities.metrics)
 
 
-def test_confidence_scoring():
+def test_confidence_scoring(deterministic_extractor):
     """Test that confidence scores are calculated reasonably."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     # Question with clear entities should have high confidence
@@ -70,9 +78,9 @@ def test_confidence_scoring():
     assert entities2.confidence <= entities1.confidence
 
 
-def test_no_match_handling():
+def test_no_match_handling(deterministic_extractor):
     """Test handling when no entities are extracted."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     entities = extractor.extract("Hello world", context)
@@ -85,9 +93,9 @@ def test_no_match_handling():
     assert 0 <= entities.confidence <= 1
 
 
-def test_ambiguous_entity_handling():
+def test_ambiguous_entity_handling(deterministic_extractor):
     """Test handling ambiguous or complex extractions."""
-    extractor = EntityExtractor()
+    extractor = deterministic_extractor
     context = create_request_context("test")
 
     # Question with potential ambiguity

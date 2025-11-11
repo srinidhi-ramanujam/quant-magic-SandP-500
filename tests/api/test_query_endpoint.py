@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from typing import Optional
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from src.api.app import app, get_query_service
+from src.api.app import app, set_query_service_override
 from src.models import FormattedResponse, GeneratedSQL, QueryRequest, QueryResult
 from src.services import QueryServiceResult
 from src.telemetry import create_request_context
@@ -89,26 +90,26 @@ def _failure_result() -> QueryServiceResult:
     )
 
 
-@pytest.fixture(autouse=True)
-def clear_dependency_overrides():
-    """Ensure dependency overrides do not leak between tests."""
-    yield
-    app.dependency_overrides.clear()
-
-
 def test_healthcheck():
     client = TestClient(app)
-    response = client.get("/health")
+    with patch("src.api.app.ensure_llm_available", return_value=None):
+        response = client.get("/health")
+
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["llm_available"] is True
 
 
 def test_query_endpoint_returns_answer_and_sql():
     stub = _StubQueryService(_success_result())
-    app.dependency_overrides[get_query_service] = lambda: stub
+    set_query_service_override(stub)
 
     client = TestClient(app)
-    response = client.post("/query", json={"question": "How many companies?"})
+    try:
+        response = client.post("/query", json={"question": "How many companies?"})
+    finally:
+        set_query_service_override(None)
 
     assert response.status_code == 200
     payload = response.json()
@@ -124,10 +125,15 @@ def test_query_endpoint_returns_answer_and_sql():
 
 def test_query_endpoint_includes_debug_when_requested():
     stub = _StubQueryService(_success_result())
-    app.dependency_overrides[get_query_service] = lambda: stub
+    set_query_service_override(stub)
 
     client = TestClient(app)
-    response = client.post("/query", json={"question": "How many?", "debug_mode": True})
+    try:
+        response = client.post(
+            "/query", json={"question": "How many?", "debug_mode": True}
+        )
+    finally:
+        set_query_service_override(None)
 
     assert response.status_code == 200
     payload = response.json()
@@ -138,10 +144,13 @@ def test_query_endpoint_includes_debug_when_requested():
 
 def test_query_endpoint_surfaces_errors():
     stub = _StubQueryService(_failure_result())
-    app.dependency_overrides[get_query_service] = lambda: stub
+    set_query_service_override(stub)
 
     client = TestClient(app)
-    response = client.post("/query", json={"question": "Break it"})
+    try:
+        response = client.post("/query", json={"question": "Break it"})
+    finally:
+        set_query_service_override(None)
 
     assert response.status_code == 200
     payload = response.json()

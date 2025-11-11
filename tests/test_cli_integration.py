@@ -4,13 +4,19 @@ End-to-end integration tests for the CLI.
 
 import pytest
 import json
+import pytest
+
 from src.cli import FinancialCLI
+from src.llm_guard import LLMAvailabilityError
 
 
 @pytest.fixture
 def cli():
     """Create a CLI instance for testing."""
-    cli_instance = FinancialCLI()
+    try:
+        cli_instance = FinancialCLI(allow_offline=True)
+    except LLMAvailabilityError as exc:
+        pytest.skip(f"LLM unavailable: {exc}")
     yield cli_instance
     cli_instance.close()
 

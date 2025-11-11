@@ -16,7 +16,11 @@ from src.models import FormattedResponse
 from src.services import QueryService
 from src.telemetry import create_request_context, get_logger, setup_logging
 
-from src.llm_guard import LLMAvailabilityError, ensure_llm_available
+from src.llm_guard import (
+    LLMAvailabilityError,
+    OFFLINE_FALLBACK_HELP,
+    ensure_llm_available,
+)
 
 
 class FinancialCLI:
@@ -30,16 +34,14 @@ class FinancialCLI:
 
         # Load configuration and initialize components
         self.config = get_config()
+        self.allow_offline = allow_offline
 
-        if not allow_offline:
-            try:
-                ensure_llm_available("Financial CLI startup")
-            except LLMAvailabilityError as exc:
-                raise RuntimeError(
-                    f"{exc}\nRe-run with --allow-offline to use deterministic mode."
-                ) from exc
+        if not self.allow_offline:
+            ensure_llm_available("Financial CLI startup")
 
-        self.query_service = QueryService(config=self.config)
+        self.query_service = QueryService(
+            config=self.config, use_llm=not self.allow_offline
+        )
 
         self.logger.info("FinancialCLI initialized successfully")
 
@@ -126,8 +128,12 @@ class FinancialCLI:
                     continue
 
                 # Process question
-                question_count += 1
-                response = self.process_question(question, debug_mode=debug_mode)
+                try:
+                    response = self.process_question(question, debug_mode=debug_mode)
+                    question_count += 1
+                except LLMAvailabilityError:
+                    print(f"\n❌ {OFFLINE_FALLBACK_HELP}\n")
+                    break
 
                 # Display response
                 print(f"\n💡 Answer: {response.answer}")
@@ -168,6 +174,9 @@ class FinancialCLI:
                 print("\n\n👋 Interrupted. Goodbye!\n")
                 break
 
+            except LLMAvailabilityError:
+                print(f"\n❌ {OFFLINE_FALLBACK_HELP}\n")
+                break
             except Exception as e:
                 self.logger.error(f"Error in interactive mode: {e}", exc_info=True)
                 print(f"\n❌ Unexpected error: {e}\n")
@@ -298,7 +307,11 @@ Examples:
     args = parser.parse_args()
 
     # Initialize CLI
-    cli = FinancialCLI(allow_offline=args.allow_offline)
+    try:
+        cli = FinancialCLI(allow_offline=args.allow_offline)
+    except LLMAvailabilityError:
+        print(f"\n❌ {OFFLINE_FALLBACK_HELP}\n")
+        sys.exit(2)
 
     try:
         # Test entity extraction mode (Stage 1)
@@ -340,10 +353,12 @@ Examples:
         # Exit with appropriate code
         sys.exit(0 if response.success else 1)
 
+    except LLMAvailabilityError:
+        print(f"\n❌ {OFFLINE_FALLBACK_HELP}\n")
+        sys.exit(2)
     except KeyboardInterrupt:
         print("\n\nInterrupted by user")
         sys.exit(130)
-
     except Exception as e:
         print(f"Fatal error: {e}", file=sys.stderr)
         sys.exit(1)

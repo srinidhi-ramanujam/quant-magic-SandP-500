@@ -8,6 +8,8 @@ from dataclasses import dataclass
 
 from src.azure_client import AzureOpenAIClient
 
+OFFLINE_FALLBACK_HELP = "API not available. Re-run with '--allow-offline' to use deterministic fallback mode."
+
 
 @dataclass(frozen=True)
 class LLMAvailabilityError(RuntimeError):

@@ -146,7 +146,11 @@ def test_generate_custom_sql_helper(monkeypatch):
                 reason=None,
                 confidence=0.9,
                 processing_time_ms=50,
-                token_usage={"prompt_tokens": 12, "completion_tokens": 4, "total_tokens": 16},
+                token_usage={
+                    "prompt_tokens": 12,
+                    "completion_tokens": 4,
+                    "total_tokens": 16,
+                },
             )
 
     import src.azure_client as azure_module
@@ -203,7 +207,11 @@ def test_generate_custom_sql_rejects_invalid_sql(monkeypatch):
                 reason=None,
                 confidence=0.9,
                 processing_time_ms=40,
-                token_usage={"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13},
+                token_usage={
+                    "prompt_tokens": 10,
+                    "completion_tokens": 3,
+                    "total_tokens": 13,
+                },
             )
 
     import src.azure_client as azure_module
@@ -237,7 +245,9 @@ def test_validate_sql_rejects_unknown_tables():
 
 def test_validate_sql_requires_sub_join_for_num():
     generator = SQLGenerator(use_llm=False)
-    is_valid, reason = generator.validate_sql("SELECT n.value FROM num n WHERE n.tag = 'Revenues'")
+    is_valid, reason = generator.validate_sql(
+        "SELECT n.value FROM num n WHERE n.tag = 'Revenues'"
+    )
     assert not is_valid
     assert "join through SUB" in reason
 

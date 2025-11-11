@@ -48,14 +48,18 @@ class SQLValidator:
                 client = AzureOpenAIClient()
                 if client.is_available():
                     self.azure_client = client
-                    self.logger.info("SQLValidator initialized with LLM semantic checks")
+                    self.logger.info(
+                        "SQLValidator initialized with LLM semantic checks"
+                    )
                 else:
                     self.logger.warning(
                         "Azure OpenAI client unavailable – semantic validation disabled"
                     )
                     self.use_llm = False
             except Exception as exc:  # noqa: BLE001
-                self.logger.error(f"Failed to initialize Azure client for validator: {exc}")
+                self.logger.error(
+                    f"Failed to initialize Azure client for validator: {exc}"
+                )
                 self.use_llm = False
 
     # ------------------------------------------------------------------ #
@@ -75,8 +79,7 @@ class SQLValidator:
 
         normalized_start = sql_upper.lstrip()
         if not (
-            normalized_start.startswith("SELECT")
-            or normalized_start.startswith("WITH")
+            normalized_start.startswith("SELECT") or normalized_start.startswith("WITH")
         ):
             return False, "SQL must start with SELECT or WITH"
 
@@ -120,7 +123,10 @@ class SQLValidator:
             if table not in self._ALLOWED_TABLES and table not in cte_names
         }
         if unknown_tables:
-            return False, f"Unknown tables referenced: {', '.join(sorted(unknown_tables))}"
+            return (
+                False,
+                f"Unknown tables referenced: {', '.join(sorted(unknown_tables))}",
+            )
 
         if "NUM" in referenced_tables and "SUB" not in referenced_tables:
             return False, "Queries referencing NUM must join through SUB"
@@ -129,7 +135,10 @@ class SQLValidator:
             return False, "Use the COMPANIES view instead of companies_with_sectors"
 
         if " NUM.CIK" in sql_upper:
-            return False, "NUM table does not expose CIK; join through SUB for issuer details"
+            return (
+                False,
+                "NUM table does not expose CIK; join through SUB for issuer details",
+            )
 
         return True, None
 
@@ -181,9 +190,11 @@ class SQLValidator:
             sql=sql,
             entities=entities,
             schema_markdown=schema_for_prompt(),
-            max_tokens=getattr(self.azure_client.config, "max_tokens", None)
-            if self.azure_client
-            else None,
+            max_tokens=(
+                getattr(self.azure_client.config, "max_tokens", None)
+                if self.azure_client
+                else None
+            ),
         )
 
         verdict = self._semantic_validate(request)

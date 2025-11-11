@@ -32,7 +32,9 @@ def test_static_validation_allows_cte_usage():
 def test_semantic_validation_success(monkeypatch):
     class DummyAzureClient:
         def __init__(self):
-            self.config = type("cfg", (), {"deployment_name": "gpt-test", "max_tokens": 1024})
+            self.config = type(
+                "cfg", (), {"deployment_name": "gpt-test", "max_tokens": 1024}
+            )
 
         def is_available(self):
             return True
@@ -44,7 +46,11 @@ def test_semantic_validation_success(monkeypatch):
                 reason=None,
                 confidence=0.92,
                 processing_time_ms=120,
-                token_usage={"prompt_tokens": 150, "completion_tokens": 30, "total_tokens": 180},
+                token_usage={
+                    "prompt_tokens": 150,
+                    "completion_tokens": 30,
+                    "total_tokens": 180,
+                },
             )
 
     import src.azure_client as azure_module
@@ -68,13 +74,17 @@ def test_semantic_validation_success(monkeypatch):
     assert ok
     assert reason is None
     assert confidence == pytest.approx(0.92, rel=1e-3)
-    assert any(record["stage"] == "semantic" for record in context.metadata["sql_validation"])
+    assert any(
+        record["stage"] == "semantic" for record in context.metadata["sql_validation"]
+    )
 
 
 def test_semantic_validation_failure(monkeypatch):
     class DummyAzureClient:
         def __init__(self):
-            self.config = type("cfg", (), {"deployment_name": "gpt-test", "max_tokens": 1024})
+            self.config = type(
+                "cfg", (), {"deployment_name": "gpt-test", "max_tokens": 1024}
+            )
 
         def is_available(self):
             return True
@@ -86,7 +96,11 @@ def test_semantic_validation_failure(monkeypatch):
                 reason="SQL does not answer the question",
                 confidence=0.4,
                 processing_time_ms=90,
-                token_usage={"prompt_tokens": 120, "completion_tokens": 20, "total_tokens": 140},
+                token_usage={
+                    "prompt_tokens": 120,
+                    "completion_tokens": 20,
+                    "total_tokens": 140,
+                },
             )
 
     import src.azure_client as azure_module
@@ -126,6 +140,8 @@ def test_semantic_validation_skipped_when_llm_disabled():
     assert reason is None
     assert confidence == pytest.approx(0.0)
     semantic_records = [
-        record for record in context.metadata["sql_validation"] if record["stage"] == "semantic"
+        record
+        for record in context.metadata["sql_validation"]
+        if record["stage"] == "semantic"
     ]
     assert semantic_records and semantic_records[0].get("skipped")

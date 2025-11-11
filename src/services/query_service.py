@@ -25,6 +25,7 @@ from src.telemetry import (
     log_error,
     setup_logging,
 )
+from src.llm_guard import LLMAvailabilityError
 
 
 @dataclass
@@ -50,6 +51,7 @@ class QueryService:
         entity_extractor: Optional[EntityExtractor] = None,
         sql_generator: Optional[SQLGenerator] = None,
         query_engine: Optional[QueryEngine] = None,
+        use_llm: bool = True,
     ) -> None:
         """Initialise the service and its dependencies."""
 
@@ -57,8 +59,11 @@ class QueryService:
         self.logger = get_logger()
 
         self.config = config or get_config()
-        self.entity_extractor = entity_extractor or EntityExtractor(config=self.config)
-        self.sql_generator = sql_generator or SQLGenerator()
+        self.use_llm = use_llm
+        self.entity_extractor = entity_extractor or EntityExtractor(
+            config=self.config, use_llm=use_llm
+        )
+        self.sql_generator = sql_generator or SQLGenerator(use_llm=use_llm)
         self.response_formatter = get_response_formatter()
 
         if query_engine:
@@ -143,6 +148,10 @@ class QueryService:
                 success=True,
             )
 
+        except LLMAvailabilityError as error:
+            log_error(context, error)
+            generate_telemetry_report(context, success=False, error=str(error))
+            raise
         except Exception as error:  # pragma: no cover - exercised via tests
             log_error(context, error)
             formatted_error = self.response_formatter.format_error(
