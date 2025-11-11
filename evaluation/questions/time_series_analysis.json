@@ -616,72 +616,78 @@
       "id": "TS_008",
       "category": "profitability",
       "difficulty": "medium",
-      "question": "Compare the gross margin evolution for major Consumer Staples companies from 2019 to 2024, showing the impact of inflation and pricing power.",
+      "question": "How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?",
       "expected_answer": {
-        "format": "Gross margin trends with inflation correlation",
-        "visualization": "Dual-axis chart showing margins vs. inflation rates",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  ROUND(AVG((f.revenues - f.cost_of_revenue) / NULLIF(f.revenues, 0)) * 100, 1) as gross_margin_pct,\n  AVG(f.revenues) / 1000000 as revenue_millions,\n  ROUND(AVG(f.cost_of_revenue / NULLIF(f.revenues, 0)) * 100, 1) as cogs_as_pct_revenue\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Consumer Staples'\n  AND c.name IN ('Procter & Gamble Co', 'Coca-Cola Company', 'PepsiCo Inc', 'Walmart Inc', 'Costco Wholesale Corporation', 'Colgate-Palmolive Company')\n  AND f.period_end_date BETWEEN '2019-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\n  AND f.revenues > 0 AND f.cost_of_revenue > 0\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
+        "format": "Ranked table summarizing FY2019 vs FY2023 gross margins and pricing-power deltas",
+        "visualization": "Slope chart or clustered bars showing margin change per company",
+        "sample_analysis": "WITH staples AS (\n  SELECT cik, MIN(name) AS company_name\n  FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n  WHERE gics_sector = 'Consumer Staples'\n  GROUP BY cik\n),\nranked_filings AS (\n  SELECT s.adsh,\n         s.cik,\n         CAST(s.fy AS INTEGER) AS fiscal_year,\n         ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n  FROM read_parquet('data/parquet/sub.parquet') s\n  JOIN staples USING (cik)\n  WHERE s.form IN ('10-K','20-F')\n    AND s.fy BETWEEN 2019 AND 2023\n),\nannual_filings AS (\n  SELECT adsh, cik, fiscal_year\n  FROM ranked_filings\n  WHERE rn = 1\n),\nrollup AS (\n  SELECT f.cik,\n         f.fiscal_year,\n         MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','NetSalesRevenue','NetSales') THEN n.value END) AS revenue,\n         MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') THEN n.value END) AS cost_of_revenue,\n         MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit\n  FROM annual_filings f\n  JOIN read_parquet('data/parquet/num.parquet') n ON n.adsh = f.adsh\n  WHERE n.tag IN (\n    'GrossProfit','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','NetSalesRevenue','NetSales',\n    'CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold'\n  )\n  GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n  SELECT s.company_name,\n         r.fiscal_year,\n         ROUND(100 * COALESCE(r.gross_profit, r.revenue - r.cost_of_revenue) / NULLIF(r.revenue, 0), 1) AS gross_margin_pct\n  FROM rollup r\n  JOIN staples s USING (cik)\n  WHERE r.fiscal_year IN (2019, 2023)\n)\nSELECT company_name,\n       MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_2019,\n       MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_2023,\n       MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END)\n         - MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS change_pp\nFROM margins\nGROUP BY company_name\nHAVING COUNT(DISTINCT fiscal_year) = 2\nORDER BY change_pp DESC;",
         "sample_data": [
           {
-            "company": "Procter & Gamble Co",
-            "2019": "49.2%",
-            "2024": "51.1%",
-            "change": "+1.9pp",
-            "inflation_resilience": "Strong"
+            "company": "Archer Daniels Midland Co",
+            "FY2019_margin": "6.5%",
+            "FY2023_margin": "8.2%",
+            "change": "+1.7pp",
+            "inflation_resilience": "Stronger pricing power"
           },
           {
-            "company": "Coca-Cola Company",
-            "2019": "60.8%",
-            "2024": "59.4%",
-            "change": "-1.4pp",
-            "inflation_resilience": "Moderate"
+            "company": "Constellation Brands, Inc.",
+            "FY2019_margin": "49.8%",
+            "FY2023_margin": "50.4%",
+            "change": "+0.6pp",
+            "inflation_resilience": "Resilient pricing"
+          },
+          {
+            "company": "Tyson Foods Inc",
+            "FY2019_margin": "12.0%",
+            "FY2023_margin": "12.5%",
+            "change": "+0.5pp",
+            "inflation_resilience": "Resilient pricing"
           },
           {
             "company": "PepsiCo Inc",
-            "2019": "53.7%",
-            "2024": "52.9%",
-            "change": "-0.8pp",
-            "inflation_resilience": "Moderate"
+            "FY2019_margin": "55.1%",
+            "FY2023_margin": "54.2%",
+            "change": "-0.9pp",
+            "inflation_resilience": "Moderate pressure"
           },
           {
-            "company": "Walmart Inc",
-            "2019": "24.1%",
-            "2024": "24.6%",
-            "change": "+0.5pp",
-            "inflation_resilience": "Strong"
+            "company": "Mondelez International, Inc.",
+            "FY2019_margin": "39.9%",
+            "FY2023_margin": "38.2%",
+            "change": "-1.7pp",
+            "inflation_resilience": "Acute pressure"
           },
           {
-            "company": "Costco Wholesale Corporation",
-            "2019": "12.9%",
-            "2024": "13.2%",
-            "change": "+0.3pp",
-            "inflation_resilience": "Strong"
+            "company": "Philip Morris International Inc.",
+            "FY2019_margin": "64.7%",
+            "FY2023_margin": "63.3%",
+            "change": "-1.4pp",
+            "inflation_resilience": "Moderate pressure"
           },
           {
-            "company": "Colgate-Palmolive Company",
-            "2019": "59.1%",
-            "2024": "58.3%",
-            "change": "-0.8pp",
-            "inflation_resilience": "Moderate"
+            "company": "Monster Beverage Corp",
+            "FY2019_margin": "60.0%",
+            "FY2023_margin": "53.1%",
+            "change": "-6.9pp",
+            "inflation_resilience": "Acute pressure"
           }
         ],
-        "business_insight": "Consumer Staples companies demonstrated varied pricing power during the 2021-2023 inflation cycle, with clear winners and losers emerging based on brand strength and operational efficiency. Procter & Gamble achieved the strongest margin expansion (+1.9pp) through premium positioning and operational leverage, while retailers like Walmart and Costco maintained surprising resilience despite low absolute margins. The sector's response revealed fundamental differences in brand moats, with companies possessing stronger consumer loyalty maintaining pricing power better than commodity-oriented players.",
+        "business_insight": "Staples names exposed to commodity hedging and premium alcohol (ADM +1.7pp, Constellation +0.6pp) expanded margins despite the 2021-2023 inflation spike, while beverages and snacks with aluminum/sugar exposure (PepsiCo -0.9pp, Mondelez -1.7pp, Monster -6.9pp) saw compression. The spread underscores how pricing power and hedging depth determine inflation resilience more than absolute margin levels.",
         "key_findings": [
-          "Procter & Gamble demonstrated strongest pricing power with +1.9pp margin expansion during peak inflation period",
-          "Walmart achieved remarkable margin stability (+0.5pp) despite cost pressures through operational efficiency and scale advantages",
-          "Beverage leaders (Coca-Cola, Pepsi) faced margin pressure (-0.8 to -1.4pp) from aluminum and transportation cost inflation",
-          "Membership models (Costco) showed resilience with +0.3pp improvement through fee income and supplier negotiations",
-          "Personal care companies (Colgate) experienced modest pressure (-0.8pp) from raw material cost inflation"
+          "ADM leveraged crush spreads and hedging to lift gross margin from 6.5% to 8.2% (+1.7pp) even as input prices surged.",
+          "Constellation and Tyson showed modest improvement (+0.6pp / +0.5pp) by mixing toward premium SKUs and contracts that pass through grain/feed inflation.",
+          "Philip Morris and PepsiCo held margins within ±1pp thanks to premium positioning, but Mondelez (-1.7pp) and Monster (-6.9pp) faced outsized commodity and packaging pressure.",
+          "Margin dispersion across Consumer Staples widened to ~15pp between defensible brands and ingredients-heavy players, highlighting the value of supplier leverage."
         ],
         "investment_implications": [
-          "Companies with strong brand moats (P&G) demonstrate superior inflation protection and pricing power sustainability",
-          "Scale-driven retailers (Walmart, Costco) offer defensive characteristics through operational efficiency during cost inflation",
-          "Beverage companies face structural margin pressure from commodity cost volatility requiring ongoing productivity initiatives",
-          "Consumer Staples pricing power varies significantly by category, favoring premium brands and scale players"
+          "Focus on staples companies with structural hedging advantages or premium mix that can pass inflation through swiftly.",
+          "Monitor beverage/snacking names with commodity-heavy cost stacks for additional productivity programs before margins normalize.",
+          "Pair resilient names (ADM, Constellation, Tyson) with pressured ones (Mondelez, Monster) to express relative-value trades on pricing power.",
+          "Gross-margin trend monitoring should feed into inflation-scenario planning for CFOs and procurement teams."
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "6 years",
+        "expected_data_span": "FY2019-FY2023 (5 fiscal years)",
         "required_metrics": [
           "gross_margin",
           "gross_profit",
@@ -691,7 +697,7 @@
         "min_companies": 6
       },
       "max_response_time_ms": 16000,
-      "time_span": "2019-2024",
+      "time_span": "2019-2023",
       "business_context": "Measure staples pricing power and margin resilience amid inflation."
     },
     {
