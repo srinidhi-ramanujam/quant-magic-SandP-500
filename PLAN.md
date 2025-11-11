@@ -255,6 +255,7 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Refreshed TS_008 with FY2019→FY2023 Consumer Staples gross-margin deltas (ADM, Constellation, Tyson, PepsiCo, Mondelez, Philip Morris, Monster) and captured the new DuckDB query, insights, and validator metadata ahead of wiring the `gross_margin_trend_sector` template.
 - Ground-truthed TS_009 inventory turnover trends for the top six retailers (new `inventory_turnover_trend` template) and logged the run in the telemetry workbook; formatter now summarizes turnover + DIO deltas.
 - Ground-truthed TS_010 leverage progression for Delta, Southwest, and United (new `net_debt_to_ebitda_trend` template) with FY2019–FY2023 DuckDB data and documented the dataset gap for American Airlines.
+  - Re-validated the DuckDB + QueryEngine outputs on 11 Nov 2025 after tightening the EBITDA guards, reran the CLI end-to-end, and logged RUN_026 in `evaluation/EVAL_WORKBOOK.csv` to capture the refreshed telemetry.
 
 ---
 
@@ -626,6 +627,36 @@ These tracks run alongside Phase 2 backend work so the product can demo via a br
 - ✅ Document chat interface features, setup, and usage patterns.
 - ✅ Capture open questions (parquet distribution, streaming updates) for next iteration before implementation.
 - ✅ Add per-session logging (CLI/API/UI) with structured Q&A records rotating via `.logs/session-<timestamp>/`.
+
+### 5. Next UI Enhancements (Planned)
+
+#### A. LLM Answer Polishing Layer
+- Add optional “answer formatting” pass in the backend:
+  - After SQL execution, call Azure Responses API with the original question, extracted entities, SQL template metadata, and the full result set (capped via row limit / JSON summary) to produce a business-ready narrative.
+  - Use existing conversation history (last N question-answer pairs) from the UI payload so the formatter can reference prior context.
+- API changes:
+  - Extend `QueryResponseModel` with a `presentation` field containing the polished text + optional table schema.
+  - Introduce request flag `include_formatted_answer` (default true for API/UI, optional false for CLI).
+  - Log formatter prompts/responses in `session_logger` so we can debug bad phrasing.
+- Quality gates:
+  - Enforce max token usage (e.g., trim table data to top rows with summary stats) to keep formatter responsive.
+  - Add tests that stub formatter responses to ensure the API degrades gracefully when the LLM fails (fallback to template formatter).
+
+#### B. Collapsible SQL & Reasoning Trace (UI)
+- Backend: continue returning raw SQL + metadata, but add a short “reasoning trace” object (template ID, key filters, constraints) for display. No change for CLI.
+- Frontend:
+  - Replace the static SQL block with a collapsible panel (default closed) styled like ChatGPT’s reasoning trace. Show summary (“SQL generated via `company_sector` template”) with a toggle to reveal the full query.
+  - Add a second panel for the formatter’s explanation so the user can inspect how the answer was synthesized.
+  - Maintain accessibility: keyboard-focusable toggles, copy-to-clipboard icon for SQL.
+- UX polish:
+  - Render tables returned by the formatter using responsive `<table>` components; collapse large datasets into paginated or scrollable areas.
+  - Surface formatter errors inline (e.g., “Polished answer unavailable; showing raw summary”).
+
+#### C. Validation & Rollout
+- Update `tests/api/test_query_endpoint.py` to cover the new response fields and failure modes.
+- Add unit tests for the formatter orchestration (mock Azure client).
+- Extend README with “Formatted Answers & SQL Toggle” section describing the behavior and troubleshooting tips.
+- Measure impact: capture latency stats for the formatter and expose them in metadata so we can monitor cost/perf.
 
 ---
 
