@@ -374,7 +374,7 @@ class SQLGenerator:
         if "start_year" in missing_params or "end_year" in missing_params:
             current_year = datetime.utcnow().year
             default_end = max(2015, current_year - 2)
-            default_start = default_end - 1
+            default_start = default_end - 2
             if "start_year" in missing_params:
                 defaults["start_year"] = str(default_start)
             if "end_year" in missing_params:
@@ -388,6 +388,9 @@ class SQLGenerator:
 
         if "rank" in missing_params:
             defaults["rank"] = "1"
+
+        if "min_growth_pct" in missing_params:
+            defaults["min_growth_pct"] = "0"
 
         if not defaults:
             return params

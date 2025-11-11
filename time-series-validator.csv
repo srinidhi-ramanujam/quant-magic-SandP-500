@@ -49,7 +49,54 @@ WHERE revenue_2023 >= 5000000000
   AND margin_2023 IS NOT NULL AND margin_2022 IS NOT NULL
 ORDER BY improvement_pp DESC
 LIMIT 10;","Fidelity National Information Services (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta Platforms (+10.0pp), and Palo Alto Networks (+9.1pp) lead once a $5B revenue floor is applied.","FIS (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta (+10.0pp), Palo Alto Networks (+9.1pp); Workday, Fiserv, Hubbell follow once the $5B revenue floor is applied.",5,Horizontal bar ranking margin delta
-TS_006,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Which Technology companies have shown declining ROE over the past 3 years even as revenue kept growing, and how large is the divergence between the two trends?",profitability,Rolling 3 years,Surface ROE deterioration despite revenue growth to flag efficiency risks.,roe_vs_revenue_growth_flag,,ROE decomposition analysis over 3 years,,,DuPont analysis charts showing ROE components
+TS_006,TS_SUITE_LIVE,"11 Nov 2025, 1321 hours",time_series,"Which Technology companies have shown declining ROE over the past 3 years even as revenue kept growing, and how large is the divergence between the two trends?",profitability,FY2021-FY2023,Surface ROE deterioration despite revenue growth to flag efficiency risks.,roe_revenue_divergence,"WITH sector_companies AS (
+    SELECT DISTINCT cik, name
+    FROM companies
+    WHERE gics_sector = 'Information Technology'
+),
+annual_filings AS (
+    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period,
+           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2021 AND 2023
+),
+latest AS (
+    SELECT * FROM annual_filings WHERE rn = 1
+),
+values AS (
+    SELECT lf.cik, lf.fiscal_year,
+           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,
+           MAX(CASE WHEN n.tag IN ('StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest') THEN n.value END) AS equity,
+           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue
+    FROM latest lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'NetIncomeLoss','StockholdersEquity','StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest',
+        'Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet'
+    )
+    GROUP BY lf.cik, lf.fiscal_year
+),
+agg AS (
+    SELECT sc.name,
+           MAX(CASE WHEN fiscal_year = 2021 THEN net_income / NULLIF(equity,0) END) AS roe_2021,
+           MAX(CASE WHEN fiscal_year = 2023 THEN net_income / NULLIF(equity,0) END) AS roe_2023,
+           MAX(CASE WHEN fiscal_year = 2021 THEN revenue END) AS revenue_2021,
+           MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_2023
+    FROM values v
+    JOIN sector_companies sc USING (cik)
+    GROUP BY sc.name
+    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2021,2023) THEN fiscal_year END) = 2
+)
+SELECT name,
+       ROUND(roe_2021 * 100, 2) AS roe_2021_pct,
+       ROUND(roe_2023 * 100, 2) AS roe_2023_pct,
+       ROUND((roe_2023 - roe_2021) * 100, 2) AS roe_change_pp,
+       ROUND(((revenue_2023 - revenue_2021) / NULLIF(revenue_2021, 0)) * 100, 2) AS revenue_growth_pct
+FROM agg
+WHERE revenue_2023 > revenue_2021 AND roe_2023 < roe_2021
+ORDER BY roe_change_pp ASC
+LIMIT 10;","Qualcomm (-57pp ROE, +6.7% revenue), AMD (-27pp, +38%), Oracle (-23.7pp, +23%), Apple (-18.7pp, +4.8%), Gen Digital (-17.5pp, +36%) lead the list of names with revenue growth but deteriorating ROE between FY2021 and FY2023.","CLI run returned Qualcomm, AMD, Oracle, Apple, Gen Digital among others; each shows ROE decline of 17-57pp while revenue grew 5-38% between FY2021 and FY2023.",5,Dual bars showing ROE delta vs revenue growth
 TS_007,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Show the working capital trends for Industrial companies from 2020 to 2024, identifying companies with improving cash conversion cycles.",liquidity,2020-2024,Monitor industrial working capital and cash conversion cycle improvements.,working_capital_cash_cycle_trend,,Working capital efficiency metrics over time,,,Multi-metric dashboard with cash conversion cycle trends
 TS_008,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Compare the gross margin evolution for major Consumer Staples companies from 2019 to 2024, showing the impact of inflation and pricing power.",profitability,2019-2024,Measure staples pricing power and margin resilience amid inflation.,consumer_staples_gross_margin_trend,,Gross margin trends with inflation correlation,,,Dual-axis chart showing margins vs. inflation rates
 TS_009,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",efficiency,Rolling 6 quarters,Evaluate retailer supply chain efficiency via inventory turnover.,inventory_turnover_trend,,Quarterly inventory metrics with efficiency rankings,,,Bar chart race showing inventory turnover leaders

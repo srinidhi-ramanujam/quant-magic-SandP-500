@@ -1,5 +1,24 @@
 [
   {
+    "template_id": "roe_revenue_divergence",
+    "intent_text": "Flag companies whose ROE declines while revenue keeps rising",
+    "pattern": "(?i)(which|what).*(company|companies).*(roe).*(declin|drop|compress).*(revenue).*(grow|increase)",
+    "example_questions": [
+      "Which Technology companies saw ROE decline even though revenue grew between FY2021 and FY2023?",
+      "Highlight Industrials whose ROE compressed despite higher sales over the last three years."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_growth_pct",
+        "limit"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
     "template_id": "company_by_cik",
     "intent_text": "Find company name and details given a CIK identifier",
     "pattern": "what.*(is|are).*(cik|cik number)|cik.*(for|of|number)",

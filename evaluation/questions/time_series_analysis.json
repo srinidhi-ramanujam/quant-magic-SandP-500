@@ -450,64 +450,64 @@
       "difficulty": "medium",
       "question": "Which Technology companies have shown declining ROE over the past 3 years even as revenue kept growing, and how large is the divergence between the two trends?",
       "expected_answer": {
-        "format": "ROE decomposition analysis over 3 years",
-        "visualization": "DuPont analysis charts showing ROE components",
-        "sample_analysis": "WITH roe_analysis AS (\n  SELECT c.name,\n    EXTRACT(YEAR FROM f.period_end_date) as year,\n    AVG(f.revenues) / 1000000 as revenue_millions,\n    AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) as roe,\n    AVG(f.net_income_loss / NULLIF(f.revenues, 0)) as net_margin,\n    AVG(f.revenues / NULLIF(f.assets, 0)) as asset_turnover\n  FROM financials f\n  JOIN companies c ON f.cik = c.cik\n  WHERE c.gics_sector = 'Information Technology'\n    AND c.name IN ('Meta Platforms Inc', 'Intel Corporation', 'Cisco Systems Inc', 'Oracle Corporation', 'Adobe Inc')\n    AND f.period_end_date BETWEEN '2021-01-01' AND '2023-12-31'\n    AND f.form_type IN ('10-K', '10-Q')\n  GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\n)\nSELECT name, \n  MAX(CASE WHEN year = 2021 THEN roe END) as roe_2021,\n  MAX(CASE WHEN year = 2023 THEN roe END) as roe_2023,\n  ROUND((MAX(CASE WHEN year = 2023 THEN roe END) - MAX(CASE WHEN year = 2021 THEN roe END)) * 100, 1) as roe_change_pct\nFROM roe_analysis\nGROUP BY name\nORDER BY roe_change_pct;",
+        "format": "ROE vs revenue divergence table",
+        "visualization": "Side-by-side bars (ROE change vs revenue growth)",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT DISTINCT cik, name\n    FROM companies\n    WHERE gics_sector = 'Information Technology'\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN sector_companies sc USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2021 AND 2023\n),\nlatest AS (\n    SELECT * FROM annual_filings WHERE rn = 1\n),\nvalues AS (\n    SELECT lf.cik, lf.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest') THEN n.value END) AS equity,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM latest lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    WHERE n.tag IN (\n        'NetIncomeLoss',\n        'StockholdersEquity',\n        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest',\n        'Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet'\n    )\n    GROUP BY lf.cik, lf.fiscal_year\n),\nagg AS (\n    SELECT sc.cik,\n           ANY_VALUE(sc.name) AS name,\n           MAX(CASE WHEN fiscal_year = 2021 THEN net_income / NULLIF(equity, 0) END) AS roe_2021,\n           MAX(CASE WHEN fiscal_year = 2023 THEN net_income / NULLIF(equity, 0) END) AS roe_2023,\n           MAX(CASE WHEN fiscal_year = 2021 THEN revenue END) AS revenue_2021,\n           MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_2023\n    FROM values\n    JOIN sector_companies sc USING (cik)\n    GROUP BY sc.cik\n    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2021, 2023) THEN fiscal_year END) = 2\n)\nSELECT name,\n       ROUND(roe_2021 * 100, 2) AS roe_2021_pct,\n       ROUND(roe_2023 * 100, 2) AS roe_2023_pct,\n       ROUND((roe_2023 - roe_2021) * 100, 2) AS roe_change_pp,\n       ROUND(((revenue_2023 - revenue_2021) / NULLIF(revenue_2021, 0)) * 100, 2) AS revenue_growth_pct\nFROM agg\nWHERE revenue_2023 > revenue_2021\n  AND roe_2023 < roe_2021\nORDER BY roe_change_pp ASC\nLIMIT 10;",
         "sample_data": [
           {
-            "company": "Meta Platforms Inc",
-            "2021_roe": "31.5%",
-            "2023_roe": "20.8%",
-            "revenue_growth": "+19%",
-            "roe_decline": "-10.7pp",
-            "primary_cause": "Metaverse R&D investments"
+            "company": "Qualcomm",
+            "roe_2021_pct": "90.9%",
+            "roe_2023_pct": "33.5%",
+            "roe_decline_pp": "-57.4",
+            "revenue_growth_pct": "+6.7%",
+            "primary_cause": "Handset weakness plus elevated R&D cut asset efficiency faster than top-line grew."
           },
           {
-            "company": "Intel Corporation",
-            "2021_roe": "26.7%",
-            "2023_roe": "15.2%",
-            "revenue_growth": "-12%",
-            "roe_decline": "-11.5pp",
-            "primary_cause": "Competitive pressure + manufacturing capex"
+            "company": "AMD",
+            "roe_2021_pct": "28.6%",
+            "roe_2023_pct": "1.4%",
+            "roe_decline_pp": "-27.1",
+            "revenue_growth_pct": "+38.0%",
+            "primary_cause": "Xilinx integration and datacenter capex drove equity base higher than earnings."
           },
           {
-            "company": "Cisco Systems Inc",
-            "2021_roe": "29.8%",
-            "2023_roe": "22.1%",
-            "revenue_growth": "+3%",
-            "roe_decline": "-7.7pp",
-            "primary_cause": "Supply chain costs + transition investments"
+            "company": "Oracle",
+            "roe_2021_pct": "51.8%",
+            "roe_2023_pct": "28.1%",
+            "roe_decline_pp": "-23.7",
+            "revenue_growth_pct": "+23.4%",
+            "primary_cause": "Cloud infrastructure build-out suppressed ROE despite accelerating subscription revenue."
           },
           {
-            "company": "Oracle Corporation",
-            "2021_roe": "45.2%",
-            "2023_roe": "41.8%",
-            "revenue_growth": "+18%",
-            "roe_decline": "-3.4pp",
-            "primary_cause": "Cloud infrastructure investments"
+            "company": "Apple",
+            "roe_2021_pct": "150.1%",
+            "roe_2023_pct": "131.4%",
+            "roe_decline_pp": "-18.7",
+            "revenue_growth_pct": "+4.8%",
+            "primary_cause": "Record buybacks moderated but supply chain investments lifted equity faster than profits."
           },
           {
-            "company": "Adobe Inc",
-            "2021_roe": "35.1%",
-            "2023_roe": "32.6%",
-            "revenue_growth": "+23%",
-            "roe_decline": "-2.5pp",
-            "primary_cause": "AI integration costs"
+            "company": "Gen Digital (Symantec)",
+            "roe_2021_pct": "45.2%",
+            "roe_2023_pct": "27.7%",
+            "roe_decline_pp": "-17.5",
+            "revenue_growth_pct": "+36.3%",
+            "primary_cause": "Consumer cyber acquisitions expanded revenue yet goodwill/intangibles depressed ROE."
           }
         ],
-        "business_insight": "Technology companies experienced ROE compression from 2021-2023 despite revenue growth due to massive strategic investments in next-generation platforms. Meta's 10.7 percentage point ROE decline reflects $13.7B annual metaverse investments, while Intel's deterioration stems from both competitive pressure in CPUs and $20B+ foundry capital expenditures. This pattern illustrates the tension between maintaining short-term returns and investing in transformational technologies during industry transitions.",
+        "business_insight": "Multiple large-cap Technology names grew revenue between FY2021 and FY2023 yet saw ROE compress sharply because reinvestment (M&A, cloud capex, R&D) expanded the equity base faster than earnings. Qualcomm and AMD exemplify how margin pressure plus higher working capital can erase ROE even when top-line momentum remains positive.",
         "key_findings": [
-          "Meta experienced largest ROE decline (-10.7pp) due to Reality Labs investment exceeding $36B cumulative",
-          "Intel faced dual pressure from AMD/NVIDIA competition and massive foundry capex reducing asset efficiency",
-          "Oracle showed resilience with minimal ROE decline (-3.4pp) despite aggressive cloud infrastructure spending",
-          "Revenue growth (+3% to +23%) failed to offset margin compression and asset efficiency declines across the sector",
-          "Traditional software companies (Adobe, Oracle) demonstrated better ROE resilience than hardware/platform companies"
+          "Qualcomm’s ROE fell 57pp as Android demand weakened and modem R&D spend outpaced modest revenue growth.",
+          "AMD’s ROE nearly evaporated (28.6% → 1.4%) despite 38% sales growth because Xilinx dilution and datacenter buildouts lifted equity.",
+          "Oracle’s ROE dropped 24pp while revenue grew 23%—cloud infrastructure capex remains a drag until utilization scales.",
+          "Apple’s ROE remains triple digits but compressed ~19pp due to higher inventory buffers and continued silicon investment.",
+          "Gen Digital’s roll-up strategy grew revenue 36% but goodwill-heavy equity eroded ROE by 17.5pp."
         ],
         "investment_implications": [
-          "Technology transitions create temporary ROE depression as companies invest in future platforms",
-          "Software-centric models (Oracle, Adobe) maintain better capital efficiency during transformation periods",
-          "Hardware companies (Intel) face structural ROE pressure from capital intensity and competitive dynamics",
-          "Meta's metaverse bet represents highest-risk/highest-reward ROE recovery scenario pending adoption"
+          "Watch for firms where ROE erosion signals capital efficiency risk even when sales trends look healthy.",
+          "Cloud and AI buildouts can depress ROE for several years; investors should model a delayed return on incremental equity.",
+          "Software consolidators with goodwill-heavy balance sheets (e.g., Gen Digital) need disciplined integration to restore ROE.",
+          "Screening for “revenue up / ROE down” scenarios highlights where activist pressure or capital allocation pivots may emerge."
         ]
       },
       "retrieval_test_criteria": {
@@ -522,7 +522,7 @@
         "min_companies": 5
       },
       "max_response_time_ms": 17000,
-      "time_span": "Rolling 3 years",
+      "time_span": "FY2021-FY2023",
       "business_context": "Surface ROE deterioration despite revenue growth to flag efficiency risks."
     },
     {
