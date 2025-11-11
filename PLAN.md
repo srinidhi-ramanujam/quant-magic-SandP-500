@@ -658,6 +658,21 @@ These tracks run alongside Phase 2 backend work so the product can demo via a br
 - Extend README with “Formatted Answers & SQL Toggle” section describing the behavior and troubleshooting tips.
 - Measure impact: capture latency stats for the formatter and expose them in metadata so we can monitor cost/perf.
 
+**Implementation Notes**
+- Backend
+  - New `AnswerFormatter` module (prompt + Responses API call) producing `{narrative, highlights, table, warnings}` payload.
+  - `QueryRequest` accepts optional `history` (last N messages) and `include_polished_answer` flag; UI supplies history, CLI stays default.
+  - `QueryResponseModel` gains `presentation` (structured narrative/table) and `reasoning_trace` (template ID, filters, row_count) plus a `sql_collapsible_hint`.
+  - Session logger records both raw `FormattedResponse` and `presentation` payload for debugging.
+  - Telemetry captures formatter latency/tokens; fallback to original answer when formatter fails (log warning).
+  - Tests: `tests/test_answer_formatter.py` (new), extended API tests for presentation fields and failure cases.
+- Frontend
+  - Update message rendering to prefer `presentation.narrative` + `highlights`; render `presentation.table` as responsive Tailwind table with capped height, optional download icon.
+  - Add collapsible “Reasoning & SQL” panel modeled after ChatGPT’s trace: summary row with template name + elapsed time; toggled body showing reasoning trace + copyable SQL block.
+  - Expose formatter warnings inline (e.g., truncated rows); fall back to legacy answer with badge when `presentation` missing.
+  - Wire question history (last 3 Q&A pairs) into API request payload; store history in React state.
+  - Tests: snapshot test for new toggle component, Playwright/RTL test for table rendering, logging smoke test.
+
 ---
 
 **Status**: Phase 1 Complete (100/104 tests passing)  
