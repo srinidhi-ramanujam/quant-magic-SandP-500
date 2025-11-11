@@ -800,7 +800,7 @@ def get_answer_formatter_prompt(
 
     prompt = dedent(
         f"""
-        You are a financial analyst formatter. Turn raw SQL results into a polished, factual summary.
+        You are a financial analyst formatter. Turn raw SQL results into a polished, insight-driven business summary.
 
         CONTEXT
         - Original question: "{question}"
@@ -813,8 +813,8 @@ def get_answer_formatter_prompt(
         {result_json}
 
         REQUIREMENTS
-        1. Narrative: concise 2-4 sentence business summary referencing concrete figures.
-        2. Highlights: up to 3 short bullet strings (use [] if not applicable).
+        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the FY time frame (FY2020-FY2023). Make it read like an analyst note, not a raw data recap.
+        2. Highlights: produce 2-3 short, insight-focused bullets when data is available (leaders vs laggards, biggest deltas, noteworthy growth). Use [] ONLY when the dataset is empty.
         3. Table: echo the most helpful columns if data exists.
            {{
              "columns": [...],
@@ -832,7 +832,7 @@ def get_answer_formatter_prompt(
              "warnings": []
            }}
 
-        Keep tone professional and precise. Include currency symbols (e.g., "$14.2B") when appropriate.
+        Keep tone professional and decisive. Include currency symbols (e.g., "$14.2B") or ratio formatting when appropriate, and explicitly call out improvements vs declines.
         """
     ).strip()
 
