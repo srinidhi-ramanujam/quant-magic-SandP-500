@@ -191,7 +191,11 @@ class SQLGenerator:
         # Validate we have all required parameters
         missing_params = set(template.parameters) - set(params.keys())
         if missing_params:
-            self.logger.warning(f"Missing parameters for template: {missing_params}")
+            self.logger.debug(
+                "Missing parameters for template %s: %s",
+                template.template_id,
+                missing_params,
+            )
 
             # Try to fill missing parameters from entities
             params = self._fill_missing_parameters(params, entities, template)

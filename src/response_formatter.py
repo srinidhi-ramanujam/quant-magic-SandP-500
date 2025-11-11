@@ -8,7 +8,7 @@ For Phase 0, handles:
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Dict, Optional
 
 import pandas as pd
 
@@ -23,6 +23,15 @@ class ResponseFormatter:
         """Initialize response formatter."""
         self.logger = get_logger()
         self.logger.info("ResponseFormatter initialized")
+        self.template_formatters: Dict[str, Callable[[QueryResult], Optional[str]]] = {
+            "debt_reduction_progression": self._format_debt_reduction_progression,
+            "profit_margin_consistency_trend": (
+                self._format_profit_margin_consistency_trend
+            ),
+            "current_ratio_trend": self._format_current_ratio_trend,
+            "operating_margin_delta": self._format_operating_margin_delta,
+            "roe_revenue_divergence": self._format_roe_revenue_divergence,
+        }
 
     def format(
         self,
@@ -61,9 +70,7 @@ class ResponseFormatter:
             else None
         )
 
-        specialized_answer = self._format_template_specific(
-            template_id, query_result
-        )
+        specialized_answer = self._format_template_specific(template_id, query_result)
 
         if specialized_answer:
             answer = specialized_answer
@@ -74,9 +81,7 @@ class ResponseFormatter:
             elif entities.question_type == "lookup":
                 answer = self._format_lookup_response(query_result, entities)
             else:
-                answer = self._format_generic_response(
-                    query_result, entities, context
-                )
+                answer = self._format_generic_response(query_result, entities, context)
 
         # Build metadata
         metadata = {
@@ -228,107 +233,181 @@ class ResponseFormatter:
         """Format known template responses."""
         if not template_id:
             return None
-
-        if template_id == "debt_reduction_progression":
-            if query_result.row_count == 0:
-                return "No debt reductions found for the requested period."
-            data = query_result.data
-            if not isinstance(data, pd.DataFrame):
-                return None
-
-            rows = data.head(5)
-            bullets = []
-            for idx, row in rows.iterrows():
-                name = row.get("name", "Unknown company")
-                sector = row.get("gics_sector", "Unknown sector")
-                start_debt_value = self._get_first_value(
-                    row, ["debt_2021_m", "debt_2021"]
-                )
-                end_debt_value = self._get_first_value(
-                    row, ["debt_2023_m", "debt_2023"]
-                )
-                delta_value = self._get_first_value(
-                    row, ["reduction_m", "debt_reduction"]
-                )
-                pct_value = self._get_first_value(
-                    row, ["reduction_pct", "reduction_ratio"]
-                )
-
-                start_debt = self._format_millions(start_debt_value)
-                end_debt = self._format_millions(end_debt_value)
-                delta_signed = -abs(delta_value) if delta_value is not None else None
-                pct_signed = -abs(pct_value) if pct_value is not None else None
-                delta = self._format_millions(delta_signed, signed=True)
-                pct_str = self._format_percentage(pct_signed, signed=True)
-                bullets.append(
-                    f"{len(bullets)+1}) {name} ({sector}) cut debt from "
-                    f"{start_debt} to {end_debt} "
-                    f"({delta}, {pct_str})."
-                )
-
-            return "Top FY2021-FY2023 deleveragers:\n" + "\n".join(bullets)
-
-        if template_id == "profit_margin_consistency_trend":
-            if query_result.row_count == 0:
-                return "No profitability improvements were found for the requested period."
-            data = query_result.data
-            if not isinstance(data, pd.DataFrame):
-                return None
-
-            rows = data.head(5)
-            bullets = []
-            for idx, row in rows.iterrows():
-                name = row.get("name", "Unknown company")
-                start_margin = self._format_percentage(
-                    self._get_first_value(row, ["margin_2019_pct"]), signed=False
-                )
-                end_margin = self._format_percentage(
-                    self._get_first_value(row, ["margin_2023_pct"]), signed=False
-                )
-                improvement = self._format_percentage(
-                    self._get_first_value(row, ["improvement_pct"]), signed=True
-                )
-                consistency = row.get("consistency_steps", "0")
-                bullets.append(
-                    f"{len(bullets)+1}) {name}: {start_margin} (2019) → "
-                    f"{end_margin} (2023) {improvement} | "
-                    f"Consistency steps: {consistency}"
-                )
-
-            return "Top Technology profit margin improvers (FY2019-FY2023):\n" + "\n".join(
-                bullets
-            )
-
-        if template_id == "current_ratio_trend":
-            if query_result.row_count == 0:
-                return "No companies met the five-year current-ratio coverage requirement."
-            data = query_result.data
-            if not isinstance(data, pd.DataFrame):
-                return None
-
-            rows = data.head(5)
-            bullets = []
-            for idx, row in rows.iterrows():
-                name = row.get("name", "Unknown company")
-                ratio_2019 = self._format_percentage(
-                    self._get_first_value(row, ["ratio_2019"]), signed=False
-                )
-                ratio_2023 = self._format_percentage(
-                    self._get_first_value(row, ["ratio_2023"]), signed=False
-                )
-                improvement = self._format_percentage(
-                    self._get_first_value(row, ["improvement"]), signed=True
-                )
-                bullets.append(
-                    f"{len(bullets)+1}) {name}: {ratio_2019} (2019) → "
-                    f"{ratio_2023} (2023) {improvement}"
-                )
-
-            return "Top Healthcare liquidity improvers (FY2019-FY2023):\n" + "\n".join(
-                bullets
-            )
-
+        formatter = self.template_formatters.get(template_id)
+        if formatter:
+            return formatter(query_result)
         return None
+
+    def _format_debt_reduction_progression(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No debt reductions found for the requested period."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(5)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            sector = row.get("gics_sector", "Unknown sector")
+            start_debt = self._format_billions(
+                self._get_first_value(row, ["debt_2021_billions", "debt_2021"])
+            )
+            end_debt = self._format_billions(
+                self._get_first_value(row, ["debt_2023_billions", "debt_2023"])
+            )
+            delta = self._format_billions(
+                -abs(
+                    self._get_first_value(
+                        row, ["debt_reduction_billions", "debt_reduction"]
+                    )
+                    or 0
+                ),
+                signed=True,
+            )
+            bullets.append(
+                f"{len(bullets)+1}) {name} ({sector}) cut debt from {start_debt} to {end_debt} ({delta})."
+            )
+
+        return "Top FY2021-FY2023 deleveragers:\n" + "\n".join(bullets)
+
+    def _format_profit_margin_consistency_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No profitability improvements were found for the requested period."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(5)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            start_margin = self._format_percentage(
+                self._get_first_value(row, ["margin_2019_pct"]), signed=False
+            )
+            end_margin = self._format_percentage(
+                self._get_first_value(row, ["margin_2023_pct"]), signed=False
+            )
+            improvement = self._format_percentage(
+                self._get_first_value(row, ["improvement_pct"]), signed=True
+            )
+            consistency = row.get("consistency_steps", "0")
+            bullets.append(
+                f"{len(bullets)+1}) {name}: {start_margin} (2019) → {end_margin} (2023) {improvement} | Consistency steps: {consistency}"
+            )
+
+        return "Top Technology profit margin improvers (FY2019-FY2023):\n" + "\n".join(
+            bullets
+        )
+
+    def _format_current_ratio_trend(self, query_result: QueryResult) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No companies met the five-year current-ratio coverage requirement."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(5)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            ratio_2019 = self._format_ratio(self._get_first_value(row, ["ratio_2019"]))
+            ratio_2023 = self._format_ratio(self._get_first_value(row, ["ratio_2023"]))
+            improvement = self._format_ratio(
+                self._get_first_value(row, ["improvement"]), signed=True
+            )
+            bullets.append(
+                f"{len(bullets)+1}) {name}: {ratio_2019} (2019) → {ratio_2023} (2023) {improvement}"
+            )
+
+        return "Top Healthcare liquidity improvers (FY2019-FY2023):\n" + "\n".join(
+            bullets
+        )
+
+    def _format_operating_margin_delta(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No operating margin improvements found for the requested period."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(5)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            cols = sorted(
+                [
+                    col
+                    for col in row.index
+                    if col.startswith("margin_") and col.endswith("_pct")
+                ]
+            )
+            if len(cols) < 2:
+                continue
+            start_label, end_label = cols[0], cols[-1]
+            start_year = start_label.split("_")[1]
+            end_year = end_label.split("_")[1]
+            start_margin = self._format_percentage(row[start_label], signed=False)
+            end_margin = self._format_percentage(row[end_label], signed=False)
+            improvement = self._format_percentage(
+                self._get_first_value(row, ["improvement_pp"]), signed=True
+            )
+            revenue = self._get_first_value(
+                row, [f"revenue_{end_year}_billions", "revenue_end"]
+            )
+            revenue_str = (
+                f"${revenue:,.2f}B" if revenue is not None else "revenue data n/a"
+            )
+            bullets.append(
+                f"{len(bullets)+1}) {name}: {start_margin} ({start_year}) → {end_margin} ({end_year}) {improvement} on {revenue_str}."
+            )
+
+        return "Largest FY operating margin rebounds:\n" + "\n".join(bullets)
+
+    def _format_roe_revenue_divergence(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No ROE declines were detected with revenue growth over the requested window."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(5)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            cols = sorted(
+                [
+                    col
+                    for col in row.index
+                    if col.startswith("roe_") and col.endswith("_pct")
+                ]
+            )
+            if len(cols) < 2:
+                continue
+            start_label, end_label = cols[0], cols[-1]
+            start_year = start_label.split("_")[1]
+            end_year = end_label.split("_")[1]
+            start_roe = self._format_percentage(row[start_label], signed=False)
+            end_roe = self._format_percentage(row[end_label], signed=False)
+            change = self._format_percentage(
+                self._get_first_value(row, ["roe_change_pp"]), signed=True
+            )
+            revenue_growth = self._format_percentage(
+                self._get_first_value(row, ["revenue_growth_pct"]), signed=True
+            )
+            bullets.append(
+                f"{len(bullets)+1}) {name}: ROE {start_roe} ({start_year}) → {end_roe} ({end_year}) {change} while revenue grew {revenue_growth}."
+            )
+
+        return "ROE compression despite revenue growth:\n" + "\n".join(bullets)
 
     @staticmethod
     def _get_first_value(row, keys) -> Optional[float]:
@@ -346,12 +425,28 @@ class ResponseFormatter:
         return f"${value:,.0f}M"
 
     @staticmethod
+    def _format_billions(value, signed: bool = False) -> str:
+        if value is None:
+            return "n/a"
+        if signed:
+            return f"{value:+.2f}B"
+        return f"${value:.2f}B"
+
+    @staticmethod
     def _format_percentage(value, signed: bool = False) -> str:
         if value is None:
             return "n/a"
         if signed:
             return f"{value:+.2f}%"
         return f"{value:.2f}%"
+
+    @staticmethod
+    def _format_ratio(value, signed: bool = False) -> str:
+        if value is None:
+            return "n/a"
+        if signed:
+            return f"{value:+.2f}x"
+        return f"{value:.2f}x"
 
     def _format_generic_response(
         self,
