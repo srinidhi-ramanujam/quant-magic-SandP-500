@@ -32,6 +32,7 @@ class ResponseFormatter:
             "current_ratio_trend": self._format_current_ratio_trend,
             "operating_margin_delta": self._format_operating_margin_delta,
             "gross_margin_trend_sector": self._format_gross_margin_trend_sector,
+            "inventory_turnover_trend": self._format_inventory_turnover_trend,
             "roe_revenue_divergence": self._format_roe_revenue_divergence,
             "working_capital_cash_cycle_trend": (
                 self._format_working_capital_cash_cycle_trend
@@ -424,6 +425,45 @@ class ResponseFormatter:
 
         return "Sector gross margin shifts:\n" + "\n".join(bullets)
 
+    def _format_inventory_turnover_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No inventory turnover data was available for the requested companies."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        bullets = []
+        for idx, (_, row) in enumerate(data.iterrows(), start=1):
+            company = row.get("company", "Company")
+            latest_period = self._format_period_label(row.get("latest_period_end"))
+            baseline_period = self._format_period_label(
+                row.get("baseline_period_end") or row.get("baseline_period")
+            )
+            latest_turnover = self._format_ratio(row.get("latest_turnover"))
+            baseline_turnover = self._format_ratio(
+                row.get("baseline_turnover") or row.get("start_turnover")
+            )
+            turnover_change = self._format_ratio(
+                self._clean_numeric(row.get("turnover_change")), signed=True
+            )
+            dio_change = self._format_days(
+                self._clean_numeric(row.get("dio_change")), signed=True
+            )
+            latest_dio = self._format_days(row.get("latest_dio"))
+            baseline_dio = self._format_days(
+                row.get("baseline_dio") or row.get("start_dio")
+            )
+
+            bullets.append(
+                f"{idx}) {company}: {baseline_turnover} ({baseline_period}) → "
+                f"{latest_turnover} ({latest_period}) {turnover_change}; "
+                f"DIO {baseline_dio} → {latest_dio} ({dio_change})"
+            )
+
+        return "Inventory turnover trend (last 6 quarters):\n" + "\n".join(bullets)
+
     def _format_roe_revenue_divergence(
         self, query_result: QueryResult
     ) -> Optional[str]:
@@ -584,6 +624,18 @@ class ResponseFormatter:
         if value is None:
             return "n/a"
         return f"{value:+.2f} days" if signed else f"{value:.2f} days"
+
+    @staticmethod
+    def _format_period_label(value) -> str:
+        if value is None:
+            return "Unknown period"
+        try:
+            import pandas as pd
+
+            ts = pd.to_datetime(value)
+            return ts.strftime("%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            return str(value)
 
     def _format_generic_response(
         self,

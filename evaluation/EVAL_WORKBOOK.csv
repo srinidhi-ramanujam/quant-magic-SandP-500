@@ -24413,3 +24413,137 @@ LIMIT 10;","Sector gross margin shifts:
 4) MOLSON COORS BEVERAGE CO: 32.30% (2019) → 31.50% (2023) -0.80% — moderate pressure on FY2023 revenue of $13.88B.
 5) PEPSICO INC: 55.10% (2019) → 54.20% (2023) -0.90% — moderate pressure on FY2023 revenue of $91.47B.
 6) CONAGRA BRANDS INC.: 27.70% (2019) → 26.60% (2023) -1.10% — moderate pressure on FY2023 revenue of $12.28B.",,,0.850,template,,,None,23.3525,0.0000,0.0000,0.0000,0.0000
+RUN_024,"11 Nov 2025, 1900 hours",custom,"Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",inventory_turnover_trend,"WITH provided_companies AS (
+    SELECT *
+    FROM (VALUES ('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')) AS t(company_name)
+),
+company_dim AS (
+    SELECT DISTINCT
+        c.cik,
+        pc.company_name AS requested_name,
+        c.name AS dataset_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON UPPER(c.name) = UPPER(pc.company_name)
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        s.period AS period_end,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.fp,
+        s.filed,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.period
+            ORDER BY s.filed DESC
+        ) AS period_rank
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-Q', '10-Q/A')
+      AND s.period >= DATE '2022-01-01'
+),
+latest_filings AS (
+    SELECT
+        rf.adsh,
+        rf.cik,
+        rf.period_end,
+        rf.fiscal_year,
+        rf.fp,
+        ROW_NUMBER() OVER (
+            PARTITION BY rf.cik
+            ORDER BY rf.period_end DESC
+        ) AS seq
+    FROM ranked_filings rf
+    WHERE rf.period_rank = 1
+),
+filtered_filings AS (
+    SELECT *
+    FROM latest_filings
+    WHERE seq <= 6
+),
+quarter_values AS (
+    SELECT
+        f.cik,
+        f.period_end,
+        f.fiscal_year,
+        f.fp,
+        MAX(
+            CASE
+                WHEN n.tag IN ('InventoryNet', 'Inventory', 'InventoryCurrent')
+                     AND COALESCE(n.qtrs, 0) = 0
+                THEN n.value
+            END
+        ) AS inventory,
+        MAX(
+            CASE
+                WHEN n.tag IN ('CostOfRevenue', 'CostOfGoodsSold', 'CostOfGoodsAndServicesSold')
+                     AND COALESCE(n.qtrs, 0) = 1
+                THEN n.value
+            END
+        ) AS cost_of_revenue
+    FROM filtered_filings f
+    JOIN num n
+      ON n.adsh = f.adsh
+     AND n.ddate = f.period_end
+    WHERE n.tag IN (
+        'InventoryNet',
+        'Inventory',
+        'InventoryCurrent',
+        'CostOfRevenue',
+        'CostOfGoodsSold',
+        'CostOfGoodsAndServicesSold'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY f.cik, f.period_end, f.fiscal_year, f.fp
+),
+metrics AS (
+    SELECT
+        cd.requested_name AS company,
+        CAST(q.period_end AS DATE) AS period_end,
+        q.fiscal_year,
+        q.fp,
+        q.inventory,
+        q.cost_of_revenue,
+        ROUND((q.cost_of_revenue * 4) / NULLIF(q.inventory, 0), 2) AS inventory_turnover,
+        ROUND((q.inventory / NULLIF(q.cost_of_revenue, 0)) * 365, 0) AS days_inventory_outstanding,
+        ROW_NUMBER() OVER (
+            PARTITION BY cd.requested_name
+            ORDER BY q.period_end DESC
+        ) AS seq
+    FROM quarter_values q
+    JOIN company_dim cd USING (cik)
+    WHERE q.inventory IS NOT NULL
+      AND q.cost_of_revenue IS NOT NULL
+),
+summary AS (
+    SELECT
+        company,
+        MAX(CASE WHEN seq = 1 THEN inventory_turnover END) AS latest_turnover,
+        MAX(CASE WHEN seq = 1 THEN days_inventory_outstanding END) AS latest_dio,
+        MAX(CASE WHEN seq = 1 THEN period_end END) AS latest_period,
+        MAX(CASE WHEN seq = 6 THEN inventory_turnover END) AS start_turnover,
+        MAX(CASE WHEN seq = 6 THEN days_inventory_outstanding END) AS start_dio,
+        MAX(CASE WHEN seq = 6 THEN period_end END) AS start_period
+    FROM metrics
+    GROUP BY company
+)
+SELECT
+    company,
+    latest_period AS latest_period_end,
+    start_period AS baseline_period_end,
+    latest_turnover,
+    start_turnover,
+    ROUND(latest_turnover - start_turnover, 2) AS turnover_change,
+    latest_dio,
+    start_dio,
+    ROUND(latest_dio - start_dio, 0) AS dio_change
+FROM summary
+ORDER BY turnover_change DESC, company;","Inventory turnover trend (last 6 quarters):
+1) AMAZON COM INC: 7.58x (2023-06-30) → 8.59x (2025-03-31) +1.01x; DIO 192.00 days → 170.00 days (-22.00 days)
+2) COSTCO WHOLESALE CORP /NEW: 11.21x (2023-11-30) → 11.82x (2025-04-30) +0.61x; DIO 130.00 days → 123.00 days (-7.00 days)
+3) WALMART INC.: 8.59x (2023-07-31) → 8.65x (2025-04-30) +0.06x; DIO 170.00 days → 169.00 days (-1.00 days)
+4) BEST BUY CO INC: 5.21x (2023-07-31) → 5.17x (2025-04-30) -0.04x; DIO 280.00 days → 282.00 days (+2.00 days)
+5) TARGET CORP: 5.61x (2023-07-31) → 5.25x (2025-04-30) -0.36x; DIO 260.00 days → 278.00 days (+18.00 days)
+6) HOME DEPOT, INC.: 4.94x (2023-07-31) → 4.10x (2025-04-30) -0.84x; DIO 295.00 days → 356.00 days (+61.00 days)",,,0.700,template,,,None,26.0100,0.0000,0.0000,0.0000,0.0000

@@ -390,6 +390,17 @@ class SQLGenerator:
         if "min_revenue" in missing_params:
             defaults["min_revenue"] = "5000000000"
 
+        if "company_values" in missing_params:
+            defaults[
+                "company_values"
+            ] = "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+
+        if "quarter_count" in missing_params:
+            defaults["quarter_count"] = "6"
+
+        if "min_period" in missing_params:
+            defaults["min_period"] = "2022-01-01"
+
         if "limit" in missing_params:
             defaults["limit"] = "10"
 

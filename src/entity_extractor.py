@@ -322,10 +322,15 @@ class EntityExtractor:
                     entities = self._extract_with_llm(question, context)
                     extraction_method = "llm"
                 except Exception as exc:  # noqa: BLE001
-                    self.logger.error(f"LLM extraction failed: {exc}")
-                    raise LLMAvailabilityError(
-                        f"LLM entity extraction failed: {exc}"
-                    ) from exc
+                    self.logger.error(
+                        "LLM entity extraction failed (%s); falling back to deterministic path",
+                        exc,
+                    )
+                    self.use_llm = False
+                    self.azure_client = None
+                    context.add_metadata("entity_llm_fallback_reason", str(exc))
+                    entities = self._extract_entities(question)
+                    extraction_method = "deterministic"
             else:
                 entities = self._extract_entities(question)
                 extraction_method = "deterministic"

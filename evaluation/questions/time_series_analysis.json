@@ -714,70 +714,70 @@
       "expected_answer": {
         "format": "Quarterly inventory metrics with efficiency rankings",
         "visualization": "Bar chart race showing inventory turnover leaders",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  EXTRACT(QUARTER FROM f.period_end_date) as quarter,\n  ROUND((f.cost_of_revenue * 4) / NULLIF(f.inventory, 0), 1) as inventory_turnover_ratio,\n  f.inventory / 1000000 as inventory_millions,\n  ROUND((f.inventory / NULLIF(f.cost_of_revenue, 0)) * 365, 0) as days_inventory_outstanding\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector IN ('Consumer Discretionary', 'Consumer Staples')\n  AND c.name IN ('Walmart Inc', 'Target Corporation', 'Home Depot Inc', 'Amazon.com Inc', 'Costco Wholesale Corporation', 'Best Buy Co Inc')\n  AND f.period_end_date >= '2022-07-01'\n  AND f.form_type = '10-Q'\n  AND f.inventory > 0 AND f.cost_of_revenue > 0\nORDER BY c.name, year, quarter;",
+        "sample_analysis": "WITH provided_companies AS (\n  VALUES ('WALMART INC.'), ('TARGET CORP'), ('HOME DEPOT, INC.'),\n         ('AMAZON COM INC'), ('COSTCO WHOLESALE CORP /NEW'), ('BEST BUY CO INC')\n),\ncompany_dim AS (\n  SELECT DISTINCT c.cik, pc.column0 AS company_name\n  FROM companies c\n  JOIN provided_companies pc ON UPPER(c.name) = UPPER(pc.column0)\n),\nranked_filings AS (\n  SELECT s.adsh, s.cik, s.period AS period_end, s.fp,\n         ROW_NUMBER() OVER (PARTITION BY s.cik, s.period ORDER BY s.filed DESC) AS period_rank\n  FROM sub s\n  JOIN company_dim cd USING (cik)\n  WHERE s.form IN ('10-Q','10-Q/A')\n),\nlatest AS (\n  SELECT rf.adsh, rf.cik, rf.period_end, rf.fp,\n         ROW_NUMBER() OVER (PARTITION BY rf.cik ORDER BY rf.period_end DESC) AS seq\n  FROM ranked_filings rf\n  WHERE period_rank = 1\n),\nfiltered AS (\n  SELECT * FROM latest WHERE seq <= 6\n),\nquarter_values AS (\n  SELECT f.cik, f.period_end,\n         MAX(CASE WHEN n.tag IN ('InventoryNet','Inventory','InventoryCurrent') AND COALESCE(n.qtrs,0)=0 THEN n.value END) AS inventory,\n         MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsSold','CostOfGoodsAndServicesSold') AND COALESCE(n.qtrs,0)=1 THEN n.value END) AS cost_of_revenue\n  FROM filtered f\n  JOIN num n ON n.adsh = f.adsh AND n.ddate = f.period_end\n  WHERE n.tag IN (\n    'InventoryNet','Inventory','InventoryCurrent',\n    'CostOfRevenue','CostOfGoodsSold','CostOfGoodsAndServicesSold'\n  )\n    AND COALESCE(TRIM(n.segments),'') = ''\n    AND COALESCE(TRIM(n.coreg),'') = ''\n  GROUP BY f.cik, f.period_end\n),\nsummary AS (\n  SELECT cd.company_name AS company,\n         MAX(CASE WHEN seq = 1 THEN period_end END) AS latest_period,\n         MAX(CASE WHEN seq = 6 THEN period_end END) AS baseline_period,\n         MAX(CASE WHEN seq = 1 THEN ROUND((cost_of_revenue * 4) / NULLIF(inventory, 0), 2) END) AS latest_turnover,\n         MAX(CASE WHEN seq = 6 THEN ROUND((cost_of_revenue * 4) / NULLIF(inventory, 0), 2) END) AS baseline_turnover,\n         MAX(CASE WHEN seq = 1 THEN ROUND((inventory / NULLIF(cost_of_revenue, 0)) * 365, 0) END) AS latest_dio,\n         MAX(CASE WHEN seq = 6 THEN ROUND((inventory / NULLIF(cost_of_revenue, 0)) * 365, 0) END) AS baseline_dio\n  FROM quarter_values q\n  JOIN filtered f USING (cik, period_end)\n  JOIN company_dim cd USING (cik)\n  GROUP BY company\n)\nSELECT company,\n       latest_period,\n       baseline_period,\n       latest_turnover,\n       baseline_turnover,\n       ROUND(latest_turnover - baseline_turnover, 2) AS turnover_change,\n       latest_dio,\n       baseline_dio,\n       ROUND(latest_dio - baseline_dio, 0) AS dio_change\nFROM summary\nORDER BY turnover_change DESC;",
         "sample_data": [
           {
-            "company": "Walmart Inc",
-            "Q3_2022": "8.1x",
-            "Q2_2024": "8.9x",
-            "improvement": "+0.8x",
-            "DIO_improvement": "-6 days",
-            "efficiency_rank": "#1"
-          },
-          {
-            "company": "Target Corporation",
-            "Q3_2022": "6.2x",
-            "Q2_2024": "7.1x",
-            "improvement": "+0.9x",
-            "DIO_improvement": "-8 days",
-            "efficiency_rank": "#2"
-          },
-          {
-            "company": "Home Depot Inc",
-            "Q3_2022": "4.8x",
-            "Q2_2024": "5.2x",
-            "improvement": "+0.4x",
-            "DIO_improvement": "-4 days",
-            "efficiency_rank": "#5"
-          },
-          {
             "company": "Amazon.com Inc",
-            "Q3_2022": "8.7x",
-            "Q2_2024": "9.4x",
-            "improvement": "+0.7x",
-            "DIO_improvement": "-5 days",
-            "efficiency_rank": "#1"
+            "baseline": "Q2 FY2023",
+            "latest": "Q1 FY2025",
+            "turnover_change": "+1.01x (7.58x → 8.59x)",
+            "dio_change": "-22 days",
+            "note": "Robotics-led replenishment kept DIO near 170 days despite SKU growth."
           },
           {
-            "company": "Costco Wholesale Corporation",
-            "Q3_2022": "11.8x",
-            "Q2_2024": "12.3x",
-            "improvement": "+0.5x",
-            "DIO_improvement": "-2 days",
-            "efficiency_rank": "#1"
+            "company": "Costco Wholesale",
+            "baseline": "Q1 FY2024",
+            "latest": "Q3 FY2025",
+            "turnover_change": "+0.61x (11.21x → 11.82x)",
+            "dio_change": "-7 days",
+            "note": "Membership model still delivers >11x turnover with stable 120-day DIO."
+          },
+          {
+            "company": "Walmart Inc.",
+            "baseline": "Q2 FY2024",
+            "latest": "Q1 FY2026",
+            "turnover_change": "+0.06x (8.59x → 8.65x)",
+            "dio_change": "-1 day",
+            "note": "Automation kept turnover in the 8–9x range with flat working capital."
+          },
+          {
+            "company": "Target Corp",
+            "baseline": "Q2 FY2024",
+            "latest": "Q1 FY2025",
+            "turnover_change": "-0.36x (5.61x → 5.25x)",
+            "dio_change": "+18 days",
+            "note": "Recovery stalled as discretionary softness rebuilt inventory buffers."
+          },
+          {
+            "company": "Home Depot Inc.",
+            "baseline": "Q2 FY2024",
+            "latest": "Q1 FY2025",
+            "turnover_change": "-0.84x (4.94x → 4.10x)",
+            "dio_change": "+61 days",
+            "note": "Big-ticket weakness lifted DIO above 350 days."
           },
           {
             "company": "Best Buy Co Inc",
-            "Q3_2022": "5.1x",
-            "Q2_2024": "5.5x",
-            "improvement": "+0.4x",
-            "DIO_improvement": "-3 days",
-            "efficiency_rank": "#6"
+            "baseline": "Q2 FY2024",
+            "latest": "Q1 FY2026",
+            "turnover_change": "-0.04x (5.21x → 5.17x)",
+            "dio_change": "+2 days",
+            "note": "Seasonal volatility remains, but turnover held near 5x."
           }
         ],
-        "business_insight": "Major retailers achieved significant inventory efficiency improvements from Q3 2022 to Q2 2024, with Costco leading at 12.3x turnover and Target showing the most dramatic improvement (+0.9x). The gains reflect widespread adoption of AI-driven demand forecasting, automated replenishment systems, and supply chain optimization following post-COVID disruptions. Amazon and Walmart leveraged their massive scale and technology investments to maintain high-efficiency operations while competitors struggled with traditional inventory management approaches.",
+        "business_insight": "Only Amazon and Costco posted material inventory-efficiency gains over the last six quarters, trimming days-in-inventory by 22 and 7 days respectively. Walmart held steady near 8.6x turnover, while discretionary chains (Target, Home Depot, Best Buy) saw turnover slip as softer demand forced extra buffer stock.",
         "key_findings": [
-          "Costco maintained highest inventory turnover (12.3x) through membership model driving predictable demand patterns",
-          "Target achieved largest improvement (+0.9x) through technology-driven inventory optimization and supplier collaboration",
-          "Amazon sustained high efficiency (9.4x) despite massive SKU complexity through AI-powered demand forecasting",
-          "Walmart improved to 8.9x turnover through automated replenishment and regional distribution optimization",
-          "Traditional retailers (Home Depot, Best Buy) showed modest gains but lagged efficiency leaders by 2-4x"
+          "Amazon maintains ~9x turnover despite SKU creep, showing tangible benefits from robotics-led replenishment.",
+          "Costco kept DIO close to 120 days, proving the membership flywheel still delivers best-in-class working-capital velocity.",
+          "Target and Home Depot face the sharpest deterioration (–0.36x and –0.84x, respectively) as discretionary categories stall.",
+          "Walmart’s automated replenishment capped DIO losses to a single day, highlighting scale advantages.",
+          "Best Buy’s turnover remains volatile but broadly flat, emphasizing the need for faster attachment of services to limit inventory drag."
         ],
         "investment_implications": [
-          "High inventory turnover indicates superior demand forecasting capabilities and operational efficiency",
-          "Companies achieving >8x turnover (Costco, Amazon, Walmart) demonstrate sustainable competitive advantages",
-          "Inventory efficiency improvements translate directly to working capital optimization and free cash flow generation",
-          "Retailers with improving turnover trends signal successful technology adoption and supply chain modernization"
+          "Investors looking for defensive cash conversion should emphasize retailers with >8x turnover (Amazon, Costco, Walmart).",
+          "Weakening turnover at Target and Home Depot signals lingering consumer caution and higher working-capital requirements.",
+          "Monitoring DIO deltas provides an early warning for margin pressure before it shows up in gross profit lines.",
+          "Supply-chain automation remains a decisive differentiator—retailers without it risk widening efficiency gaps."
         ]
       },
       "retrieval_test_criteria": {

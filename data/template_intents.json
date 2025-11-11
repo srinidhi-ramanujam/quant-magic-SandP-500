@@ -81,9 +81,9 @@
   {
     "template_id": "sector_company_count",
     "intent_text": "Count number of companies in a specific sector",
-    "pattern": "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)",
+    "pattern": "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)?",
     "example_questions": [
-      "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)"
+      "how many.*(companies|firms).*(in|from|within|are in).*(sector|industry)?"
     ],
     "metadata": {
       "parameters": [
@@ -420,6 +420,23 @@
         "limit"
       ],
       "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "inventory_turnover_trend",
+    "intent_text": "Track rolling inventory turnover and days-inventory trend for named companies",
+    "pattern": "(?i)(inventory turnover|inventory efficiency|days inventory).*(quarter|trend|last)",
+    "example_questions": [
+      "Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",
+      "Which Consumer Staples companies improved days inventory the most over the past year?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "quarter_count",
+        "min_period"
+      ],
+      "intent_category": "time_series_efficiency"
     }
   },
   {
