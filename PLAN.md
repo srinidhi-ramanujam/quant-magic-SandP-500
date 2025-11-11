@@ -250,6 +250,7 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Ground-truthed TS_003 with FY2021-FY2023 total-debt reductions (AT&T, AIG, US Bancorp, Deere, Apple) and shipped the `debt_reduction_progression` template for leverage questions.
 - Ground-truthed TS_004 with FY2019-FY2023 Healthcare current-ratio trends (Hologic, ResMed, Zoetis, Cooper, STERIS, IDEXX) and added the `current_ratio_trend` template to the catalog/FAISS store.
 - Ground-truthed TS_005 (FY2022→FY2023 Technology operating-margin rebound), refreshed the JSON/validator artifacts with DuckDB-sourced numbers, and registered the new `operating_margin_delta` template (metadata + FAISS) so margin-rebound questions route deterministically.
+- Ground-truthed TS_007 by adding the `working_capital_cash_cycle_trend` template, logging FY2020→FY2023 working-capital day reductions (airlines, rail, industrials) and updating JSON/validator artifacts so the CLI produces the curated list deterministically.
 - Ground-truthed TS_006 with the `roe_revenue_divergence` template, which now powers ROE-decline-vs-revenue-growth questions end-to-end (DuckDB numbers captured in JSON + validator, FAISS rebuilt, CLI verified).
 
 ---

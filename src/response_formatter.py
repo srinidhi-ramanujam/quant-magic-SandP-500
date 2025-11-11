@@ -9,6 +9,7 @@ For Phase 0, handles:
 
 from datetime import datetime
 from typing import Callable, Dict, Optional
+import math
 
 import pandas as pd
 
@@ -31,6 +32,9 @@ class ResponseFormatter:
             "current_ratio_trend": self._format_current_ratio_trend,
             "operating_margin_delta": self._format_operating_margin_delta,
             "roe_revenue_divergence": self._format_roe_revenue_divergence,
+            "working_capital_cash_cycle_trend": (
+                self._format_working_capital_cash_cycle_trend
+            ),
         }
 
     def format(
@@ -409,6 +413,69 @@ class ResponseFormatter:
 
         return "ROE compression despite revenue growth:\n" + "\n".join(bullets)
 
+    def _format_working_capital_cash_cycle_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No working-capital improvements found for the requested period."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        wc_cols = sorted(
+            [
+                col
+                for col in data.columns
+                if col.startswith("wc_")
+                and col.endswith("_days")
+                and col.split("_")[1].isdigit()
+            ]
+        )
+        if len(wc_cols) < 2:
+            return None
+        start_col, end_col = wc_cols[0], wc_cols[-1]
+        start_year = start_col.split("_")[1]
+        end_year = end_col.split("_")[1]
+
+        ccc_cols = sorted(
+            [
+                col
+                for col in data.columns
+                if col.startswith("ccc_")
+                and col.endswith("_days")
+                and col.split("_")[1].isdigit()
+            ]
+        )
+
+        bullets = []
+        for idx, (_, row) in enumerate(data.head(5).iterrows(), start=1):
+            name = row.get("name", "Unknown company")
+            start_wc = self._format_days(self._clean_numeric(row.get(start_col)))
+            end_wc = self._format_days(self._clean_numeric(row.get(end_col)))
+            change_wc = self._format_days(
+                self._clean_numeric(row.get("wc_change_days")), signed=True
+            )
+
+            ccc_summary = ""
+            if len(ccc_cols) >= 2:
+                ccc_start_col, ccc_end_col = ccc_cols[0], ccc_cols[-1]
+                ccc_start = self._clean_numeric(row.get(ccc_start_col))
+                ccc_end = self._clean_numeric(row.get(ccc_end_col))
+                ccc_change = self._clean_numeric(row.get("ccc_change_days"))
+                if ccc_start is not None and ccc_end is not None:
+                    ccc_summary = (
+                        f" | CCC {self._format_days(ccc_start)} ({ccc_start_col.split('_')[1]}) → "
+                        f"{self._format_days(ccc_end)} ({ccc_end_col.split('_')[1]}) "
+                        f"{self._format_days(ccc_change, signed=True)}"
+                    )
+
+            bullets.append(
+                f"{idx}) {name}: working capital days {start_wc} ({start_year}) → "
+                f"{end_wc} ({end_year}) {change_wc}{ccc_summary or ' | CCC data n/a'}"
+            )
+
+        return "Working capital leaders (days):\n" + "\n".join(bullets)
+
     @staticmethod
     def _get_first_value(row, keys) -> Optional[float]:
         for key in keys:
@@ -448,6 +515,12 @@ class ResponseFormatter:
             return f"{value:+.2f}x"
         return f"{value:.2f}x"
 
+    @staticmethod
+    def _format_days(value, signed: bool = False) -> str:
+        if value is None:
+            return "n/a"
+        return f"{value:+.2f} days" if signed else f"{value:.2f} days"
+
     def _format_generic_response(
         self,
         query_result: QueryResult,
@@ -474,6 +547,19 @@ class ResponseFormatter:
                 return f"Found {query_result.row_count} results. Sample: {summary}"
 
         return f"Query returned {query_result.row_count} rows."
+
+    @staticmethod
+    def _clean_numeric(value):
+        if value is None:
+            return None
+        try:
+            import math
+
+            if isinstance(value, float) and math.isnan(value):
+                return None
+        except (ValueError, TypeError):
+            return value
+        return value
 
     def format_error(
         self, error: Exception, context: RequestContext, debug_mode: bool = False

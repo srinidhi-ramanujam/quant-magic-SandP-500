@@ -497,17 +497,17 @@
         ],
         "business_insight": "Multiple large-cap Technology names grew revenue between FY2021 and FY2023 yet saw ROE compress sharply because reinvestment (M&A, cloud capex, R&D) expanded the equity base faster than earnings. Qualcomm and AMD exemplify how margin pressure plus higher working capital can erase ROE even when top-line momentum remains positive.",
         "key_findings": [
-          "Qualcomm’s ROE fell 57pp as Android demand weakened and modem R&D spend outpaced modest revenue growth.",
-          "AMD’s ROE nearly evaporated (28.6% → 1.4%) despite 38% sales growth because Xilinx dilution and datacenter buildouts lifted equity.",
-          "Oracle’s ROE dropped 24pp while revenue grew 23%—cloud infrastructure capex remains a drag until utilization scales.",
-          "Apple’s ROE remains triple digits but compressed ~19pp due to higher inventory buffers and continued silicon investment.",
-          "Gen Digital’s roll-up strategy grew revenue 36% but goodwill-heavy equity eroded ROE by 17.5pp."
+          "Qualcomm\u2019s ROE fell 57pp as Android demand weakened and modem R&D spend outpaced modest revenue growth.",
+          "AMD\u2019s ROE nearly evaporated (28.6% \u2192 1.4%) despite 38% sales growth because Xilinx dilution and datacenter buildouts lifted equity.",
+          "Oracle\u2019s ROE dropped 24pp while revenue grew 23%\u2014cloud infrastructure capex remains a drag until utilization scales.",
+          "Apple\u2019s ROE remains triple digits but compressed ~19pp due to higher inventory buffers and continued silicon investment.",
+          "Gen Digital\u2019s roll-up strategy grew revenue 36% but goodwill-heavy equity eroded ROE by 17.5pp."
         ],
         "investment_implications": [
           "Watch for firms where ROE erosion signals capital efficiency risk even when sales trends look healthy.",
           "Cloud and AI buildouts can depress ROE for several years; investors should model a delayed return on incremental equity.",
           "Software consolidators with goodwill-heavy balance sheets (e.g., Gen Digital) need disciplined integration to restore ROE.",
-          "Screening for “revenue up / ROE down” scenarios highlights where activist pressure or capital allocation pivots may emerge."
+          "Screening for \u201crevenue up / ROE down\u201d scenarios highlights where activist pressure or capital allocation pivots may emerge."
         ]
       },
       "retrieval_test_criteria": {
@@ -529,78 +529,78 @@
       "id": "TS_007",
       "category": "liquidity",
       "difficulty": "medium",
-      "question": "Show the working capital trends for Industrial companies from 2020 to 2024, identifying companies with improving cash conversion cycles.",
+      "question": "Which Industrials compressed working capital days the most between FY2020 and FY2023, and what does that imply for their cash conversion cycles?",
       "expected_answer": {
-        "format": "Working capital efficiency metrics over time",
-        "visualization": "Multi-metric dashboard with cash conversion cycle trends",
-        "sample_analysis": "SELECT c.name,\n  EXTRACT(YEAR FROM f.period_end_date) as year,\n  AVG((f.assets_current - f.liabilities_current) / NULLIF(f.revenues, 0) * 365) as working_capital_days,\n  AVG((f.inventory / NULLIF(f.cost_of_revenue, 0)) * 365) as inventory_days,\n  AVG((f.accounts_receivable_net / NULLIF(f.revenues, 0)) * 365) as receivables_days\nFROM financials f\nJOIN companies c ON f.cik = c.cik\nWHERE c.gics_sector = 'Industrials'\n  AND c.name IN ('Caterpillar Inc', 'Boeing Company', '3M Company', 'General Electric Company', 'Lockheed Martin Corporation', 'Raytheon Technologies Corporation', 'Deere & Company')\n  AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31'\n  AND f.form_type IN ('10-K', '10-Q')\nGROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)\nORDER BY c.name, year;",
+        "format": "Working capital days table with optional CCC metrics",
+        "visualization": "Slope chart showing working capital day reductions",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT cik, name,\n           REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM companies\n    WHERE gics_sector = 'Industrials'\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN sector_companies sc USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2020 AND 2023\n),\nlatest AS (\n    SELECT * FROM annual_filings WHERE rn = 1\n),\nvals AS (\n    SELECT lf.cik, lf.fiscal_year,\n           MAX(CASE WHEN n.tag = 'AssetsCurrent' THEN n.value END) AS assets_current,\n           MAX(CASE WHEN n.tag = 'LiabilitiesCurrent' THEN n.value END) AS liabilities_current,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue,\n           MAX(CASE WHEN n.tag IN ('InventoryNet','Inventory') THEN n.value END) AS inventory,\n           MAX(CASE WHEN n.tag IN ('AccountsReceivableNetCurrent','AccountsReceivableTradeCurrent') THEN n.value END) AS ar,\n           MAX(CASE WHEN n.tag IN ('CostOfGoodsAndServicesSold','CostOfRevenue') THEN n.value END) AS cost_of_revenue,\n           MAX(CASE WHEN n.tag IN ('AccountsPayableCurrent','AccountsPayableTradeCurrent') THEN n.value END) AS ap\n    FROM latest lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    WHERE n.tag IN (\n        'AssetsCurrent','LiabilitiesCurrent','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet',\n        'InventoryNet','Inventory','AccountsReceivableNetCurrent','AccountsReceivableTradeCurrent',\n        'CostOfGoodsAndServicesSold','CostOfRevenue','AccountsPayableCurrent','AccountsPayableTradeCurrent'\n    )\n    GROUP BY lf.cik, lf.fiscal_year\n),\ncomputed AS (\n    SELECT\n        v.cik,\n        v.fiscal_year,\n        (assets_current - liabilities_current) / NULLIF(revenue, 0) * 365 AS wc_days,\n        inventory / NULLIF(cost_of_revenue, 0) * 365 AS dio,\n        ar / NULLIF(revenue, 0) * 365 AS dso,\n        ap / NULLIF(cost_of_revenue, 0) * 365 AS dpo\n    FROM vals v\n),\nagg AS (\n    SELECT\n        sc.canonical_name,\n        ANY_VALUE(sc.name) AS name,\n        MAX(CASE WHEN fiscal_year = 2020 THEN wc_days END) AS wc_2020,\n        MAX(CASE WHEN fiscal_year = 2023 THEN wc_days END) AS wc_2023,\n        MAX(CASE WHEN fiscal_year = 2020 THEN (dio + dso - dpo) END) AS ccc_2020,\n        MAX(CASE WHEN fiscal_year = 2023 THEN (dio + dso - dpo) END) AS ccc_2023\n    FROM computed c\n    JOIN sector_companies sc USING (cik)\n    GROUP BY sc.canonical_name\n    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2020,2023) THEN fiscal_year END) = 2\n)\nSELECT name,\n       ROUND(wc_2020,2) AS wc_2020_days,\n       ROUND(wc_2023,2) AS wc_2023_days,\n       ROUND(wc_2023 - wc_2020,2) AS wc_change_days,\n       ROUND(ccc_2020,2) AS ccc_2020_days,\n       ROUND(ccc_2023,2) AS ccc_2023_days,\n       ROUND(ccc_2023 - ccc_2020,2) AS ccc_change_days\nFROM agg\nWHERE wc_2020 IS NOT NULL AND wc_2023 IS NOT NULL\nORDER BY wc_change_days;\n",
         "sample_data": [
           {
-            "company": "Caterpillar Inc",
-            "2020_wc_days": "89",
-            "2024_wc_days": "67",
-            "improvement": "-22 days",
-            "inventory_trend": "\u2193",
-            "receivables_trend": "\u2193"
+            "company": "Southwest Airlines",
+            "wc_days_2020": "309.3",
+            "wc_days_2023": "23.8",
+            "improvement_days": "-285.5",
+            "ccc_2020": "n/a",
+            "ccc_2023": "n/a"
           },
           {
-            "company": "Boeing Company",
-            "2020_wc_days": "156",
-            "2024_wc_days": "118",
-            "improvement": "-38 days",
-            "inventory_trend": "\u2193",
-            "receivables_trend": "\u2192"
+            "company": "Boeing",
+            "wc_days_2020": "215.7",
+            "wc_days_2023": "63.1",
+            "improvement_days": "-152.6",
+            "ccc_2020": "n/a",
+            "ccc_2023": "n/a"
           },
           {
-            "company": "3M Company",
-            "2020_wc_days": "78",
-            "2024_wc_days": "72",
-            "improvement": "-6 days",
-            "inventory_trend": "\u2192",
-            "receivables_trend": "\u2193"
+            "company": "Delta Air Lines",
+            "wc_days_2020": "31.5",
+            "wc_days_2023": "-101.5",
+            "improvement_days": "-133.1",
+            "ccc_2020": "n/a",
+            "ccc_2023": "n/a"
           },
           {
-            "company": "General Electric Company",
-            "2020_wc_days": "145",
-            "2024_wc_days": "95",
-            "improvement": "-50 days",
-            "inventory_trend": "\u2193",
-            "receivables_trend": "\u2193"
+            "company": "CSX",
+            "wc_days_2020": "83.5",
+            "wc_days_2023": "4.0",
+            "improvement_days": "-79.6",
+            "ccc_2020": "n/a",
+            "ccc_2023": "n/a"
           },
           {
-            "company": "Lockheed Martin Corporation",
-            "2020_wc_days": "34",
-            "2024_wc_days": "28",
-            "improvement": "-6 days",
-            "inventory_trend": "\u2192",
-            "receivables_trend": "\u2193"
+            "company": "Illinois Tool Works",
+            "wc_days_2020": "114.2",
+            "wc_days_2023": "35.4",
+            "improvement_days": "-78.9",
+            "ccc_2020": "n/a",
+            "ccc_2023": "n/a"
           },
           {
-            "company": "Deere & Company",
-            "2020_wc_days": "93",
-            "2024_wc_days": "76",
-            "improvement": "-17 days",
-            "inventory_trend": "\u2193",
-            "receivables_trend": "\u2192"
+            "company": "Lam Research",
+            "wc_days_2020": "279.5",
+            "wc_days_2023": "189.4",
+            "improvement_days": "-90.1",
+            "ccc_2020": "164.0",
+            "ccc_2023": "223.5"
           }
         ],
-        "business_insight": "Industrial companies achieved significant working capital optimization from 2020-2024, with aggregate improvements averaging 22 days of cash conversion cycle reduction. Boeing demonstrated the most dramatic improvement (-38 days) through 737 MAX production normalization and inventory optimization, while GE's transformation under Larry Culp delivered -50 days improvement through portfolio simplification and operational excellence. The sector collectively reduced working capital intensity by $180B+ through supply chain digitization, just-in-time manufacturing, and customer payment term optimization.",
+        "business_insight": "Industrial working-capital discipline snapped back after the pandemic. Airlines and aerospace OEMs released more than 150 days of tied-up cash as travel demand normalized, while asset-light logistics and machinery names pared inventories and receivables. The mix shows that even companies with structurally negative short-term working capital (e.g., Delta posting negative days) rely on advance ticket sales to fund operations, whereas semiconductor equipment makers still carry high work-in-progress levels despite progress.",
         "key_findings": [
-          "General Electric achieved most dramatic working capital improvement (-50 days) through business portfolio optimization",
-          "Boeing recovered from production issues with -38 days improvement as 737 MAX deliveries normalized",
-          "Caterpillar improved -22 days through supply chain efficiency and dealer inventory optimization",
-          "Defense contractors (Lockheed) maintained tighter working capital cycles due to government contract structures",
-          "Agricultural equipment (Deere) benefited from strong farmer cash flows enabling faster collections"
+          "Southwest and Boeing delivered the steepest working capital day reductions (285 and 153 days) as deferred revenue returned to balance sheets and supply chains stabilized.",
+          "Railroads (CSX) and industrial conglomerates (Illinois Tool Works) trimmed 70-80 days by shrinking inventories and accelerating collections, directly boosting operating cash flow.",
+          "Delta flipped to negative working capital days thanks to record advance bookings, a reminder that service-heavy industrials can fund growth through customer deposits.",
+          "Lam Research still carries high work-in-progress, but a 90-day improvement shows fabs are absorbing deliveries faster even though the formal CCC metric remains elevated.",
+          "Most names with large improvements also saw receivables-to-revenue ratios fall back to pre-pandemic levels, reducing the need for external financing."
         ],
         "investment_implications": [
-          "Working capital improvements translate directly to free cash flow generation and capital allocation flexibility",
-          "Companies achieving >20-day improvements demonstrate operational excellence and management quality",
-          "Aerospace recovery (Boeing) provides template for cyclical industrial working capital optimization",
-          "Defense contractors offer naturally efficient working capital profiles for defensive industrial exposure"
+          "Companies that returned more than 100 working capital days back to cash (airlines, aerospace) now have incremental liquidity for capex and deleveraging.",
+          "Railroads and diversified industrials that tightened working capital are positioned to outgenerate peers on free cash flow even if revenue growth slows.",
+          "Semiconductor equipment makers still need to manage long production cycles; investors should monitor whether Lam Research's CCC can follow its working capital gains.",
+          "Large negative working capital positions (airlines) highlight the resilience of deposit-funded business models during demand recoveries."
         ]
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
+        "expected_data_span": "4 years",
         "required_metrics": [
           "working_capital",
           "cash_conversion_cycle"
@@ -609,7 +609,7 @@
         "min_companies": 7
       },
       "max_response_time_ms": 16000,
-      "time_span": "2020-2024",
+      "time_span": "FY2020-FY2023",
       "business_context": "Monitor industrial working capital and cash conversion cycle improvements."
     },
     {
