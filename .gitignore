@@ -78,3 +78,6 @@ artifacts/
 # Frontend artefacts
 frontend/node_modules/
 frontend/dist/
+
+# Local logs
+.logs/

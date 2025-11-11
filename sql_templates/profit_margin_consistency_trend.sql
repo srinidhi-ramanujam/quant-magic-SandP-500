@@ -50,7 +50,7 @@ values AS (
 margins AS (
     SELECT
         sc.canonical_name,
-        ANY_VALUE(sc.name) AS display_name,
+        sc.name AS display_name,
         v.fiscal_year,
         v.net_income / NULLIF(v.revenue, 0) AS profit_margin
     FROM values v

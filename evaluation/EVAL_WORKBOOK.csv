@@ -24099,3 +24099,317 @@ WHERE rn = 1
 ",Count: 346,"{""value"": 349, ""type"": ""numeric"", ""tolerance"": {""absolute"": 2}}",3,0.7,template,,,,0.1059,0.0,0.0,0.0,0.0
 RUN_001,"06 Nov 2025, 1300 hours",simple,Which sector has the most companies in our S&P 500 dataset?,sector_with_most_companies,"SELECT gics_sector, COUNT(*) as count FROM companies WHERE gics_sector IS NOT NULL GROUP BY gics_sector ORDER BY count DESC LIMIT 1",AT&T INC is in the Financials sector.,"{""value"": ""Other"", ""type"": ""text""}",1,0.8,template,,,,25.0958,0.0,0.0,0.0,0.0
 RUN_001,"06 Nov 2025, 1300 hours",simple,How many S&P 500 companies are in the Information Technology sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%information technology%'),There are 165 companies in the Information Technology sector.,"{""value"": 165, ""type"": ""numeric"", ""tolerance"": {""absolute"": 5}}",5,0.95,template,,,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1496, 'completion_tokens': 231}, 'latency_ms': 4122, 'success': True}]",4.1471,0.0,0.0,0.0,0.0
+RUN_022,"11 Nov 2025, 1600 hours",time_series,Which Technology companies have shown the most consistent profitability improvement over the last 5 years (2019-2023)?,profit_margin_consistency_trend,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies
+    WHERE (UPPER('Information Technology') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Information Technology%'))
+),
+base_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2019 AND 2023
+),
+filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM base_filings
+    WHERE rn = 1
+),
+values AS (
+    SELECT
+        f.cik,
+        f.fiscal_year,
+        MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'Revenues',
+                    'RevenueFromContractWithCustomerExcludingAssessedTax',
+                    'SalesRevenueNet'
+                ) THEN n.value
+            END
+        ) AS revenue
+    FROM filings f
+    JOIN num n ON n.adsh = f.adsh AND n.ddate = f.period
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet'
+    )
+    GROUP BY f.cik, f.fiscal_year
+),
+margins AS (
+    SELECT
+        sc.canonical_name,
+        sc.name AS display_name,
+        v.fiscal_year,
+        v.net_income / NULLIF(v.revenue, 0) AS profit_margin
+    FROM values v
+    JOIN sector_companies sc USING (cik)
+    WHERE v.net_income IS NOT NULL
+      AND v.revenue IS NOT NULL
+),
+ordered AS (
+    SELECT
+        m.*,
+        LEAD(m.profit_margin) OVER (PARTITION BY m.canonical_name ORDER BY m.fiscal_year) AS next_margin,
+        LEAD(m.fiscal_year) OVER (PARTITION BY m.canonical_name ORDER BY m.fiscal_year) AS next_year
+    FROM margins m
+)
+SELECT
+    display_name AS name,
+    ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END) * 100, 2) AS margin_2019_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END) * 100, 2) AS margin_2020_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END) * 100, 2) AS margin_2021_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END) * 100, 2) AS margin_2022_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) * 100, 2) AS margin_2023_pct,
+    ROUND(
+        (MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))
+        * 100,
+        2
+    ) AS improvement_pct,
+    SUM(
+        CASE
+            WHEN next_year = fiscal_year + 1
+             AND next_margin IS NOT NULL
+             AND next_margin >= profit_margin THEN 1
+            ELSE 0
+        END
+    ) AS consistency_steps
+FROM ordered
+GROUP BY display_name
+HAVING COUNT(DISTINCT fiscal_year) = 5
+ORDER BY consistency_steps DESC, improvement_pct DESC, display_name
+LIMIT 5;","Top Technology profit margin improvers (FY2019-FY2023):
+1) ON SEMICONDUCTOR CORP: 3.84% (2019) → 26.46% (2023) +22.62% | Consistency steps: 4.0
+2) AUTOMATIC DATA PROCESSING INC: 16.17% (2019) → 18.94% (2023) +2.77% | Consistency steps: 4.0
+3) EMERSON ELECTRIC CO: 12.55% (2019) → 87.17% (2023) +74.62% | Consistency steps: 3.0
+4) UBER TECHNOLOGIES, INC: -60.13% (2019) → 5.06% (2023) +65.19% | Consistency steps: 3.0
+5) FIRST SOLAR, INC.: -3.75% (2019) → 25.03% (2023) +28.79% | Consistency steps: 3.0","{""type"": ""multi_year_analysis"", ""validation_method"": ""duckdb_sql_on_parquet"", ""answer_pattern"": ""Rank technology companies by 5-year profit margin improvement and monotonic consistency."", ""format"": ""Multi-year table with profit margins"", ""visualization"": ""Line chart showing profit margin trends"", ""data_table"": {""columns"": [""Company"", ""2019_Margin_%"", ""2020_Margin_%"", ""2021_Margin_%"", ""2022_Margin_%"", ""2023_Margin_%"", ""5Yr_Improvement_pp"", ""Consistency_Steps""], ""sample_data"": [[""ON Semiconductor"", ""3.84"", ""4.46"", ""14.98"", ""22.85"", ""26.46"", ""+22.62"", ""4 / 4""], [""Automatic Data Processing"", ""16.17"", ""16.91"", ""17.32"", ""17.87"", ""18.94"", ""+2.77"", ""4 / 4""], [""Emerson Electric"", ""12.55"", ""11.70"", ""12.61"", ""16.45"", ""87.17"", ""+74.62"", ""3 / 4""], [""Uber Technologies"", ""-60.13"", ""-54.48"", ""-2.84"", ""-28.68"", ""5.06"", ""+65.19"", ""3 / 4""], [""First Solar"", ""-3.75"", ""14.69"", ""16.03"", ""-1.69"", ""25.03"", ""+28.79"", ""3 / 4""]]}, ""business_insight"": ""Semiconductor suppliers and recurring-revenue platforms are the only tech cohorts delivering four straight years of margin improvement; heavy transformation stories still show volatility but the slope is finally positive."", ""key_findings"": [""ON Semiconductor expanded net profit margin from 3.84% in FY2019 to 26.46% in FY2023 (+22.62pp) thanks to silicon-carbide mix and disciplined capex, delivering 4/4 positive steps."", ""ADP inched margins from 16.17% to 18.94% with subscription automation and pricing lift\u2014steady 0.5-0.7pp annual gains make it the benchmark compounder."", ""Uber swung from -60% to +5% margins as take rates and cost leverage improved post-pandemic; volatility remains but the profitability breakthrough is tangible."", ""Emerson\u2019s FY2023 margin spike to 87.17% is tied to asset divestiture gains, highlighting the need to flag non-recurring uplift when ranking \u201cimprovements.\u201d""], ""investment_implications"": [""Focus on firms showing structural, not just cyclical, margin expansion (ADP, ON Semi) for core holdings."", ""Turnaround names (Uber, First Solar) carry higher volatility but can rapidly add 25-65pp of margin once scale and mix inflect; size positions accordingly."", ""CFO teams should annotate one-time gains (e.g., Emerson disposals) before feeding automated storytellers, so downstream answers stay decision grade.""], ""sample_analysis"": ""WITH tech_companies AS (\n    SELECT DISTINCT cik, name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Information Technology'\n),\nbase_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN tech_companies t USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nfilings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM base_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT f.cik, f.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM filings f\n    JOIN read_parquet('data/parquet/num.parquet') n\n      ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n    SELECT t.name, v.cik, v.fiscal_year, v.net_income, v.revenue,\n           v.net_income / NULLIF(v.revenue, 0) AS profit_margin\n    FROM values v\n    JOIN tech_companies t ON v.cik = t.cik\n    WHERE v.net_income IS NOT NULL\n      AND v.revenue IS NOT NULL\n),\nordered AS (\n    SELECT m.*,\n           LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin,\n           LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year\n    FROM margins m\n)\nSELECT name,\n       ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END)*100, 2) AS margin_2019_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END)*100, 2) AS margin_2020_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END)*100, 2) AS margin_2021_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END)*100, 2) AS margin_2022_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END)*100, 2) AS margin_2023_pct,\n       ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))*100, 2) AS improvement_pct,\n       SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps\nFROM ordered\nGROUP BY name\nHAVING COUNT(DISTINCT fiscal_year) = 5\nORDER BY consistency_steps DESC, improvement_pct DESC, name\nLIMIT 5;""}",,0.950,template,,,None,0.4613,0.0000,0.0000,0.0000,0.0000
+RUN_022,"11 Nov 2025, 1600 hours",time_series,"How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?",gross_margin_trend_sector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies
+    WHERE (UPPER('Consumer Staples') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Consumer Staples%'))
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A','20-F')
+      AND s.fy BETWEEN 2019 AND 2023
+),
+annual_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM ranked_filings
+    WHERE rn = 1
+),
+values AS (
+    SELECT
+        f.cik,
+        f.fiscal_year,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'Revenues',
+                    'RevenueFromContractWithCustomerExcludingAssessedTax',
+                    'SalesRevenueNet',
+                    'NetSalesRevenue',
+                    'NetSales'
+                ) THEN n.value
+            END
+        ) AS revenue,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'CostOfRevenue',
+                    'CostOfGoodsAndServicesSold',
+                    'CostOfGoodsSold'
+                ) THEN n.value
+            END
+        ) AS cost_of_revenue,
+        MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit
+    FROM annual_filings f
+    JOIN num n ON n.adsh = f.adsh AND n.ddate = f.period
+    WHERE n.tag IN (
+        'GrossProfit',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSalesRevenue',
+        'NetSales',
+        'CostOfRevenue',
+        'CostOfGoodsAndServicesSold',
+        'CostOfGoodsSold'
+    )
+    GROUP BY f.cik, f.fiscal_year
+),
+margins AS (
+    SELECT
+        sc.canonical_name,
+        sc.name AS display_name,
+        v.fiscal_year,
+        ROUND(
+            100 * COALESCE(v.gross_profit, v.revenue - v.cost_of_revenue)
+            / NULLIF(v.revenue, 0),
+            1
+        ) AS gross_margin_pct,
+        v.revenue
+    FROM values v
+    JOIN sector_companies sc USING (cik)
+    WHERE v.revenue IS NOT NULL
+      AND v.cost_of_revenue IS NOT NULL
+),
+pivoted AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(display_name) AS name,
+        MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_start,
+        MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_end,
+        MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_end
+    FROM margins
+    GROUP BY canonical_name
+    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2019, 2023) THEN fiscal_year END) = 2
+)
+SELECT
+    name,
+    ROUND(margin_start, 1) AS margin_2019_pct,
+    ROUND(margin_end, 1) AS margin_2023_pct,
+    ROUND(margin_end - margin_start, 1) AS change_pp,
+    ROUND(revenue_end / 1000000000.0, 2) AS revenue_2023_billions
+FROM pivoted
+WHERE revenue_end >= 5000000000
+ORDER BY change_pp DESC, name
+LIMIT 10;","Sector gross margin shifts:
+1) ARCHER-DANIELS-MIDLAND CO: 6.40% (2019) → 8.00% (2023) +1.60% — pricing power strengthened on FY2023 revenue of $93.94B.
+2) CONSTELLATION BRANDS, INC.: 49.80% (2019) → 50.40% (2023) +0.60% — margins held steady on FY2023 revenue of $9.96B.
+3) KELLANOVA: 32.30% (2019) → 32.70% (2023) +0.40% — margins held steady on FY2023 revenue of $13.13B.
+4) KELLOGG CO: 32.30% (2019) → 32.70% (2023) +0.40% — margins held steady on FY2023 revenue of $13.13B.
+5) MOLSON COORS BEVERAGE CO: 32.30% (2019) → 31.50% (2023) -0.80% — moderate pressure on FY2023 revenue of $13.88B.
+6) MOLSON COORS BREWING CO: 32.30% (2019) → 31.50% (2023) -0.80% — moderate pressure on FY2023 revenue of $13.88B.","{""format"": ""Ranked table summarizing FY2019 vs FY2023 gross margins and pricing-power deltas"", ""visualization"": ""Slope chart or clustered bars showing margin change per company"", ""sample_analysis"": ""WITH staples AS (\n  SELECT cik, MIN(name) AS company_name\n  FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n  WHERE gics_sector = 'Consumer Staples'\n  GROUP BY cik\n),\nranked_filings AS (\n  SELECT s.adsh,\n         s.cik,\n         CAST(s.fy AS INTEGER) AS fiscal_year,\n         ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n  FROM read_parquet('data/parquet/sub.parquet') s\n  JOIN staples USING (cik)\n  WHERE s.form IN ('10-K','20-F')\n    AND s.fy BETWEEN 2019 AND 2023\n),\nannual_filings AS (\n  SELECT adsh, cik, fiscal_year\n  FROM ranked_filings\n  WHERE rn = 1\n),\nrollup AS (\n  SELECT f.cik,\n         f.fiscal_year,\n         MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','NetSalesRevenue','NetSales') THEN n.value END) AS revenue,\n         MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') THEN n.value END) AS cost_of_revenue,\n         MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit\n  FROM annual_filings f\n  JOIN read_parquet('data/parquet/num.parquet') n ON n.adsh = f.adsh\n  WHERE n.tag IN (\n    'GrossProfit','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','NetSalesRevenue','NetSales',\n    'CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold'\n  )\n  GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n  SELECT s.company_name,\n         r.fiscal_year,\n         ROUND(100 * COALESCE(r.gross_profit, r.revenue - r.cost_of_revenue) / NULLIF(r.revenue, 0), 1) AS gross_margin_pct\n  FROM rollup r\n  JOIN staples s USING (cik)\n  WHERE r.fiscal_year IN (2019, 2023)\n)\nSELECT company_name,\n       MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_2019,\n       MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_2023,\n       MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END)\n         - MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS change_pp\nFROM margins\nGROUP BY company_name\nHAVING COUNT(DISTINCT fiscal_year) = 2\nORDER BY change_pp DESC;"", ""sample_data"": [{""company"": ""Archer Daniels Midland Co"", ""FY2019_margin"": ""6.5%"", ""FY2023_margin"": ""8.2%"", ""change"": ""+1.7pp"", ""inflation_resilience"": ""Stronger pricing power""}, {""company"": ""Constellation Brands, Inc."", ""FY2019_margin"": ""49.8%"", ""FY2023_margin"": ""50.4%"", ""change"": ""+0.6pp"", ""inflation_resilience"": ""Resilient pricing""}, {""company"": ""Tyson Foods Inc"", ""FY2019_margin"": ""12.0%"", ""FY2023_margin"": ""12.5%"", ""change"": ""+0.5pp"", ""inflation_resilience"": ""Resilient pricing""}, {""company"": ""PepsiCo Inc"", ""FY2019_margin"": ""55.1%"", ""FY2023_margin"": ""54.2%"", ""change"": ""-0.9pp"", ""inflation_resilience"": ""Moderate pressure""}, {""company"": ""Mondelez International, Inc."", ""FY2019_margin"": ""39.9%"", ""FY2023_margin"": ""38.2%"", ""change"": ""-1.7pp"", ""inflation_resilience"": ""Acute pressure""}, {""company"": ""Philip Morris International Inc."", ""FY2019_margin"": ""64.7%"", ""FY2023_margin"": ""63.3%"", ""change"": ""-1.4pp"", ""inflation_resilience"": ""Moderate pressure""}, {""company"": ""Monster Beverage Corp"", ""FY2019_margin"": ""60.0%"", ""FY2023_margin"": ""53.1%"", ""change"": ""-6.9pp"", ""inflation_resilience"": ""Acute pressure""}], ""business_insight"": ""Staples names exposed to commodity hedging and premium alcohol (ADM +1.7pp, Constellation +0.6pp) expanded margins despite the 2021-2023 inflation spike, while beverages and snacks with aluminum/sugar exposure (PepsiCo -0.9pp, Mondelez -1.7pp, Monster -6.9pp) saw compression. The spread underscores how pricing power and hedging depth determine inflation resilience more than absolute margin levels."", ""key_findings"": [""ADM leveraged crush spreads and hedging to lift gross margin from 6.5% to 8.2% (+1.7pp) even as input prices surged."", ""Constellation and Tyson showed modest improvement (+0.6pp / +0.5pp) by mixing toward premium SKUs and contracts that pass through grain/feed inflation."", ""Philip Morris and PepsiCo held margins within \u00b11pp thanks to premium positioning, but Mondelez (-1.7pp) and Monster (-6.9pp) faced outsized commodity and packaging pressure."", ""Margin dispersion across Consumer Staples widened to ~15pp between defensible brands and ingredients-heavy players, highlighting the value of supplier leverage.""], ""investment_implications"": [""Focus on staples companies with structural hedging advantages or premium mix that can pass inflation through swiftly."", ""Monitor beverage/snacking names with commodity-heavy cost stacks for additional productivity programs before margins normalize."", ""Pair resilient names (ADM, Constellation, Tyson) with pressured ones (Mondelez, Monster) to express relative-value trades on pricing power."", ""Gross-margin trend monitoring should feed into inflation-scenario planning for CFOs and procurement teams.""]}",,0.850,template,,,None,0.2085,0.0000,0.0000,0.0000,0.0000
+RUN_023,"11 Nov 2025, 1700 hours",custom,"How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?",gross_margin_trend_sector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        MIN(name) AS name,
+        REGEXP_REPLACE(UPPER(TRIM(MIN(name))), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies
+    WHERE (UPPER('Consumer Staples') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Consumer Staples%'))
+    GROUP BY cik
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A','20-F')
+      AND s.fy BETWEEN 2019 AND 2023
+),
+annual_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM ranked_filings
+    WHERE rn = 1
+),
+values AS (
+    SELECT
+        f.cik,
+        f.fiscal_year,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'Revenues',
+                    'RevenueFromContractWithCustomerExcludingAssessedTax',
+                    'SalesRevenueNet',
+                    'NetSalesRevenue',
+                    'NetSales'
+                ) THEN n.value
+            END
+        ) AS revenue,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'CostOfRevenue',
+                    'CostOfGoodsAndServicesSold',
+                    'CostOfGoodsSold'
+                ) THEN n.value
+            END
+        ) AS cost_of_revenue,
+        MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit
+    FROM annual_filings f
+    JOIN num n ON n.adsh = f.adsh AND n.ddate = f.period
+    WHERE n.tag IN (
+        'GrossProfit',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSalesRevenue',
+        'NetSales',
+        'CostOfRevenue',
+        'CostOfGoodsAndServicesSold',
+        'CostOfGoodsSold'
+    )
+    GROUP BY f.cik, f.fiscal_year
+),
+margins AS (
+    SELECT
+        sc.canonical_name,
+        sc.name AS display_name,
+        v.fiscal_year,
+        ROUND(
+            100 * COALESCE(v.gross_profit, v.revenue - v.cost_of_revenue)
+            / NULLIF(v.revenue, 0),
+            1
+        ) AS gross_margin_pct,
+        v.revenue
+    FROM values v
+    JOIN sector_companies sc USING (cik)
+    WHERE v.revenue IS NOT NULL
+      AND v.cost_of_revenue IS NOT NULL
+),
+pivoted AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(display_name) AS name,
+        MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_start,
+        MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_end,
+        MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_end
+    FROM margins
+    GROUP BY canonical_name
+    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2019, 2023) THEN fiscal_year END) = 2
+)
+SELECT
+    name,
+    ROUND(margin_start, 1) AS margin_2019_pct,
+    ROUND(margin_end, 1) AS margin_2023_pct,
+    ROUND(margin_end - margin_start, 1) AS change_pp,
+    ROUND(revenue_end / 1000000000.0, 2) AS revenue_2023_billions
+FROM pivoted
+WHERE revenue_end >= 5000000000
+ORDER BY change_pp DESC, name
+LIMIT 10;","Sector gross margin shifts:
+1) ARCHER DANIELS MIDLAND CO: 6.40% (2019) → 8.00% (2023) +1.60% — pricing power strengthened on FY2023 revenue of $93.94B.
+2) CONSTELLATION BRANDS, INC.: 49.80% (2019) → 50.40% (2023) +0.60% — margins held steady on FY2023 revenue of $9.96B.
+3) KELLANOVA: 32.30% (2019) → 32.70% (2023) +0.40% — margins held steady on FY2023 revenue of $13.13B.
+4) MOLSON COORS BEVERAGE CO: 32.30% (2019) → 31.50% (2023) -0.80% — moderate pressure on FY2023 revenue of $13.88B.
+5) PEPSICO INC: 55.10% (2019) → 54.20% (2023) -0.90% — moderate pressure on FY2023 revenue of $91.47B.
+6) CONAGRA BRANDS INC.: 27.70% (2019) → 26.60% (2023) -1.10% — moderate pressure on FY2023 revenue of $12.28B.",,,0.850,template,,,None,23.3525,0.0000,0.0000,0.0000,0.0000

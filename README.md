@@ -29,6 +29,20 @@ python -m pytest tests/ -v
 5. Launch the FastAPI layer with `uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000` (task shortcut: "run api").
 6. Start the React chat interface from `frontend/` with `npm run dev -- --host 0.0.0.0 --port 5173` (task shortcut: "run ui"). Codespaces will expose a public link you can share.
 
+### Local Dev Stack
+
+Run both FastAPI and the Vite UI on localhost:
+
+```bash
+./scripts/run_local_ui.sh
+```
+
+Prerequisites:
+- `.venv` created and `pip install -r requirements.txt` completed
+- Frontend dependencies installed (`frontend/node_modules/`); the script will run `npm install` automatically if missing
+
+The script binds FastAPI to `http://localhost:8000` and Vite to `http://localhost:5173`, streams logs, and stops both services when you hit `Ctrl+C`.
+
 ### Chat Interface
 The new chat interface features:
 - **ASCENDION branding** with Quant Magic title

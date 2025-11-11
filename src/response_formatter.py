@@ -31,6 +31,7 @@ class ResponseFormatter:
             ),
             "current_ratio_trend": self._format_current_ratio_trend,
             "operating_margin_delta": self._format_operating_margin_delta,
+            "gross_margin_trend_sector": self._format_gross_margin_trend_sector,
             "roe_revenue_divergence": self._format_roe_revenue_divergence,
             "working_capital_cash_cycle_trend": (
                 self._format_working_capital_cash_cycle_trend
@@ -374,6 +375,55 @@ class ResponseFormatter:
 
         return "Largest FY operating margin rebounds:\n" + "\n".join(bullets)
 
+    def _format_gross_margin_trend_sector(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No gross margin movements were detected for the requested cohort."
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        rows = data.head(6)
+        bullets = []
+        for idx, row in rows.iterrows():
+            name = row.get("name", "Unknown company")
+            margin_cols = sorted(
+                [
+                    col
+                    for col in row.index
+                    if col.startswith("margin_") and col.endswith("_pct")
+                ]
+            )
+            if len(margin_cols) < 2:
+                continue
+            start_label, end_label = margin_cols[0], margin_cols[-1]
+            start_year = start_label.split("_")[1]
+            end_year = end_label.split("_")[1]
+            start_margin = self._format_percentage(row[start_label], signed=False)
+            end_margin = self._format_percentage(row[end_label], signed=False)
+            change_raw = self._get_first_value(row, ["change_pp"])
+            change_str = self._format_percentage(change_raw, signed=True)
+            resilience = self._describe_margin_resilience(change_raw)
+
+            revenue_cols = sorted(
+                [
+                    col
+                    for col in row.index
+                    if col.startswith("revenue_") and col.endswith("_billions")
+                ]
+            )
+            revenue_val = (
+                self._get_first_value(row, [revenue_cols[-1]]) if revenue_cols else None
+            )
+            revenue_str = self._format_billions(revenue_val) if revenue_val else "n/a"
+
+            bullets.append(
+                f"{len(bullets)+1}) {name}: {start_margin} ({start_year}) → {end_margin} ({end_year}) {change_str} — {resilience} on FY{end_year} revenue of {revenue_str}."
+            )
+
+        return "Sector gross margin shifts:\n" + "\n".join(bullets)
+
     def _format_roe_revenue_divergence(
         self, query_result: QueryResult
     ) -> Optional[str]:
@@ -482,6 +532,20 @@ class ResponseFormatter:
             if key in row and row[key] is not None:
                 return row[key]
         return None
+
+    @staticmethod
+    def _describe_margin_resilience(change: Optional[float]) -> str:
+        if change is None:
+            return "mixed pricing power"
+        if change >= 1.0:
+            return "pricing power strengthened"
+        if change >= 0.2:
+            return "margins held steady"
+        if change <= -2:
+            return "material compression"
+        if change <= -0.5:
+            return "moderate pressure"
+        return "slight pullback"
 
     @staticmethod
     def _format_millions(value, signed: bool = False) -> str:

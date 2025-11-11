@@ -624,24 +624,24 @@
         "sample_data": [
           {
             "company": "Archer Daniels Midland Co",
-            "FY2019_margin": "6.5%",
-            "FY2023_margin": "8.2%",
-            "change": "+1.7pp",
-            "inflation_resilience": "Stronger pricing power"
+            "FY2019_margin": "6.4%",
+            "FY2023_margin": "8.0%",
+            "change": "+1.6pp",
+            "inflation_resilience": "Pricing power strengthened"
           },
           {
             "company": "Constellation Brands, Inc.",
             "FY2019_margin": "49.8%",
             "FY2023_margin": "50.4%",
             "change": "+0.6pp",
-            "inflation_resilience": "Resilient pricing"
+            "inflation_resilience": "Margins held steady"
           },
           {
-            "company": "Tyson Foods Inc",
-            "FY2019_margin": "12.0%",
-            "FY2023_margin": "12.5%",
-            "change": "+0.5pp",
-            "inflation_resilience": "Resilient pricing"
+            "company": "Kellanova",
+            "FY2019_margin": "32.3%",
+            "FY2023_margin": "32.7%",
+            "change": "+0.4pp",
+            "inflation_resilience": "Margins held steady"
           },
           {
             "company": "PepsiCo Inc",
@@ -652,10 +652,10 @@
           },
           {
             "company": "Mondelez International, Inc.",
-            "FY2019_margin": "39.9%",
+            "FY2019_margin": "40.0%",
             "FY2023_margin": "38.2%",
-            "change": "-1.7pp",
-            "inflation_resilience": "Acute pressure"
+            "change": "-1.8pp",
+            "inflation_resilience": "Commodity pressure"
           },
           {
             "company": "Philip Morris International Inc.",
@@ -665,6 +665,13 @@
             "inflation_resilience": "Moderate pressure"
           },
           {
+            "company": "Tyson Foods Inc",
+            "FY2019_margin": "11.8%",
+            "FY2023_margin": "5.0%",
+            "change": "-6.8pp",
+            "inflation_resilience": "Material compression"
+          },
+          {
             "company": "Monster Beverage Corp",
             "FY2019_margin": "60.0%",
             "FY2023_margin": "53.1%",
@@ -672,18 +679,17 @@
             "inflation_resilience": "Acute pressure"
           }
         ],
-        "business_insight": "Staples names exposed to commodity hedging and premium alcohol (ADM +1.7pp, Constellation +0.6pp) expanded margins despite the 2021-2023 inflation spike, while beverages and snacks with aluminum/sugar exposure (PepsiCo -0.9pp, Mondelez -1.7pp, Monster -6.9pp) saw compression. The spread underscores how pricing power and hedging depth determine inflation resilience more than absolute margin levels.",
+        "business_insight": "Staples hedged to grain and energy flows (ADM +1.6pp) or premium categories (Constellation +0.6pp, Kellanova +0.4pp) inched margins higher despite the 2021-2023 cost spike, while broad-based consumer brands saw mild compression (PepsiCo -0.9pp, Philip Morris -1.4pp). Protein-heavy and packaging-sensitive names (Tyson -6.8pp, Monster -6.9pp) suffered steep declines, underscoring how input mix dominates inflation resilience.",
         "key_findings": [
-          "ADM leveraged crush spreads and hedging to lift gross margin from 6.5% to 8.2% (+1.7pp) even as input prices surged.",
-          "Constellation and Tyson showed modest improvement (+0.6pp / +0.5pp) by mixing toward premium SKUs and contracts that pass through grain/feed inflation.",
-          "Philip Morris and PepsiCo held margins within ±1pp thanks to premium positioning, but Mondelez (-1.7pp) and Monster (-6.9pp) faced outsized commodity and packaging pressure.",
-          "Margin dispersion across Consumer Staples widened to ~15pp between defensible brands and ingredients-heavy players, highlighting the value of supplier leverage."
+          "ADM’s crush spreads and hedging continue to offset feed inflation, lifting gross margin above 8%.",
+          "Constellation and Kellanova kept margins intact via premium mix and contractual pass-throughs.",
+          "PepsiCo and Philip Morris absorbed ~1pp of compression, highlighting stronger but not unlimited pricing power.",
+          "Tyson and Monster faced the sharpest declines (-6.8pp/-6.9pp) as grain, livestock, and aluminum costs outpaced price actions."
         ],
         "investment_implications": [
-          "Focus on staples companies with structural hedging advantages or premium mix that can pass inflation through swiftly.",
-          "Monitor beverage/snacking names with commodity-heavy cost stacks for additional productivity programs before margins normalize.",
-          "Pair resilient names (ADM, Constellation, Tyson) with pressured ones (Mondelez, Monster) to express relative-value trades on pricing power.",
-          "Gross-margin trend monitoring should feed into inflation-scenario planning for CFOs and procurement teams."
+          "Favor staples with structural hedges or premium SKUs that can defensibly pass through input shocks.",
+          "Use margin spread tracking to separate true pricing power from temporary mix benefits.",
+          "Watch protein and commodity-exposed names for further normalization plans before multiple expansion."
         ]
       },
       "retrieval_test_criteria": {

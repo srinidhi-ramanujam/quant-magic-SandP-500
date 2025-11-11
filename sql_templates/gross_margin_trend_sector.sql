@@ -1,10 +1,11 @@
 WITH sector_companies AS (
     SELECT
         cik,
-        name,
-        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+        MIN(name) AS name,
+        REGEXP_REPLACE(UPPER(TRIM(MIN(name))), '[^A-Z0-9]', '', 'g') AS canonical_name
     FROM companies
     WHERE (UPPER('{sector}') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%{sector}%'))
+    GROUP BY cik
 ),
 ranked_filings AS (
     SELECT
