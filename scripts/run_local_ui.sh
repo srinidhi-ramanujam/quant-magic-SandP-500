@@ -7,6 +7,10 @@ API_HOST="0.0.0.0"
 API_PORT="${API_PORT:-8000}"
 UI_HOST="0.0.0.0"
 UI_PORT="${UI_PORT:-5173}"
+LOG_ROOT="${ROOT_DIR}/.logs"
+SESSION_ID="session-$(date +%Y%m%d-%H%M%S)"
+SESSION_DIR="${LOG_ROOT}/${SESSION_ID}"
+SESSION_LOG_FILE="${SESSION_DIR}/requests.jsonl"
 
 echo "📦 Starting Quant Magic dev stack from ${ROOT_DIR}"
 
@@ -27,15 +31,23 @@ if [[ ! -d "${ROOT_DIR}/frontend/node_modules" ]]; then
   (cd "${ROOT_DIR}/frontend" && npm install)
 fi
 
-API_LOG="${ROOT_DIR}/.logs/api.log"
-UI_LOG="${ROOT_DIR}/.logs/ui.log"
-mkdir -p "${ROOT_DIR}/.logs"
+rm -rf "${LOG_ROOT}"
+mkdir -p "${SESSION_DIR}"
+export SESSION_LOG_FILE
+export SESSION_LOG_DIR="${SESSION_DIR}"
+
+API_LOG="${SESSION_DIR}/api.log"
+UI_LOG="${SESSION_DIR}/ui.log"
+
+echo "🗂  Session logs will be stored in ${SESSION_DIR}"
 
 cleanup() {
   echo ""
   echo "🛑 Shutting down dev stack..."
   [[ -n "${API_PID:-}" ]] && kill "${API_PID}" >/dev/null 2>&1 || true
   [[ -n "${UI_PID:-}" ]] && kill "${UI_PID}" >/dev/null 2>&1 || true
+  rm -rf "${LOG_ROOT}"
+  echo "🧹 Cleared session logs"
 }
 
 trap cleanup EXIT INT TERM

@@ -47,6 +47,11 @@ Prerequisites:
 
 The script binds FastAPI to `http://localhost:8000` and Vite to `http://localhost:5173`, streams logs, and stops both services when you hit `Ctrl+C`.
 
+Per run, the script creates `.logs/session-<timestamp>/` (deleted when you stop the stack) containing:
+- `api.log` / `ui.log`: live server output (cleared on next start)
+- `requests.jsonl`: structured question/answer records with request IDs, SQL, and entities  
+Once you stop the script, restart it to clear old logs and begin a fresh session.
+
 ### Chat Interface
 The new chat interface features:
 - **ASCENDION branding** with Quant Magic title

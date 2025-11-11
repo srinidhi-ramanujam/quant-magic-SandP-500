@@ -21,6 +21,7 @@ from src.llm_guard import (
     OFFLINE_FALLBACK_HELP,
     ensure_llm_available,
 )
+from src.session_logger import log_interaction
 
 
 class FinancialCLI:
@@ -59,6 +60,16 @@ class FinancialCLI:
             FormattedResponse with answer and metadata
         """
         result = self.query_service.run(question, debug_mode=debug_mode)
+
+        log_interaction(
+            channel="cli",
+            question=question,
+            response=result.response,
+            context=result.context,
+            entities=result.entities,
+            generated_sql=result.generated_sql,
+            debug_mode=debug_mode,
+        )
         return result.response
 
     def close(self):

@@ -28,6 +28,10 @@ type QueryResponse = {
   error?: string | null;
 };
 
+const logInfo = (label: string, payload: unknown) => {
+  console.info(`[ui] ${label}`, payload);
+};
+
 function App() {
   const [question, setQuestion] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -64,10 +68,11 @@ function App() {
       return;
     }
 
+    const trimmedQuestion = question.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
-      content: question.trim(),
+      content: trimmedQuestion,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -77,6 +82,10 @@ function App() {
     setMessages((prev) => [...prev, userMessage]);
     setQuestion("");
     setLoading(true);
+    logInfo("question", {
+      id: userMessage.id,
+      question: trimmedQuestion,
+    });
 
     // Reset textarea height
     if (textareaRef.current) {
@@ -89,8 +98,18 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ question: userMessage.content }),
+        body: JSON.stringify({ question: trimmedQuestion }),
       });
+
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => null)) as
+          | { detail?: string }
+          | null;
+        throw new Error(
+          errorPayload?.detail ||
+            `API error (${response.status} ${response.statusText})`,
+        );
+      }
 
       const payload = (await response.json()) as QueryResponse;
 
@@ -111,6 +130,12 @@ function App() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      logInfo("response", {
+        id: assistantMessage.id,
+        requestId: payload.metadata?.request_id,
+        success: payload.success,
+        sql: payload.sql,
+      });
 
       // Add to chat history if it's the first message in the session
       if (messages.length === 0) {
@@ -125,12 +150,15 @@ function App() {
         setChatHistory((prev) => [newSession, ...prev]);
       }
     } catch (err) {
-      console.error(err);
+      console.error("[ui] error", err);
+      const errorText =
+        err instanceof Error
+          ? err.message
+          : "Unable to reach the API. Please confirm the backend is running.";
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "assistant",
-        content:
-          "Unable to reach the API. Please confirm the backend is running.",
+        content: errorText,
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",

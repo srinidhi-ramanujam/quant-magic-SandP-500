@@ -14,6 +14,7 @@ from src.llm_guard import (
     ensure_llm_available,
 )
 from src.models import FormattedResponse, QueryRequest
+from src.session_logger import log_interaction
 from src.services import QueryService, QueryServiceResult
 
 
@@ -169,6 +170,15 @@ async def run_query(request: QueryRequest) -> QueryResponseModel:
         ) from exc
 
     response = result.response
+    log_interaction(
+        channel="api",
+        question=request.question,
+        response=response,
+        context=result.context,
+        entities=result.entities,
+        generated_sql=result.generated_sql,
+        debug_mode=request.debug_mode,
+    )
 
     debug_payload = response.debug_info if request.debug_mode else None
     return QueryResponseModel.from_service_result(result, response, debug=debug_payload)

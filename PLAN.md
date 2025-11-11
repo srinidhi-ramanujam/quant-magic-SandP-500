@@ -253,6 +253,8 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Ground-truthed TS_007 by adding the `working_capital_cash_cycle_trend` template, logging FY2020→FY2023 working-capital day reductions (airlines, rail, industrials) and updating JSON/validator artifacts so the CLI produces the curated list deterministically.
 - Ground-truthed TS_006 with the `roe_revenue_divergence` template, which now powers ROE-decline-vs-revenue-growth questions end-to-end (DuckDB numbers captured in JSON + validator, FAISS rebuilt, CLI verified).
 - Refreshed TS_008 with FY2019→FY2023 Consumer Staples gross-margin deltas (ADM, Constellation, Tyson, PepsiCo, Mondelez, Philip Morris, Monster) and captured the new DuckDB query, insights, and validator metadata ahead of wiring the `gross_margin_trend_sector` template.
+- Ground-truthed TS_009 inventory turnover trends for the top six retailers (new `inventory_turnover_trend` template) and logged the run in the telemetry workbook; formatter now summarizes turnover + DIO deltas.
+- Ground-truthed TS_010 leverage progression for Delta, Southwest, and United (new `net_debt_to_ebitda_trend` template) with FY2019–FY2023 DuckDB data and documented the dataset gap for American Airlines.
 
 ---
 
@@ -623,6 +625,7 @@ These tracks run alongside Phase 2 backend work so the product can demo via a br
 - ✅ Update onboarding docs (`README.md`, AGENTS.md if needed) with Codespaces setup, env vars, and run instructions.
 - ✅ Document chat interface features, setup, and usage patterns.
 - ✅ Capture open questions (parquet distribution, streaming updates) for next iteration before implementation.
+- ✅ Add per-session logging (CLI/API/UI) with structured Q&A records rotating via `.logs/session-<timestamp>/`.
 
 ---
 
