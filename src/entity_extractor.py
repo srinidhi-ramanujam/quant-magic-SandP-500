@@ -306,32 +306,52 @@ class EntityExtractor:
             ExtractedEntities with extracted information
         """
         with log_component_timing(context, "entity_extraction"):
-            if self.hybrid_retriever:
-                entities = self._extract_entities(question)
-                coverage = self.hybrid_retriever.enrich(question, entities)
-                entities.confidence = self._calculate_confidence(
-                    entities.companies,
-                    entities.metrics,
-                    entities.sectors,
-                    entities.time_periods,
-                    entities.question_type,
-                )
-                context.add_metadata("entity_extraction_method", "hybrid")
-                if coverage:
-                    context.add_metadata("entity_retriever_slots", coverage)
-                return entities
+            extraction_method = None
+            entities: Optional[ExtractedEntities] = None
 
             if self.use_llm and self.azure_client:
                 try:
-                    return self._extract_with_llm(question, context)
-                except Exception as e:
+                    entities = self._extract_with_llm(question, context)
+                    extraction_method = "llm"
+                except Exception as e:  # noqa: BLE001
                     self.logger.error(
                         f"LLM extraction failed: {e}, using deterministic fallback"
                     )
-                    # Fallback to deterministic if LLM fails
-                    return self._extract_entities(question)
+                    entities = self._extract_entities(question)
+                    extraction_method = "deterministic"
             else:
-                return self._extract_entities(question)
+                entities = self._extract_entities(question)
+                extraction_method = "deterministic"
+
+            coverage = {}
+            if self.hybrid_retriever:
+                coverage = self.hybrid_retriever.enrich(question, entities)
+                extraction_method = (
+                    f"{extraction_method}+hybrid"
+                    if extraction_method
+                    else "hybrid"
+                )
+
+            baseline_confidence = self._calculate_confidence(
+                entities.companies,
+                entities.metrics,
+                entities.sectors,
+                entities.time_periods,
+                entities.question_type,
+            )
+            if extraction_method and extraction_method.startswith("llm"):
+                entities.confidence = max(entities.confidence, baseline_confidence)
+            else:
+                entities.confidence = baseline_confidence
+
+            context.add_metadata(
+                "entity_extraction_method",
+                extraction_method or "deterministic_only",
+            )
+            if coverage:
+                context.add_metadata("entity_retriever_slots", coverage)
+
+            return entities
 
     def _extract_with_llm(
         self, question: str, context: RequestContext

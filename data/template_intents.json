@@ -404,6 +404,25 @@
     }
   },
   {
+    "template_id": "gross_margin_trend_sector",
+    "intent_text": "Compare gross margin resilience across a sector between two fiscal years",
+    "pattern": "(?i)(gross margin|pricing power).*(trend|change|evolution).*(20\\d{2}).*(20\\d{2})",
+    "example_questions": [
+      "How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023?",
+      "Which Consumer Staples companies expanded gross margin the most over the last five years?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_revenue",
+        "limit"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
     "template_id": "debt_reduction_progression",
     "intent_text": "Rank companies by multi-year debt reduction",
     "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
