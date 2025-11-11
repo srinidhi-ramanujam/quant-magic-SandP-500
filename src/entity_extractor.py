@@ -408,66 +408,29 @@ class EntityExtractor:
                 if not self.azure_client.is_available():
                     raise ValueError("Azure OpenAI client not available")
 
-                # Use the client's OpenAI instance directly for entity extraction
                 model_name = self.azure_client.config.deployment_name or ""
                 self.logger.debug(f"Using deployment: {model_name}")
 
-                # Build request parameters
-                # Note: gpt-5 deployment requires specific parameters:
-                # - Only supports temperature=1 (default, no custom values)
-                # - Doesn't support system messages
-                # - Uses max_completion_tokens instead of max_tokens
-                # Other models (o1-*) also have similar requirements
-                requires_special_params = any(
-                    x in model_name.lower() for x in ["o1", "gpt-5"]
+                response = self.azure_client.client.responses.create(
+                    model=model_name,
+                    instructions=(
+                        "You extract structured financial entities from questions. "
+                        "Respond with minified JSON only (no prose)."
+                    ),
+                    input=prompt,
+                    max_output_tokens=500,
                 )
-
-                if requires_special_params:
-                    # Use parameters compatible with gpt-5 and o1-series models
-                    self.logger.debug(
-                        f"Using special parameters for model: {model_name}"
-                    )
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_completion_tokens=500,
-                    )
-                else:
-                    # Standard models support all parameters
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are a financial data analyst assistant.",
-                            },
-                            {"role": "user", "content": prompt},
-                        ],
-                        temperature=self.config.entity_extraction_temperature,
-                        max_completion_tokens=500,
-                    )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
                 # Extract content from response
-                content = response.choices[0].message.content
+                content = self.azure_client._parse_api_response(response)
 
                 # Parse JSON from LLM response
                 llm_output = self._parse_llm_response(content)
 
                 # Extract token usage from response
-                token_usage = {
-                    "prompt_tokens": (
-                        response.usage.prompt_tokens
-                        if hasattr(response, "usage")
-                        else 0
-                    ),
-                    "completion_tokens": (
-                        response.usage.completion_tokens
-                        if hasattr(response, "usage")
-                        else 0
-                    ),
-                }
+                token_usage = self.azure_client._extract_token_usage(response)
 
                 # Validate with Pydantic
                 llm_entity_response = LLMEntityResponse(

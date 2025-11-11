@@ -32,14 +32,11 @@ def create_mock_openai_response(entity_dict: dict) -> Mock:
         Mock object with proper response structure
     """
     mock_response = Mock()
-    mock_choice = Mock()
-    mock_message = Mock()
-    mock_message.content = json.dumps(entity_dict)
-    mock_choice.message = mock_message
-    mock_response.choices = [mock_choice]
+    mock_response.output_text = json.dumps(entity_dict)
     mock_usage = Mock()
-    mock_usage.prompt_tokens = 120
-    mock_usage.completion_tokens = 36
+    mock_usage.input_tokens = 120
+    mock_usage.output_tokens = 36
+    mock_usage.total_tokens = 156
     mock_response.usage = mock_usage
     return mock_response
 
@@ -71,9 +68,15 @@ def mock_azure_client():
         mock_config.deployment_name = "gpt-4"
         mock_client.config = mock_config
 
-        # Mock the client.chat.completions.create method with proper structure
+        # Mock the client.responses.create method with proper structure
         mock_openai_client = Mock()
         mock_client.client = mock_openai_client
+        mock_client._parse_api_response = Mock(
+            side_effect=lambda resp: resp.output_text
+        )
+        mock_client._extract_token_usage = Mock(
+            return_value={"prompt_tokens": 120, "completion_tokens": 36, "total_tokens": 156}
+        )
 
         mock_client_class.return_value = mock_client
         yield mock_client
@@ -117,7 +120,7 @@ def test_extract_simple_company_question(
             "reasoning": "Clear company name (Apple → APPLE INC) and specific metric (CIK) requested.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     # Extract entities
     entities = entity_extractor.extract(question, request_context)
@@ -131,7 +134,7 @@ def test_extract_simple_company_question(
     assert entities.confidence >= 0.9
 
     # Verify LLM was called
-    assert mock_azure_client.client.chat.completions.create.called
+    assert mock_azure_client.client.responses.create.called
 
 
 def test_extract_ambiguous_company_ticker(
@@ -151,7 +154,7 @@ def test_extract_ambiguous_company_ticker(
             "reasoning": "Ticker AAPL converted to APPLE INC. 'Latest' period implied.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -178,7 +181,7 @@ def test_extract_multiple_entities(
             "reasoning": "Comparison question with two companies. Both converted to official names.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -204,7 +207,7 @@ def test_extract_metric_synonyms(entity_extractor, mock_azure_client, request_co
             "reasoning": "Ticker MSFT → MICROSOFT CORP. 'Sales' synonym mapped to 'revenue'.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -232,7 +235,7 @@ def test_extract_time_period_explicit(
             "reasoning": "Clear time period specification: Q3 2024.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -259,7 +262,7 @@ def test_extract_implicit_time_period(
             "reasoning": "'Latest' indicates most recent available period.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -283,7 +286,7 @@ def test_extract_sector_question(entity_extractor, mock_azure_client, request_co
             "reasoning": "Technology normalized to official GICS name 'Information Technology'.",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 
@@ -304,7 +307,7 @@ def test_extract_with_llm_failure_fallback(
     question = "How many companies in Technology?"
 
     # Mock LLM to raise exception
-    mock_azure_client.client.chat.completions.create.side_effect = Exception(
+    mock_azure_client.client.responses.create.side_effect = Exception(
         "API Error"
     )
 
@@ -353,7 +356,7 @@ def test_extract_json_parsing_retry(
         }
     )
 
-    mock_azure_client.client.chat.completions.create.side_effect = [
+    mock_azure_client.client.responses.create.side_effect = [
         invalid_response,
         valid_response,
     ]
@@ -362,7 +365,7 @@ def test_extract_json_parsing_retry(
 
     # Should succeed on second attempt
     assert "APPLE INC" in entities.companies
-    assert mock_azure_client.client.chat.completions.create.call_count == 2
+    assert mock_azure_client.client.responses.create.call_count == 2
 
 
 def test_extract_pydantic_validation_error(
@@ -392,7 +395,7 @@ def test_extract_pydantic_validation_error(
     mock_response.usage.prompt_tokens = 100
     mock_response.usage.completion_tokens = 20
 
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     # Should handle validation error and fallback to deterministic
     entities = entity_extractor.extract(question, request_context)
@@ -419,7 +422,7 @@ def test_extract_tracks_llm_call(entity_extractor, mock_azure_client, request_co
             "reasoning": "Test",
         }
     )
-    mock_azure_client.client.chat.completions.create.return_value = mock_response
+    mock_azure_client.client.responses.create.return_value = mock_response
 
     entities = entity_extractor.extract(question, request_context)
 

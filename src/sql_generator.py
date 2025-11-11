@@ -391,15 +391,25 @@ class SQLGenerator:
             defaults["min_revenue"] = "5000000000"
 
         if "company_values" in missing_params:
-            defaults[
-                "company_values"
-            ] = "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+            if template.template_id == "inventory_turnover_trend":
+                defaults[
+                    "company_values"
+                ] = "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+            elif template.template_id == "net_debt_to_ebitda_trend":
+                defaults[
+                    "company_values"
+                ] = "('DELTA AIR LINES, INC.'),('SOUTHWEST AIRLINES CO'),('UNITED AIRLINES HOLDINGS, INC.')"
 
         if "quarter_count" in missing_params:
             defaults["quarter_count"] = "6"
 
         if "min_period" in missing_params:
             defaults["min_period"] = "2022-01-01"
+
+        if "start_year" in missing_params and template.template_id == "net_debt_to_ebitda_trend":
+            defaults["start_year"] = "2019"
+        if "end_year" in missing_params and template.template_id == "net_debt_to_ebitda_trend":
+            defaults["end_year"] = "2023"
 
         if "limit" in missing_params:
             defaults["limit"] = "10"
@@ -553,47 +563,27 @@ class SQLGenerator:
                 if not self.azure_client or not self.azure_client.is_available():
                     raise ValueError("Azure OpenAI client not available")
 
-                # Prepare API call parameters based on model
                 model_name = self.azure_client.config.deployment_name or ""
-                requires_special_params = any(
-                    x in model_name.lower() for x in ["o1", "gpt-5"]
+                response = self.azure_client.client.responses.create(
+                    model=model_name,
+                    instructions=(
+                        "You are a SQL template selection assistant. "
+                        "Respond with JSON following the provided schema."
+                    ),
+                    input=prompt,
+                    max_output_tokens=500,
                 )
-
-                if requires_special_params:
-                    # gpt-5 and o1 models require special parameters
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_completion_tokens=500,
-                    )
-                else:
-                    # Standard models
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are a SQL template selection assistant.",
-                            },
-                            {"role": "user", "content": prompt},
-                        ],
-                        temperature=self.config.template_selection_temperature,
-                        max_completion_tokens=500,
-                    )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
                 # Extract content from response
-                content = response.choices[0].message.content
+                content = self.azure_client._parse_api_response(response)
 
                 # Parse JSON response
                 llm_output = self._parse_llm_response(content)
 
                 # Extract token usage
-                token_usage = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                }
+                token_usage = self.azure_client._extract_token_usage(response)
 
                 # Parse into LLMTemplateSelectionResponse
                 llm_response = LLMTemplateSelectionResponse(**llm_output)
