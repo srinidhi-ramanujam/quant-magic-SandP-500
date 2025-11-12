@@ -86,7 +86,7 @@ SELECT
         END
     ) AS consistency_steps
 FROM ordered
-GROUP BY display_name
+GROUP BY canonical_name, display_name
 HAVING COUNT(DISTINCT fiscal_year) = 5
 ORDER BY consistency_steps DESC, improvement_pct DESC, display_name
 LIMIT 5;
