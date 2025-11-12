@@ -28,83 +28,17 @@
 
 ## ✅ Phase 0: Foundation (COMPLETE)
 
-**Goal**: Prove end-to-end flow with minimal templates
-
-### Deliverables
-- ✅ Data layer: DuckDB + parquet (15.5M+ facts)
-- ✅ Entity extraction: Deterministic patterns
-- ✅ SQL generation: 3 templates (sector_count, company_cik, company_sector)
-- ✅ Response formatting: Natural language output
-- ✅ CLI: Interactive REPL + single-shot modes
-- ✅ Tests: 55 passing (100%)
-- ✅ Telemetry: Logging, timing, request tracking
-
-### Exit Criteria
-- ✅ 10/10 PoC questions correct
-- ✅ <2s response time
-- ✅ All tests passing
-- ✅ Clean architecture with Pydantic models
-
-**Completed**: November 3, 2025
+- Proved the NL→SQL→answer loop with DuckDB, deterministic patterns, and 3 starter templates.
+- Delivered the REPL/CLI, natural-language formatter, telemetry hooks, and 55/55 passing tests with sub-2s latency.
+- Outcome: solid scaffolding for data access + clean architecture; no further action required (Completed Nov 3, 2025).
 
 ---
 
 ## ✅ Phase 1: AI Integration (COMPLETE)
 
-**Goal**: Add Azure OpenAI for entity extraction and template selection
-
-### Deliverables
-
-#### 1. Azure OpenAI Integration ✅
-- ✅ `src/azure_client.py`: Production-ready wrapper (720 lines)
-- ✅ GPT-5 deployment with retry logic + circuit breaker
-- ✅ Token tracking with reasoning breakdown
-- ✅ 7 new Pydantic models for LLM interactions
-- ✅ 20 tests passing (100%)
-
-#### 2. LLM Entity Extraction ✅
-- ✅ `src/prompts.py`: 400-line prompt with 10 few-shot examples
-- ✅ `LLMEntityRequest` and `LLMEntityResponse` models
-- ✅ LLM-first approach with deterministic fallback
-- ✅ Robust JSON parsing (handles markdown code blocks)
-- ✅ 13 tests passing (11 unit + 2 integration)
-- ✅ CLI command: `--test-entity-extraction --use-llm`
-
-#### 3. Hybrid Template Selection ✅
-- ✅ 3-tier routing logic in `src/sql_generator.py`:
-  - Fast path (≥0.8 confidence): Skip LLM, use template directly
-  - LLM confirmation (0.5-0.8): LLM validates template choice
-  - LLM fallback (<0.5): LLM selects from all templates
-- ✅ `_select_template_with_llm()` with retry and telemetry
-- ✅ Template expansion: 3 → 27 patterns
-- ✅ 16 tests passing (11 unit + 2 integration + 3 edge cases)
-
-#### 4. Template Expansion ✅
-- ✅ 27 SQL templates across 7 categories:
-  - Company lookups (4): CIK, headquarters, incorporation, sector
-  - Sector analysis (5): counts, lists, thresholds
-  - Geographic (3): HQ state, incorporation state
-  - Financial metrics (5): revenue, assets, equity, net income
-  - Ratios (3): ROE, current ratio, debt-to-equity
-  - Revenue time series (3): YoY, multi-year, quarterly
-  - Profitability time series (2): net margin, operating margin
-- ✅ Flexible regex patterns for natural language matching
-- ✅ All templates validated against real questions
-- ✅ Template SQL aligned with DuckDB schema and covered by automated execution tests
-
-#### 5. Operational Readiness ✅
-- ✅ LLM entity extraction and template selection default to Azure GPT-5 when credentials are present
-- ✅ Safe fallback to deterministic paths when Azure access is unavailable
-
-### Exit Criteria
-- ✅ Azure OpenAI integrated with GPT-5
-- ✅ LLM entity extraction: 13/13 tests passing
-- ✅ Hybrid template selection working end-to-end
-- ✅ 27 templates operational
-- ✅ 100/104 tests passing (96.2%)
-- ✅ No regressions from Phase 0
-
-**Completed**: November 4, 2025
+- Brought Azure OpenAI online for entity extraction + template routing with retries, circuit breaker, and Pydantic contracts.
+- Expanded template catalog to 27 patterns, added hybrid routing, and verified via 100+/104 tests with deterministic fallback.
+- Outcome: LLM-first pipeline with robust guardrails, ready to support Phase 2 custom SQL (Completed Nov 4, 2025).
 
 ---
 
@@ -256,6 +190,9 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Ground-truthed TS_009 inventory turnover trends for the top six retailers (new `inventory_turnover_trend` template) and logged the run in the telemetry workbook; formatter now summarizes turnover + DIO deltas.
 - Ground-truthed TS_010 leverage progression for Delta, Southwest, and United (new `net_debt_to_ebitda_trend` template) with FY2019–FY2023 DuckDB data and documented the dataset gap for American Airlines.
   - Re-validated the DuckDB + QueryEngine outputs on 11 Nov 2025 after tightening the EBITDA guards, reran the CLI end-to-end, and logged RUN_026 in `evaluation/EVAL_WORKBOOK.csv` to capture the refreshed telemetry.
+- Ground-truthed TS_011 (Technology hardware asset-turnover trends) with a new `asset_turnover_trend` template, updated JSON/validator expectations, wired formatter output, and logged RUN_028 to capture the latest telemetry.
+  - Template now supports sector-wide/SIC-configurable cohorts with $10B revenue gating and has regression coverage in `tests/test_sql_templates.py`; README documents how to tune the parameters and validate via CLI/eval harness.
+- Ground-truthed TS_012 (Healthcare CFO-to-net income quality trends) via the new `cfo_to_net_income_trend` template, including canonical company dedupe, cash-to-earnings capping, updated JSON/validator artifacts, formatter support, SQL template regression tests, and telemetry run RUN_030.
 
 ---
 
@@ -657,6 +594,24 @@ These tracks run alongside Phase 2 backend work so the product can demo via a br
 - Add unit tests for the formatter orchestration (mock Azure client).
 - Extend README with “Formatted Answers & SQL Toggle” section describing the behavior and troubleshooting tips.
 - Measure impact: capture latency stats for the formatter and expose them in metadata so we can monitor cost/perf.
+
+#### D. Formatter Insight Polish (In Progress)
+- **Goal**: Ensure the LLM formatter delivers analyst-quality narratives with clear bullets for comparison-style queries.
+- **Scope**:
+  - Capture 5–7 representative prompts (asset turnover, working capital cycles, sector comps) and log current formatter output.
+  - Update the formatter prompt with stricter structure (headline sentence, concise context, explicit leader/laggard bullets) and add light post-processing to guarantee bullet characters render in Markdown/HTML.
+  - Add snapshot-style unit tests that assert bullet presence, sentence count, and tone hints for regression safety.
+  - Validate via API + UI flow; document QA steps in README/Runbook.
+- **Exit Criteria**: Every formatter response for multi-row datasets contains a 2–3 sentence narrative, ≥2 bullet highlights, and renders correctly in the chat UI.
+
+#### E. Streaming Reasoning Output (Seperate Branch: `feature/streamed-thinking`)
+- **Objective**: Stream the “thinking” trace to the UI while the final answer is composed, keeping the current branch focused on formatter polish.
+- **Plan**:
+  1. **Backend Streaming API**: Introduce a `POST /query/stream` endpoint (Server-Sent Events or FastAPI WebSocket) that emits `{"phase":"thinking","chunk":...}` events followed by the final payload. Reuse `QueryService` but surface intermediate reasoning trace updates.
+  2. **Service Hooks**: Extend `QueryService`/formatter to provide generator-style updates (entity extraction, SQL selection, validation) without blocking the final answer; gate behind config flag so default path stays unchanged.
+  3. **UI Prototype**: In the new branch, add a streaming client (EventSource or fetch reader) to display “Thinking…” tokens in the chat bubble before replacing them with the polished response.
+  4. **Telemetry & Testing**: Log streaming latency, add contract tests for the new endpoint, and document fallback behavior when SSE/WebSocket isn’t supported.
+- **Dependencies**: Requires separate PR so we can iterate on UX without destabilizing current formatter work. Target branch: `feature/streamed-thinking`.
 
 **Implementation Notes**
 - Backend
