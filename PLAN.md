@@ -236,11 +236,35 @@ Each remaining TS item should follow the **Agent Work Template** below so multip
 5. **Telemetry + Tests**  
    - Log a fresh run using `python scripts/run_eval_suite.py --question "<TS question>" --no-json` so `evaluation/EVAL_WORKBOOK.csv` captures RUN_xxx with Quality=5.  
    - Add a regression entry to `tests/test_sql_templates.py` (and any additional targeted tests) covering the new template.
-6. **Docs + Plan Update**  
-   - Update README/PLAN when the new pattern introduces tuning knobs or completion milestones.  
+6. **Docs + Plan Update**
+   - Update README/PLAN when the new pattern introduces tuning knobs or completion milestones.
    - Summarize the work in PLAN under Time-Series Template Roadmap with template id + status.
 
+---
 
+### Template System Fixes (Post-Evaluation RUN_112)
+
+**Issue**: Evaluation RUN_112 revealed that some templates marked as "completed" are still failing with template-guided generation. The issue is that complex templates with many parameters (>10) are generating invalid SQL when used with LLM guidance.
+
+**Failed Templates from RUN_112**:
+- `top_tech_cfo_trend` (TS_016): Failed to generate valid SQL - template has 8+ complex parameters
+- `hardware_gross_margin_trend` (TS_020): Failed SQL validation - schema/tag issues in generated SQL
+
+**Root Cause**: Template-guided generation works for templates with reasonable parameter counts (≤5-6 parameters), but fails for highly parameterized templates (8+ parameters) because the LLM cannot reliably generate correct SQL with too many constraints.
+
+**Solution Strategy**:
+1. **Parameter Count Limits**: Only use template-guided generation for templates with ≤6 parameters
+2. **Complex Template Fix**: For templates with 7+ parameters, implement them as standard templates with full parameter inference rather than LLM guidance
+3. **Validation Improvements**: Enhance SQL validation to catch schema errors before execution
+4. **Fallback Logic**: When template-guided generation fails, ensure clean fallback to parameter inference + defaults
+
+**Action Items**:
+- [ ] Review all templates with >6 parameters and implement as standard inference-based templates
+- [ ] Fix `top_tech_cfo_trend` parameter inference for company ranking and revenue filtering
+- [ ] Fix `hardware_gross_margin_trend` schema references and tag filtering
+- [ ] Add validation guardrails for quarterly data availability
+- [ ] Test updated templates against evaluation questions
+- [ ] Update template metadata to reflect complexity-appropriate routing
 
 ---
 

@@ -122,7 +122,7 @@ class SQLGenerator:
                             "template_selection_method", "deterministic_only"
                         ),
                     )
-                    return self._generate_from_template(intelligence_match, entities)
+                    return self._generate_from_template(intelligence_match, entities, context)
 
                 self.logger.warning("No template matched and LLM unavailable")
                 return None
@@ -140,7 +140,7 @@ class SQLGenerator:
                     intelligence_match.template.template_id,
                 )
                 context.add_metadata("template_selection_method", "fast_path")
-                return self._generate_from_template(intelligence_match, entities)
+                return self._generate_from_template(intelligence_match, entities, context)
 
             if confidence >= llm_threshold and intelligence_match.template is not None:
                 # MEDIUM CONFIDENCE: Ask LLM to confirm chosen template
@@ -174,7 +174,7 @@ class SQLGenerator:
             )
 
     def _generate_from_template(
-        self, intelligence_match: IntelligenceMatch, entities: ExtractedEntities
+        self, intelligence_match: IntelligenceMatch, entities: ExtractedEntities, context: Optional[RequestContext] = None
     ) -> Optional[GeneratedSQL]:
         """
         Generate SQL by populating a template.
@@ -192,28 +192,37 @@ class SQLGenerator:
         self.logger.debug(f"Generating SQL from template: {template.template_id}")
         self.logger.debug(f"Template parameters: {params}")
 
-        # Validate we have all required parameters
+        # Check for missing parameters - use template as GUIDE, not rigid contract
         missing_params = set(template.parameters) - set(params.keys())
         if missing_params:
             self.logger.debug(
-                "Missing parameters for template %s: %s",
+                "Missing parameters for template %s: %s - using template-guided LLM generation",
                 template.template_id,
                 missing_params,
             )
 
-            # Try to fill missing parameters from entities
-            params = self._fill_missing_parameters(params, entities, template)
+            # Try to infer missing parameters from question and entities
+            inferred_params = self._infer_missing_parameters(params, missing_params, entities, self._current_question, template)
+            params.update(inferred_params)
 
-            # Check again
-            missing_params = set(template.parameters) - set(params.keys())
-            if missing_params:
-                params = self._apply_default_parameters(
-                    params, missing_params, template
-                )
-                missing_params = set(template.parameters) - set(params.keys())
-                if missing_params:
-                    self.logger.error(f"Still missing parameters: {missing_params}")
-                    return None
+            # Check again after inference
+            still_missing = set(template.parameters) - set(params.keys())
+            if still_missing:
+                # For templates with many missing parameters or complex logic, use template-guided generation
+                # For templates with just a few simple missing parameters, stick with inferred defaults
+                if self._should_use_guided_generation(template, still_missing):
+                    self.logger.debug(
+                        f"Using template-guided LLM generation for complex template {template.template_id} with missing params {still_missing}"
+                    )
+                    return self._generate_guided_sql(template, entities, self._current_question, context)
+                else:
+                    # Apply defaults for remaining simple parameters and proceed with template
+                    defaulted_params = self._apply_default_parameters(params, still_missing, template)
+                    params.update(defaulted_params)
+                    still_missing = set(template.parameters) - set(params.keys())
+                    if still_missing:
+                        self.logger.error(f"Still missing parameters after all attempts: {still_missing}")
+                        return None
 
         params = self._apply_entity_overrides(params, entities, template)
 
@@ -897,6 +906,154 @@ class SQLGenerator:
             self.logger.error(f"Failed to generate SQL from LLM template: {e}")
             return None
 
+    def _generate_guided_sql(
+        self,
+        template: QueryTemplate,
+        entities: ExtractedEntities,
+        question: str,
+        context: RequestContext,
+    ) -> Optional[GeneratedSQL]:
+        """
+        Generate SQL using a template as a semantic guide for the LLM.
+
+        Instead of requiring exact parameter matching, the template provides
+        context and structure that guides the LLM to generate appropriate SQL.
+
+        Args:
+            template: Template to use as semantic guide
+            entities: Extracted entities
+            question: Original question
+            context: Request context
+
+        Returns:
+            GeneratedSQL using template-guided LLM generation
+        """
+        if not self.azure_client or not self.use_llm:
+            self.logger.debug("Template-guided SQL generation skipped (LLM unavailable)")
+            return None
+
+        try:
+            # Build enhanced context with template guidance
+            entity_payload = entities.model_dump()
+            domain_hints = self._build_domain_hints(question, entities)
+
+            # Include template information as guidance
+            template_guidance = {
+                "template_id": template.template_id,
+                "template_description": template.name,
+                "template_sql_structure": template.sql_template,
+                "expected_parameters": template.parameters,
+                "available_parameters": template.parameters,  # All expected parameters
+            }
+
+            request_context = {
+                "entities": entity_payload,
+                "schema": schema_docs.schema_for_prompt(),
+                "template_guidance": template_guidance,
+            }
+            if domain_hints:
+                request_context["domain_hints"] = domain_hints
+
+            # Create specialized prompt for template-guided generation
+            guided_prompt = f"""
+You are generating SQL for a financial analysis question. Use the template as a semantic guide for what type of analysis to perform.
+
+QUESTION: {question}
+
+TEMPLATE GUIDANCE:
+- Template Purpose: {template.name}
+- This template analyzes: {self._get_template_description(template.template_id)}
+- Key Analysis Type: {self._get_template_analysis_type(template.template_id)}
+
+EXTRACTED ENTITIES:
+{json.dumps(entity_payload, indent=2)}
+
+DATABASE SCHEMA:
+{schema_docs.schema_for_prompt()}
+
+Generate appropriate SQL that addresses the question. Use the template guidance to understand what type of financial analysis is needed, but generate clean, correct SQL that will work with the provided schema. Focus on the business logic rather than template parameter substitution.
+
+Return only the SQL query, no explanation.
+"""
+
+            llm_request = LLMRequest(
+                query=guided_prompt,
+                context=request_context,
+                similar_queries=context.metadata.get("similar_queries", []),
+                template_attempts=[{"template_id": template.template_id, "guidance": True}],
+            )
+
+            response = self.azure_client.generate_sql(llm_request)
+
+            attempt_record = {
+                "template_guidance": template.template_id,
+                "sql": response.generated_sql,
+                "confidence": response.confidence,
+                "token_usage": response.token_usage,
+                "latency_ms": response.processing_time_ms,
+            }
+
+            if not response.success or not response.generated_sql:
+                attempt_record["success"] = False
+                attempt_record["failure_reason"] = (
+                    response.explanation or "LLM response missing SQL"
+                )
+                context.metadata.setdefault("guided_sql_attempts", []).append(
+                    attempt_record
+                )
+                self.logger.warning(
+                    "Template-guided SQL generation failed: %s", response.explanation
+                )
+                return None
+
+            # Validate the generated SQL
+            validation_ok, validation_reason, validation_confidence = (
+                self.validator.validate(
+                    response.generated_sql,
+                    question,
+                    entities.model_dump(),
+                    context,
+                )
+            )
+
+            attempt_record["success"] = response.success and validation_ok
+            attempt_record["validation_confidence"] = validation_confidence
+            if validation_reason:
+                attempt_record["failure_reason"] = validation_reason
+
+            context.metadata.setdefault("guided_sql_attempts", []).append(
+                attempt_record
+            )
+
+            if not validation_ok:
+                self.logger.warning(
+                    "Generated guided SQL failed validation checks: %s", validation_reason
+                )
+                return None
+
+            llm_calls = context.metadata.setdefault("llm_calls", [])
+            llm_calls.append(
+                {
+                    "stage": "guided_sql",
+                    "template": template.template_id,
+                    "tokens": response.token_usage,
+                    "latency_ms": response.processing_time_ms,
+                    "success": response.success,
+                }
+            )
+
+            return GeneratedSQL(
+                sql=response.generated_sql,
+                parameters={},  # Parameters are inferred by LLM
+                template_id=template.template_id,
+                generation_method="template_guided_llm",
+                confidence=response.confidence,
+            )
+
+        except Exception as exc:  # noqa: BLE001
+            self.logger.error(f"Unexpected error in template-guided SQL generation: {exc}")
+            return None
+
     def _generate_custom_sql(
         self,
         entities: ExtractedEntities,
@@ -993,6 +1150,247 @@ class SQLGenerator:
         except Exception as exc:  # noqa: BLE001
             self.logger.error(f"Unexpected error generating custom SQL: {exc}")
             return None
+
+    def _get_template_description(self, template_id: str) -> str:
+        """Get a human-readable description of what the template analyzes."""
+        descriptions = {
+            "fcf_to_capex_trend": "free cash flow coverage of capital expenditures over time",
+            "shareholder_return_trend": "dividend and share repurchase trends and payout ratios",
+            "top_tech_cfo_trend": "cash flow from operations trends for top technology companies",
+            "ebitda_margin_improvement_rank": "EBITDA margin improvements over time",
+            "energy_roe_threshold_detector": "ROE above specific thresholds for consecutive years",
+            "semiconductor_roe_trend": "return on equity trends for semiconductor companies",
+            "hardware_gross_margin_trend": "gross margin trends for hardware companies",
+            "profit_margin_consistency_trend": "consistent profit margins over time",
+            "current_ratio_trend": "current ratio liquidity trends",
+            "debt_reduction_progression": "debt reduction over time",
+            "operating_margin_trend": "operating margin trends",
+            "gross_margin_trend_sector": "gross margin trends by sector",
+            "working_capital_cash_cycle_trend": "working capital efficiency trends",
+            "net_debt_to_ebitda_trend": "leverage trends using net debt to EBITDA",
+            "inventory_turnover_trend": "inventory management efficiency",
+            "asset_turnover_trend": "asset utilization efficiency",
+            "cfo_to_net_income_ratio_trend": "quality of earnings through cash flow vs net income",
+        }
+        return descriptions.get(template_id, f"financial metrics for {template_id.replace('_', ' ')}")
+
+    def _get_template_analysis_type(self, template_id: str) -> str:
+        """Get the type of financial analysis the template performs."""
+        analysis_types = {
+            "fcf_to_capex_trend": "cash flow sustainability and capital allocation efficiency",
+            "shareholder_return_trend": "shareholder capital return efficiency",
+            "top_tech_cfo_trend": "operating cash flow generation capacity",
+            "ebitda_margin_improvement_rank": "profitability improvement trends",
+            "energy_roe_threshold_detector": "consistent profitability above thresholds",
+            "semiconductor_roe_trend": "return on equity performance trends",
+            "hardware_gross_margin_trend": "gross margin performance trends",
+            "profit_margin_consistency_trend": "profit margin stability analysis",
+            "current_ratio_trend": "liquidity and working capital trends",
+            "debt_reduction_progression": "balance sheet deleveraging trends",
+            "operating_margin_trend": "operating profitability trends",
+            "gross_margin_trend_sector": "sector-level pricing power analysis",
+            "working_capital_cash_cycle_trend": "working capital efficiency analysis",
+            "net_debt_to_ebitda_trend": "leverage and debt capacity analysis",
+            "inventory_turnover_trend": "inventory management efficiency",
+            "asset_turnover_trend": "asset utilization and efficiency",
+            "cfo_to_net_income_ratio_trend": "earnings quality assessment",
+        }
+        return analysis_types.get(template_id, "financial performance analysis")
+
+    def _infer_missing_parameters(
+        self,
+        existing_params: Dict[str, str],
+        missing_params: List[str],
+        entities: ExtractedEntities,
+        question: str,
+        template: QueryTemplate,
+    ) -> Dict[str, str]:
+        """
+        Infer missing template parameters from question text and entities.
+
+        This makes templates more flexible by intelligently filling in common parameters
+        rather than requiring exact specification.
+        """
+        inferred = {}
+        question_lower = question.lower()
+
+        for param in missing_params:
+            if param in existing_params:
+                continue
+
+            # Sector parameter
+            if param == "sector" and entities.sectors:
+                inferred[param] = entities.sectors[0]  # Use first sector found
+
+            # Year parameters - look for fiscal year patterns
+            elif param in ["start_year", "end_year"] or param.startswith("year_"):
+                years = entities.time_periods
+                if years:
+                    # Extract numeric years
+                    numeric_years = []
+                    for year in years:
+                        year_clean = ''.join(c for c in year if c.isdigit())
+                        if len(year_clean) == 4:
+                            try:
+                                numeric_years.append(int(year_clean))
+                            except ValueError:
+                                pass
+
+                    if numeric_years:
+                        if param == "start_year":
+                            inferred[param] = str(min(numeric_years))
+                        elif param == "end_year":
+                            inferred[param] = str(max(numeric_years))
+                        elif param.startswith("year_"):
+                            # For year_2, year_3, etc., create a sequence
+                            try:
+                                year_num = int(param.split("_")[1])
+                                base_years = sorted(numeric_years)
+                                if len(base_years) >= 2:
+                                    # Interpolate between start and end years
+                                    start_year = base_years[0]
+                                    end_year = base_years[-1]
+                                    if year_num <= len(base_years):
+                                        inferred[param] = str(base_years[year_num - 1])
+                                    else:
+                                        # Extrapolate
+                                        year_span = end_year - start_year
+                                        steps = len(base_years) - 1
+                                        if steps > 0:
+                                            step_size = year_span // steps
+                                            inferred[param] = str(start_year + (year_num - 1) * step_size)
+                            except (ValueError, IndexError):
+                                pass
+
+            # Company parameters
+            elif param == "company_values" and entities.companies:
+                # Format as SQL array/list
+                inferred[param] = ", ".join(f"'{company}'" for company in entities.companies)
+
+            # Limit parameters
+            elif param == "limit":
+                if "top" in question_lower and any(word in question_lower for word in ["10", "five", "5"]):
+                    inferred[param] = "5"
+                elif "top" in question_lower and any(word in question_lower for word in ["20", "twenty"]):
+                    inferred[param] = "20"
+                else:
+                    inferred[param] = "10"  # Default top 10
+
+            # Minimum thresholds - use reasonable defaults based on template type
+            elif param.startswith("min_") or param.startswith("max_"):
+                inferred[param] = self._get_reasonable_default(param, template.template_id)
+
+            # Result limit
+            elif param == "result_limit":
+                inferred[param] = "10"
+
+            # Ranking year
+            elif param == "ranking_year" and entities.time_periods:
+                # Use most recent year mentioned
+                years = [y for y in entities.time_periods if y.isdigit() and len(y) == 4]
+                if years:
+                    inferred[param] = max(years)
+
+            # Top N parameter
+            elif param == "top_n":
+                if "top 10" in question_lower:
+                    inferred[param] = "10"
+                elif "top 5" in question_lower:
+                    inferred[param] = "5"
+                else:
+                    inferred[param] = "10"
+
+        self.logger.debug(f"Inferred parameters: {inferred}")
+        return inferred
+
+    def _get_reasonable_default(self, param: str, template_id: str) -> str:
+        """Get reasonable default values for threshold parameters."""
+        defaults = {
+            # Financial thresholds
+            "min_revenue": "1000000000",  # $1B
+            "min_assets": "1000000000",   # $1B
+            "min_cfo": "100000000",       # $100M
+            "min_capex_abs": "50000000",  # $50M
+            "min_net_income": "100000000", # $100M
+            "min_years": "3",
+
+            # Ratio thresholds
+            "min_fcf_retention": "0.0",
+            "max_fcf_retention": "2.0",
+            "max_capex_intensity": "0.5",
+
+            # Percentage thresholds
+            "min_improvement_pp": "200",  # 2 percentage points
+
+            # Scale/value thresholds
+            "max_abs_cfo": "10000000000",  # $10B
+            "value_scale": "1000000",      # Millions
+        }
+
+        # Template-specific overrides
+        template_defaults = {
+            "fcf_to_capex_trend": {
+                "min_fcf_retention": "0.5",
+                "max_fcf_retention": "3.0",
+                "min_years": "3",
+            },
+            "shareholder_return_trend": {
+                "min_total_return": "1000000000",  # $1B
+                "max_payout_ratio": "2.0",
+                "min_years": "3",
+            },
+        }
+
+        # Check template-specific defaults first
+        if template_id in template_defaults and param in template_defaults[template_id]:
+            return template_defaults[template_id][param]
+
+        # Fall back to general defaults
+        return defaults.get(param, "0")
+
+    def _should_use_guided_generation(self, template: QueryTemplate, missing_params: List[str]) -> bool:
+        """
+        Decide whether to use template-guided LLM generation or stick with parameter inference.
+
+        Use guided generation for:
+        - Templates with many missing parameters (>50% of total params)
+        - Templates with complex logic that can't be easily inferred
+        - Specific templates known to need LLM guidance
+
+        Stick with inference for:
+        - Templates with few missing parameters that can be reasonably defaulted
+        - Simple threshold/financial parameters
+        """
+        total_params = len(template.parameters)
+        missing_count = len(missing_params)
+
+        # If more than half the parameters are missing, use guided generation
+        if missing_count > total_params / 2:
+            return True
+
+        # Templates that are known to be complex and benefit from LLM guidance
+        complex_templates = {
+            "fcf_to_capex_trend",  # Complex multi-year analysis with many parameters
+            "shareholder_return_trend",  # Complex payout analysis
+            "top_tech_cfo_trend",  # Complex ranking and filtering
+            "ebitda_margin_improvement_rank",  # Complex margin calculations
+            "hardware_gross_margin_trend",  # Complex trend analysis
+        }
+
+        if template.template_id in complex_templates:
+            return True
+
+        # Parameters that are hard to infer and likely need LLM understanding
+        complex_params = {
+            "company_values",  # Specific company lists are hard to infer
+            "year_2", "year_3", "year_4", "year_5",  # Multi-year sequences
+        }
+
+        if any(param in complex_params for param in missing_params):
+            return True
+
+        # For simple missing parameters, stick with inference
+        return False
 
     def _retrieve_template_with_embeddings(
         self,

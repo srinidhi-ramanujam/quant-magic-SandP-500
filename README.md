@@ -62,7 +62,7 @@ Once you stop the script, restart it to clear old logs and begin a fresh session
 ## Status Snapshot
 
 - **Phase 0/1**: Foundation + LLM integration complete (Azure OpenAI, hybrid template routing, 27 templates, 100+ tests). No further action required.
-- **Phase 2 (Active)**: Custom SQL generation + validation + coverage push (goal: 86+/171 simple questions). See `PLAN.md` for live roadmap.
+- **Phase 2 (Active)**: Custom SQL generation + validation + coverage push (goal: 86+/171 simple questions). Template system enhanced with intelligent parameter inference and semantic guidance. See `PLAN.md` for live roadmap.
 
 ---
 
@@ -85,9 +85,15 @@ Natural Language Answer
 ```
 
 **Hybrid Approach**:
-- **Fast Path** (confidence ≥0.8): Template → SQL (sub-second)
-- **LLM Confirmation** (0.5-0.8): LLM validates template
+- **Fast Path** (confidence ≥0.8): Template → SQL (sub-second) with intelligent parameter inference
+- **LLM Confirmation** (0.5-0.8): LLM validates template with parameter completion
 - **LLM Fallback** (<0.5): Full LLM-powered generation
+- **Template-Guided Generation**: Templates as semantic guides rather than rigid contracts
+
+**Template Intelligence**:
+- **Parameter Inference**: Automatically fills missing template parameters from question context (sectors, years, thresholds)
+- **Semantic Guidance**: Templates provide business logic hints to LLM rather than requiring exact parameter matches
+- **Flexible Adaptation**: System adapts to user intent rather than failing on missing parameters
 
 ---
 

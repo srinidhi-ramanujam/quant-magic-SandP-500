@@ -389,7 +389,7 @@ class EntityExtractor:
             question=prompt,
             context={},
             temperature=self.config.entity_extraction_temperature,
-            max_tokens=500,  # Entity extraction shouldn't need many tokens
+            max_tokens=2000,  # Increased to accommodate LLM reasoning overhead
         )
 
         # Call Azure OpenAI with retry logic
