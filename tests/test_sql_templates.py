@@ -35,6 +35,30 @@ TEMPLATE_CASES = {
     "roe_trend_multi_year": {"company": "Apple", "start_year": "2019"},
     "net_margin_trend": {"company": "Apple", "start_year": "2019"},
     "operating_margin_quarterly": {"company": "Apple", "start_date": "2020-01-01"},
+    "asset_turnover_trend": {
+        "sector": "Information Technology",
+        "sic_filter_enabled": "1",
+        "sic_min": "3570",
+        "sic_max": "3699",
+        "start_year": "2020",
+        "year_2": "2021",
+        "year_3": "2022",
+        "end_year": "2023",
+        "min_years": "4",
+        "limit": "5",
+        "min_revenue": "10000000000",
+    },
+    "cfo_to_net_income_trend": {
+        "sector": "Health Care",
+        "start_year": "2019",
+        "year_2": "2020",
+        "year_3": "2021",
+        "end_year": "2023",
+        "min_years": "4",
+        "limit": "5",
+        "min_net_income": "500000000",
+        "max_ratio": "3",
+    },
 }
 
 

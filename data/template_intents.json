@@ -440,6 +440,23 @@
     }
   },
   {
+    "template_id": "net_debt_to_ebitda_trend",
+    "intent_text": "Track net debt-to-EBITDA leverage trends for named companies",
+    "pattern": "(?i)(net debt|debt-to-ebitda|leverage).*(trend|track|progression)",
+    "example_questions": [
+      "Track the net debt-to-EBITDA progression for major airlines from 2019 through 2023.",
+      "How has airline leverage normalized post-COVID?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year"
+      ],
+      "intent_category": "time_series_leverage"
+    }
+  },
+  {
     "template_id": "debt_reduction_progression",
     "intent_text": "Rank companies by multi-year debt reduction",
     "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
@@ -1640,6 +1657,54 @@
         "sector"
       ],
       "intent_category": "liquidity"
+    }
+  },
+  {
+    "template_id": "asset_turnover_trend",
+    "intent_text": "Compare multi-year asset turnover trends for a named cohort (e.g., Technology hardware leaders).",
+    "pattern": "(?i)(asset turnover|asset efficiency).*(trend|compare|progression|over the past)",
+    "example_questions": [
+      "Compare the asset turnover efficiency trends for major Technology hardware companies over the past 4 years (2020-2023).",
+      "Which hardware names improved asset turnover the most since 2020?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "sic_filter_enabled",
+        "sic_min",
+        "sic_max",
+        "start_year",
+        "year_2",
+        "year_3",
+        "end_year",
+        "min_years",
+        "limit",
+        "min_revenue"
+      ],
+      "intent_category": "time_series_efficiency"
+    }
+  },
+  {
+    "template_id": "cfo_to_net_income_trend",
+    "intent_text": "Assess sector earnings quality via CFO-to-net-income ratios over multiple fiscal years.",
+    "pattern": "(?i)(cash flow from operations|cfo).*net income.*(ratio|trend|quality)",
+    "example_questions": [
+      "Show the cash flow from operations to net income ratio trends for Healthcare companies from 2019 to 2024, identifying quality of earnings patterns.",
+      "Which pharma companies improved their CFO/Net Income ratios over the last five years?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "year_2",
+        "year_3",
+        "end_year",
+        "min_years",
+        "limit",
+        "min_net_income",
+        "max_ratio"
+      ],
+      "intent_category": "time_series_quality_of_earnings"
     }
   }
 ]

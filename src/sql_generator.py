@@ -392,13 +392,17 @@ class SQLGenerator:
 
         if "company_values" in missing_params:
             if template.template_id == "inventory_turnover_trend":
-                defaults[
-                    "company_values"
-                ] = "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+                defaults["company_values"] = (
+                    "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+                )
             elif template.template_id == "net_debt_to_ebitda_trend":
-                defaults[
-                    "company_values"
-                ] = "('DELTA AIR LINES, INC.'),('SOUTHWEST AIRLINES CO'),('UNITED AIRLINES HOLDINGS, INC.')"
+                defaults["company_values"] = (
+                    "('DELTA AIR LINES, INC.'),('SOUTHWEST AIRLINES CO'),('UNITED AIRLINES HOLDINGS, INC.')"
+                )
+            elif template.template_id == "asset_turnover_trend":
+                defaults["company_values"] = (
+                    "('APPLE INC'),('INTEL CORP'),('NVIDIA CORP'),('CISCO SYSTEMS, INC.'),('QUALCOMM INC/DE'),('BROADCOM INC.')"
+                )
 
         if "quarter_count" in missing_params:
             defaults["quarter_count"] = "6"
@@ -406,12 +410,62 @@ class SQLGenerator:
         if "min_period" in missing_params:
             defaults["min_period"] = "2022-01-01"
 
-        if "start_year" in missing_params and template.template_id == "net_debt_to_ebitda_trend":
+        if (
+            "start_year" in missing_params
+            and template.template_id == "net_debt_to_ebitda_trend"
+        ):
             defaults["start_year"] = "2019"
-        if "end_year" in missing_params and template.template_id == "net_debt_to_ebitda_trend":
+        if (
+            "end_year" in missing_params
+            and template.template_id == "net_debt_to_ebitda_trend"
+        ):
             defaults["end_year"] = "2023"
 
-        if "limit" in missing_params:
+        if template.template_id == "asset_turnover_trend":
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2020"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2023"
+            if "year_2" in missing_params:
+                defaults["year_2"] = "2021"
+            if "year_3" in missing_params:
+                defaults["year_3"] = "2022"
+            if "min_years" in missing_params:
+                defaults["min_years"] = "4"
+            if "sector" in missing_params:
+                defaults["sector"] = "Information Technology"
+            if "limit" in missing_params:
+                defaults["limit"] = "8"
+            if "min_revenue" in missing_params:
+                defaults["min_revenue"] = "10000000000"
+            if "sic_filter_enabled" in missing_params:
+                defaults["sic_filter_enabled"] = "1"
+            if "sic_min" in missing_params:
+                defaults["sic_min"] = "3570"
+            if "sic_max" in missing_params:
+                defaults["sic_max"] = "3699"
+
+        if template.template_id == "cfo_to_net_income_trend":
+            if "sector" in missing_params:
+                defaults["sector"] = "Health Care"
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2019"
+            if "year_2" in missing_params:
+                defaults["year_2"] = "2020"
+            if "year_3" in missing_params:
+                defaults["year_3"] = "2022"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2023"
+            if "min_years" in missing_params:
+                defaults["min_years"] = "4"
+            if "limit" in missing_params:
+                defaults["limit"] = "8"
+            if "min_net_income" in missing_params:
+                defaults["min_net_income"] = "500000000"
+            if "max_ratio" in missing_params:
+                defaults["max_ratio"] = "3"
+
+        if "limit" in missing_params and "limit" not in defaults:
             defaults["limit"] = "10"
 
         if "rank" in missing_params:
