@@ -25081,3 +25081,2580 @@ WHERE name_rank = 1
 ORDER BY avg_ratio DESC NULLS LAST, name
 LIMIT 8;
 ","Healthcare CFO-to-net income trend (2019-2023): DaVita and AbbVie keep >2.3x cash conversion while Becton, Bristol, HCA stay >1.7x; cash conversion is cooling in Gilead but remains >1.4x.","{""format"": ""Earnings quality metrics with cash flow analysis"", ""visualization"": ""Quality score heatmap over time"", ""sample_analysis"": ""WITH sector_companies AS (\n  SELECT cik,\n         name AS display_name,\n         REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,\n         ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n  FROM companies\n  WHERE UPPER(gics_sector) = UPPER('Health Care')\n), company_seed AS (\n  SELECT cik, display_name, canonical_name\n  FROM sector_companies\n  WHERE rn = 1\n), ranked_filings AS (\n  SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period,\n         ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n  FROM sub s\n  JOIN company_seed sc USING (cik)\n  WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2019 AND 2023\n), latest AS (\n  SELECT * FROM ranked_filings WHERE rn = 1\n), annual_values AS (\n  SELECT sc.display_name AS company,\n         lf.fiscal_year,\n         MAX(CASE WHEN n.tag IN (\n           'NetCashProvidedByUsedInOperatingActivities',\n           'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n           'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'\n         ) THEN n.value END) AS cfo,\n         MAX(CASE WHEN n.tag IN (\n           'NetIncomeLoss',\n           'NetIncomeLossAvailableToCommonStockholdersBasic',\n           'NetIncomeLossAvailableToCommonStockholdersDiluted'\n         ) THEN n.value END) AS net_income\n  FROM latest lf\n  JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n  JOIN company_seed sc USING (cik)\n  WHERE n.tag IN (\n    'NetCashProvidedByUsedInOperatingActivities',\n    'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n    'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations',\n    'NetIncomeLoss',\n    'NetIncomeLossAvailableToCommonStockholdersBasic',\n    'NetIncomeLossAvailableToCommonStockholdersDiluted'\n  )\n    AND COALESCE(TRIM(n.segments), '') = ''\n    AND COALESCE(TRIM(n.coreg), '') = ''\n  GROUP BY sc.display_name, lf.fiscal_year\n), ratios AS (\n  SELECT company,\n         fiscal_year,\n         CASE\n           WHEN net_income IS NULL OR cfo IS NULL THEN NULL\n           WHEN net_income <= 500000000 OR cfo <= 0 THEN NULL\n           ELSE LEAST(cfo / net_income, 3)\n         END AS cfo_to_ni\n  FROM annual_values\n), company_quality AS (\n  SELECT company,\n         COUNT(DISTINCT fiscal_year) AS years_available,\n         ROUND(AVG(cfo_to_ni), 2) AS avg_ratio,\n         ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN cfo_to_ni END), 2) AS ratio_2019,\n         ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN cfo_to_ni END), 2) AS ratio_2020,\n         ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN cfo_to_ni END), 2) AS ratio_2022,\n         ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN cfo_to_ni END), 2) AS ratio_2023,\n         ROUND(\n           MAX(CASE WHEN fiscal_year = 2023 THEN cfo_to_ni END) -\n           MIN(CASE WHEN fiscal_year = 2019 THEN cfo_to_ni END), 2\n         ) AS change_since_start\n  FROM ratios\n  GROUP BY company\n  HAVING COUNT(DISTINCT fiscal_year) >= 4\n     AND MIN(CASE WHEN fiscal_year = 2019 THEN cfo_to_ni END) IS NOT NULL\n     AND MIN(CASE WHEN fiscal_year = 2022 THEN cfo_to_ni END) IS NOT NULL\n)\nSELECT company,\n       years_available,\n       avg_ratio,\n       change_since_start,\n       ratio_2019,\n       ratio_2020,\n       ratio_2022,\n       ratio_2023\nFROM company_quality\nORDER BY avg_ratio DESC NULLS LAST\nLIMIT 8;"", ""sample_data"": [{""company"": ""DaVita Healthcare Partners"", ""FY2019"": ""2.56x"", ""FY2020"": ""2.56x"", ""FY2022"": ""2.79x"", ""FY2023"": ""2.98x"", ""avg_ratio"": ""2.57x"", ""insight"": ""Dialysis cash flows remain >2.5x net income as working-capital releases offset reimbursement lags.""}, {""company"": ""AbbVie"", ""FY2019"": ""1.69x"", ""FY2020"": ""3.00x"", ""FY2022"": ""2.11x"", ""FY2023"": ""3.00x"", ""avg_ratio"": ""2.35x"", ""insight"": ""Humira cash engine plus Allergan synergies kept operating cash far ahead of reported earnings.""}, {""company"": ""Becton Dickinson"", ""FY2019"": ""2.70x"", ""FY2020"": ""3.00x"", ""FY2022"": ""1.39x"", ""FY2023"": ""2.01x"", ""avg_ratio"": ""2.27x"", ""insight"": ""Pandemic diagnostics surge faded, but cash conversion stayed >2x despite supply-chain noise.""}, {""company"": ""Bristol Myers Squibb"", ""FY2019"": ""2.35x"", ""FY2022"": ""2.07x"", ""FY2023"": ""1.73x"", ""avg_ratio"": ""2.11x"", ""insight"": ""Post-Celgene integration still throws off ~2x cash vs. earnings even as Revlimid erosion begins.""}, {""company"": ""HCA Healthcare"", ""FY2019"": ""2.17x"", ""FY2020"": ""2.46x"", ""FY2022"": ""1.51x"", ""FY2023"": ""1.80x"", ""avg_ratio"": ""1.85x"", ""insight"": ""Elective volumes normalized, but disciplined capex kept hospital cash conversion above 1.5x.""}], ""business_insight"": ""Healthcare cash conversion remains sturdy: dialysis and pharma cash cows (DaVita, AbbVie, Becton) consistently turn $1 of earnings into $2\u20133 of operating cash, while hospitals (HCA) stay above 1.5x despite wage inflation."", ""key_findings"": [""DaVita sustains >2.5x CFO/NI as recurring treatments generate upfront cash relative to accrual revenue."", ""AbbVie\u2019s operating cash stayed ~3x net income while Humira wind-down funded Allergan amortization."", ""Becton Dickinson\u2019s ratio dipped post-pandemic but still clears 2x as diagnostics cash settles."", ""HCA holds ~1.8x conversion thanks to disciplined capex and faster receivables after staffing recovery.""], ""investment_implications"": [""Names delivering >2x cash-to-earnings (DaVita, AbbVie) warrant quality premiums for dividend/buyback programs."", ""Monitoring the ratio highlights early warning signs when pricing pressure erodes cash before EPS (e.g., hospital labor spikes)."", ""CFO/NI trends provide a cross-check on reported earnings for deal or litigation-heavy pharma names.""]}",5.0,1.0,template,,,,37.9622,0.0,0.0,0.0,0.0
+RUN_031,"12 Nov 2025, 1600 hours",custom,"Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024.",cash_to_assets_ratio_trend,"WITH provided_companies AS (
+    SELECT
+        TRIM(company_name) AS provided_name,
+        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM (VALUES ('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')) AS t(company_name)
+),
+company_dim AS (
+    SELECT DISTINCT
+        c.cik,
+        pc.provided_name AS display_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_name
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(
+            CASE
+                WHEN n.tag = 'CashAndCashEquivalentsAtCarryingValue'
+                THEN n.value
+            END
+        ) AS cash_and_equivalents,
+        MAX(
+            CASE
+                WHEN n.tag = 'CashCashEquivalentsAndShortTermInvestments'
+                THEN n.value
+            END
+        ) AS cash_and_short_term,
+        MAX(
+            CASE
+                WHEN n.tag = 'Assets'
+                THEN n.value
+            END
+        ) AS total_assets
+    FROM latest_filings lf
+    JOIN num n
+      ON n.adsh = lf.adsh
+     AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'CashAndCashEquivalentsAtCarryingValue',
+        'CashCashEquivalentsAndShortTermInvestments',
+        'Assets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+normalized AS (
+    SELECT
+        av.cik,
+        av.fiscal_year,
+        COALESCE(av.cash_and_equivalents, av.cash_and_short_term) AS cash_balance,
+        av.total_assets
+    FROM annual_values av
+),
+ratios AS (
+    SELECT
+        cd.display_name AS company,
+        n.fiscal_year,
+        n.cash_balance,
+        n.total_assets,
+        CASE
+            WHEN n.total_assets IS NULL
+                 OR n.total_assets = 0
+                 OR n.cash_balance IS NULL
+            THEN NULL
+            ELSE n.cash_balance / n.total_assets
+        END AS cash_to_assets_ratio
+    FROM normalized n
+    JOIN company_dim cd USING (cik)
+),
+coverage AS (
+    SELECT
+        company,
+        COUNT(DISTINCT CASE WHEN cash_to_assets_ratio IS NOT NULL THEN fiscal_year END) AS ratios_available
+    FROM ratios
+    GROUP BY company
+)
+SELECT
+    r.company,
+    r.fiscal_year,
+    ROUND(r.cash_balance / 1000000000.0, 2) AS cash_billions,
+    ROUND(r.total_assets / 1000000000.0, 2) AS assets_billions,
+    ROUND(r.cash_to_assets_ratio, 4) AS cash_to_assets_ratio,
+    ROUND(r.cash_to_assets_ratio * 100, 2) AS cash_to_assets_ratio_pct
+FROM ratios r
+JOIN coverage c USING (company)
+WHERE r.cash_to_assets_ratio IS NOT NULL
+  AND c.ratios_available >= 4
+ORDER BY r.company, r.fiscal_year;","Cash-to-assets liquidity trend:
+1) ADOBE INC.: 12.76% (2019) → 25.18% (2024); peak 25.18% in 2024. FY2024 cash $7.61B, assets $30.23B.
+2) MICROSOFT CORP: 3.96% (2019) → 3.58% (2024); peak 8.42% in 2023. FY2024 cash $18.32B, assets $512.16B.
+3) SALESFORCE, INC.: 7.52% (2019) → 8.60% (2024); peak 9.34% in 2020. FY2024 cash $8.85B, assets $102.93B.",,,0.85,template,,,,24.2396,0.0,0.0,0.0,0.0
+RUN_032,"12 Nov 2025, 1600 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 10;
+
+","Energy ROE streak leaders:
+1) HALLIBURTON CO: 2021-2024 streak (4 yrs) averaging 23.26% ROE (range 19.71%-27.97%, std dev 3.54%). Latest FY2024: 23.71%.
+2) DEVON ENERGY CORP/DE: 2021-2023 streak (3 yrs) averaging 37.95% ROE (range 29.93%-53.25%, std dev 13.26%). Latest FY2023: 30.67%.
+3) MARATHON PETROLEUM CORP: 2021-2023 streak (3 yrs) averaging 34.71% ROE (range 29.86%-42.55%, std dev 6.85%). Latest FY2023: 31.74%.
+4) CHESAPEAKE ENERGY CORP: 2021-2023 streak (3 yrs) averaging 31.10% ROE (range 16.66%-54.10%, std dev 20.13%). Latest FY2023: 22.55%.
+5) EOG RESOURCES INC: 2021-2023 streak (3 yrs) averaging 26.46% ROE (range 21.03%-31.31%, std dev 5.17%). Latest FY2023: 27.03%.",,,0.8,template,,,,27.308,0.0,0.0,0.0,0.0
+RUN_033,"12 Nov 2025, 1600 hours",custom,Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?,fcf_to_capex_trend,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Health Care' = 'ALL' OR UPPER(gics_sector) = UPPER('Health Care'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM ranked_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetCashProvidedByUsedInOperatingActivities',
+            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+        ) THEN n.value END) AS cfo,
+        MAX(CASE WHEN n.tag IN (
+            'PaymentsToAcquirePropertyPlantAndEquipment',
+            'PaymentsToAcquireProductiveAssets'
+        ) THEN n.value END) AS capex
+    FROM latest_filings lf
+    JOIN num n
+      ON n.adsh = lf.adsh
+     AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations',
+        'PaymentsToAcquirePropertyPlantAndEquipment',
+        'PaymentsToAcquireProductiveAssets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+filtered AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        cfo,
+        ABS(capex) AS capex_outlay,
+        cfo - ABS(capex) AS free_cash_flow,
+        CASE
+            WHEN cfo IS NULL OR capex IS NULL THEN NULL
+            WHEN cfo <= 400000000 THEN NULL
+            WHEN ABS(capex) < 200000000 THEN NULL
+            ELSE LEAST(
+                GREATEST((cfo - ABS(capex)) / NULLIF(cfo, 0), -1.0),
+                1.2
+            )
+        END AS fcf_retention_ratio,
+        CASE
+            WHEN cfo IS NULL OR capex IS NULL THEN NULL
+            WHEN cfo <= 400000000 THEN NULL
+            WHEN ABS(capex) < 200000000 THEN NULL
+            ELSE LEAST(ABS(capex) / NULLIF(cfo, 0), 1.2)
+        END AS capex_intensity_ratio
+    FROM annual_values
+),
+company_trend AS (
+    SELECT
+        company,
+        canonical_name,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(AVG(fcf_retention_ratio), 2) AS avg_fcf_retention,
+        ROUND(AVG(capex_intensity_ratio), 2) AS avg_capex_intensity,
+        ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END), 2) AS retention_2019,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN fcf_retention_ratio END), 2) AS retention_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN fcf_retention_ratio END), 2) AS retention_2021,
+        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN fcf_retention_ratio END), 2) AS retention_2022,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN fcf_retention_ratio END), 2) AS retention_2023,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END), 2) AS retention_2024,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_intensity_ratio END), 2) AS capex_intensity_2024,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN free_cash_flow END) / 1000000000.0, 2) AS fcf_2024_billions,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_outlay END) / 1000000000.0, 2) AS capex_2024_billions
+    FROM filtered
+    GROUP BY company, canonical_name
+    HAVING COUNT(DISTINCT fiscal_year) >= 5
+       AND MIN(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END) IS NOT NULL
+       AND MIN(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END) IS NOT NULL
+)
+SELECT
+    name,
+    years_available,
+    avg_fcf_retention,
+    avg_capex_intensity,
+    retention_2019,
+    retention_2020,
+    retention_2021,
+    retention_2022,
+    retention_2023,
+    retention_2024,
+    capex_intensity_2024,
+    fcf_2024_billions,
+    capex_2024_billions
+FROM (
+    SELECT
+        company AS name,
+        canonical_name,
+        years_available,
+        avg_fcf_retention,
+        avg_capex_intensity,
+        retention_2019,
+        retention_2020,
+        retention_2021,
+        retention_2022,
+        retention_2023,
+        retention_2024,
+        capex_intensity_2024,
+        fcf_2024_billions,
+        capex_2024_billions,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY avg_fcf_retention DESC NULLS LAST, company
+        ) AS name_rank
+    FROM company_trend
+    WHERE avg_fcf_retention IS NOT NULL
+) ranked
+WHERE name_rank = 1
+ORDER BY avg_fcf_retention DESC NULLS LAST, name
+LIMIT 8;
+
+","Free cash flow coverage leaders:
+1) AMGEN INC: avg retention 0.91x with capex intensity 0.09x; latest year retention 0.90x, capex intensity 0.10x, FCF $10.39B on capex $1.10B.
+2) REGENERON PHARMACEUTICALS INC: avg retention 0.84x with capex intensity 0.16x; latest year retention 0.83x, capex intensity 0.17x, FCF $3.66B on capex $0.76B.
+3) MEDTRONIC PLC: avg retention 0.80x with capex intensity 0.20x; latest year retention 0.77x, capex intensity 0.23x, FCF $5.20B on capex $1.59B.
+4) QUEST DIAGNOSTICS INC: avg retention 0.74x with capex intensity 0.26x; latest year retention 0.68x, capex intensity 0.32x, FCF $0.91B on capex $0.43B.
+5) BECTON DICKINSON & CO: avg retention 0.72x with capex intensity 0.28x; latest year retention 0.81x, capex intensity 0.19x, FCF $3.12B on capex $0.73B.",,,0.95,template,,,,22.3594,0.0,0.0,0.0,0.0
+RUN_034,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,22.5953,0.0,0.0,0.0,0.0
+RUN_035,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 13:         {sic_filter_enabled} = 0
+                                    ^",,,0.0,,,,,21.1896,0.0,0.0,0.0,0.0
+RUN_036,"12 Nov 2025, 1600 hours",custom,Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?,ebitda_margin_improvement_rank,"WITH sector_candidates AS (
+    SELECT
+        c.cik,
+        c.name,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.cik
+            ORDER BY
+                CASE WHEN UPPER(c.name) LIKE '% INC%' THEN 0 ELSE 1 END,
+                LENGTH(TRIM(c.name)),
+                UPPER(c.name)
+        ) AS rn
+    FROM companies c
+    WHERE (UPPER('Information Technology') = 'ALL' OR LOWER(c.gics_sector) LIKE LOWER('%Information Technology%'))
+),
+sector_companies AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM sector_candidates
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2021 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM ranked_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'OperatingIncomeLoss',
+            'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'
+        ) THEN n.value END) AS operating_income,
+        MAX(CASE WHEN n.tag IN (
+            'DepreciationDepletionAndAmortization',
+            'DepreciationAndAmortization',
+            'DepreciationAmortizationAndAccretionNet',
+            'AmortizationOfIntangibleAssets',
+            'Depreciation'
+        ) THEN n.value END) AS depreciation,
+        MAX(CASE WHEN n.tag IN (
+            'Revenues',
+            'RevenueFromContractWithCustomerExcludingAssessedTax',
+            'SalesRevenueNet',
+            'NetSales'
+        ) THEN n.value END) AS revenue
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'OperatingIncomeLoss',
+        'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+        'DepreciationDepletionAndAmortization',
+        'DepreciationAndAmortization',
+        'DepreciationAmortizationAndAccretionNet',
+        'AmortizationOfIntangibleAssets',
+        'Depreciation',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSales'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+margin_series AS (
+    SELECT
+        sc.canonical_name,
+        ANY_VALUE(sc.name) AS display_name,
+        av.fiscal_year,
+        AVG((COALESCE(av.operating_income, 0) + COALESCE(av.depreciation, 0)) / NULLIF(av.revenue, 0)) AS ebitda_margin,
+        MAX(av.revenue) AS revenue
+    FROM annual_values av
+    JOIN sector_companies sc USING (cik)
+    WHERE av.revenue IS NOT NULL
+      AND av.operating_income IS NOT NULL
+    GROUP BY sc.canonical_name, av.fiscal_year
+),
+aggregated AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(display_name) AS display_name,
+        MAX(CASE WHEN fiscal_year = 2021 THEN ebitda_margin END) AS margin_start,
+        MAX(CASE WHEN fiscal_year = 2024 THEN ebitda_margin END) AS margin_end,
+        MAX(CASE WHEN fiscal_year = 2024 THEN revenue END) AS revenue_end,
+        COUNT(DISTINCT CASE WHEN fiscal_year BETWEEN 2021 AND 2024 THEN fiscal_year END) AS years_available
+    FROM margin_series
+    GROUP BY canonical_name
+)
+SELECT
+    display_name AS name,
+    ROUND(margin_start * 100, 2) AS margin_2021_pct,
+    ROUND(margin_end * 100, 2) AS margin_2024_pct,
+    ROUND((margin_end - margin_start) * 100, 2) AS improvement_pp,
+    ROUND(revenue_end / 1000000000.0, 2) AS revenue_2024_billions
+FROM aggregated
+WHERE margin_start IS NOT NULL
+  AND margin_end IS NOT NULL
+  AND revenue_end >= 2000000000
+  AND ((margin_end - margin_start) * 100) >= 5
+ORDER BY improvement_pp DESC,
+         revenue_2024_billions DESC,
+         name
+LIMIT 10;
+
+","Top EBITDA margin improvers:
+1) TRIMBLE INC.: 17.09% (2021) → 60.76% (2024) +43.66% on $3.68B revenue.
+2) PALO ALTO NETWORKS INC: -1.03% (2021) → 15.84% (2024) +16.87% on $8.03B revenue.
+3) FISERV INC: 14.10% (2021) → 28.74% (2024) +14.64% on $20.46B revenue.
+4) ARISTA NETWORKS, INC.: 33.28% (2021) → 47.51% (2024) +14.22% on $7.00B revenue.
+5) FORTINET INC: 21.99% (2021) → 32.34% (2024) +10.36% on $5.96B revenue.",,,0.8,template,,,,28.0597,0.0,0.0,0.0,0.0
+RUN_037,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,34.7137,0.0,0.0,0.0,0.0
+RUN_038,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,22.6133,0.0,0.0,0.0,0.0
+RUN_039,"12 Nov 2025, 1600 hours",custom,How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?,top_tech_cfo_trend,"WITH sector_companies AS (
+    SELECT
+        c.cik,
+        MIN(c.name) AS company_name,
+        REGEXP_REPLACE(UPPER(TRIM(MIN(c.name))), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies c
+    WHERE (
+        UPPER('Information Technology') = 'ALL'
+        OR LOWER(c.gics_sector) LIKE LOWER('%Information Technology%')
+    )
+    GROUP BY c.cik
+),
+ranking_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.fy
+            ORDER BY s.filed DESC
+        ) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A', '20-F')
+      AND CAST(s.fy AS INTEGER) = 2023
+),
+latest_ranking AS (
+    SELECT *
+    FROM ranking_filings
+    WHERE rn = 1
+),
+ranking_metrics AS (
+    SELECT
+        lr.cik,
+        COALESCE(
+            MAX(CASE WHEN n.tag = 'Revenues' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'RevenueFromContractWithCustomerExcludingAssessedTax' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'SalesRevenueNet' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetSalesRevenue' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetSales' THEN n.value END)
+        ) AS revenue
+    FROM latest_ranking lr
+    JOIN num n ON n.adsh = lr.adsh AND n.ddate = lr.period
+    WHERE n.tag IN (
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSalesRevenue',
+        'NetSales'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lr.cik
+),
+ranked_companies AS (
+    SELECT
+        sc.cik,
+        sc.company_name,
+        sc.canonical_name,
+        rm.revenue,
+        ROW_NUMBER() OVER (
+            ORDER BY rm.revenue DESC NULLS LAST, sc.company_name
+        ) AS revenue_rank
+    FROM ranking_metrics rm
+    JOIN sector_companies sc USING (cik)
+    WHERE rm.revenue IS NOT NULL
+      AND rm.revenue >= 10000000000
+),
+selected_companies AS (
+    SELECT *
+    FROM ranked_companies
+    WHERE revenue_rank <= 10
+),
+quarterly_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.fp,
+        s.period AS quarter_end,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.period
+            ORDER BY s.filed DESC
+        ) AS filing_rank
+    FROM sub s
+    JOIN selected_companies sc USING (cik)
+    WHERE s.form IN ('10-Q', '10-Q/A')
+      AND s.fp IN ('Q1', 'Q2', 'Q3', 'Q4')
+      AND CAST(s.fy AS INTEGER) BETWEEN 2022 AND 2024
+      AND s.period BETWEEN DATE '2021-09-01' AND DATE '2024-12-31'
+),
+latest_quarters AS (
+    SELECT *
+    FROM quarterly_filings
+    WHERE filing_rank = 1
+),
+raw_cfo AS (
+    SELECT
+        l.cik,
+        l.fiscal_year,
+        l.fp,
+        DATE_TRUNC('day', l.quarter_end) AS quarter_end,
+        COALESCE(
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivities' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations' THEN n.value END)
+        ) AS cfo_ytd
+    FROM latest_quarters l
+    JOIN num n ON n.adsh = l.adsh AND n.ddate = l.quarter_end
+    WHERE n.tag IN (
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY l.cik, l.fiscal_year, l.fp, l.quarter_end
+),
+ordered_quarters AS (
+    SELECT
+        r.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY r.cik, r.fiscal_year
+            ORDER BY r.quarter_end
+        ) AS quarter_index,
+        LAG(r.cfo_ytd) OVER (
+            PARTITION BY r.cik, r.fiscal_year
+            ORDER BY r.quarter_end
+        ) AS prev_cfo_ytd
+    FROM raw_cfo r
+    WHERE r.cfo_ytd IS NOT NULL
+),
+quarterly_cfo AS (
+    SELECT
+        o.cik,
+        o.fiscal_year,
+        o.fp,
+        o.quarter_end,
+        CASE
+            WHEN o.quarter_index = 1 THEN o.cfo_ytd
+            WHEN o.prev_cfo_ytd IS NULL THEN NULL
+            ELSE o.cfo_ytd - o.prev_cfo_ytd
+        END AS cfo_quarter
+    FROM ordered_quarters o
+),
+filtered_series AS (
+    SELECT
+        sc.company_name AS company,
+        sc.canonical_name,
+        qc.quarter_end,
+        qc.fiscal_year,
+        qc.fp,
+        qc.cfo_quarter
+    FROM quarterly_cfo qc
+    JOIN selected_companies sc USING (cik)
+    WHERE qc.cfo_quarter IS NOT NULL
+      AND ABS(qc.cfo_quarter) <= 400000000000
+      AND qc.quarter_end BETWEEN DATE '2021-09-01' AND DATE '2024-12-31'
+),
+coverage AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS quarters_observed
+    FROM filtered_series
+    GROUP BY canonical_name
+    HAVING COUNT(*) >= 6
+),
+final_series AS (
+    SELECT
+        fs.company,
+        fs.canonical_name,
+        fs.quarter_end,
+        fs.fiscal_year,
+        fs.fp,
+        fs.cfo_quarter / 1000000000.0 AS cfo_quarter_scaled
+    FROM filtered_series fs
+    JOIN coverage c USING (canonical_name)
+)
+SELECT
+    company,
+    quarter_end,
+    fiscal_year,
+    fp AS fiscal_period,
+    ROUND(cfo_quarter_scaled, 3) AS operating_cfo_billions
+FROM final_series
+ORDER BY quarter_end, company
+LIMIT 500;
+
+","Top FY2024 YTD cash generators: APPLE INC $91.44B; ALPHABET INC. $86.19B; MICROSOFT CORP $81.35B. Largest YoY cash accelerations: MICROSOFT CORP +22.54B; NVIDIA CORP +13.20B; FACEBOOK INC +11.63B. Soft spots: CISCO SYSTEMS, INC. -6.77B; INTEL CORP -1.72B. Recent peak quarters: MICROSOFT CORP $31.92B (2024-03-31); ALPHABET INC. $30.70B (2024-09-30); APPLE INC $28.86B (2024-06-30).",,,0.95,template,,,,25.3063,0.0,0.0,0.0,0.0
+RUN_040,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,21.9908,0.0,0.0,0.0,0.0
+RUN_041,"12 Nov 2025, 1600 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,An error occurred while processing your question: cannot assign to field '__traceback__',,,0.0,,,,,39.1825,0.0,0.0,0.0,0.0
+RUN_042,"12 Nov 2025, 1600 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,0.2051,0.0,0.0,0.0,0.0
+RUN_042,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,23.6047,0.0,0.0,0.0,0.0
+RUN_043,"12 Nov 2025, 1600 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 13:         {sic_filter_enabled} = 0
+                                    ^",,,0.0,,,,,0.166,0.0,0.0,0.0,0.0
+RUN_044,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,98.7027,0.0,0.0,0.0,0.0
+RUN_045,"12 Nov 2025, 1600 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,0.163,0.0,0.0,0.0,0.0
+RUN_046,"12 Nov 2025, 1600 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,19.9489,0.0,0.0,0.0,0.0
+RUN_047,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,22.8404,0.0,0.0,0.0,0.0
+RUN_048,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,0.1556,0.0,0.0,0.0,0.0
+RUN_049,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,0.2278,0.0,0.0,0.0,0.0
+RUN_050,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.0,,,,,0.2131,0.0,0.0,0.0,0.0
+RUN_050,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 13:         {sic_filter_enabled} = 0
+                                    ^",,,0.0,,,,,25.8061,0.0,0.0,0.0,0.0
+RUN_051,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 68:         CASE WHEN cfo >= {min_cfo} THEN cfo ELSE NULL END AS cfo,
+                                          ^",,,0.0,,,,,0.211,0.0,0.0,0.0,0.0
+RUN_052,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 68:         CASE WHEN cfo >= {min_cfo} THEN cfo ELSE NULL END AS cfo,
+                                          ^",,,0.0,,,,,22.0441,0.0,0.0,0.0,0.0
+RUN_053,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",shareholder_return_trend,"WITH sector_base AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (
+            PARTITION BY cik
+            ORDER BY LENGTH(TRIM(name)), name
+        ) AS rn
+    FROM companies
+    WHERE ('Information Technology' = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Information Technology%'))
+      AND (
+        1 = 0
+        OR (
+            sic IS NOT NULL
+            AND CAST(sic AS INTEGER) BETWEEN 5200 AND 5999
+        )
+      )
+),
+company_dim AS (
+    SELECT
+        cik,
+        name,
+        canonical_name
+    FROM sector_base
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2018 AND 2023
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE rn = 1
+),
+shareholder_returns AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'PaymentsOfDividendsCommonStock',
+                    'PaymentsOfDividends',
+                    'DividendsCommonStock'
+                )
+                THEN n.value
+            END
+        ) AS dividends_paid,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'PaymentsForRepurchaseOfCommonStock',
+                    'PaymentsForRepurchaseOfCapitalStock',
+                    'PaymentsForRepurchaseOfCommonStockAndPreferredStock'
+                )
+                THEN n.value
+            END
+        ) AS share_repurchases
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'PaymentsOfDividendsCommonStock',
+        'PaymentsOfDividends',
+        'DividendsCommonStock',
+        'PaymentsForRepurchaseOfCommonStock',
+        'PaymentsForRepurchaseOfCapitalStock',
+        'PaymentsForRepurchaseOfCommonStockAndPreferredStock'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+      AND n.qtrs IN (0, 4)
+    GROUP BY lf.cik, lf.fiscal_year
+),
+aggregated AS (
+    SELECT
+        cd.cik,
+        MAX(cd.name) AS company_name,
+        COUNT(
+            DISTINCT CASE
+                WHEN sr.fiscal_year BETWEEN 2018 AND 2023
+                     AND (sr.dividends_paid IS NOT NULL OR sr.share_repurchases IS NOT NULL)
+                THEN sr.fiscal_year
+            END
+        ) AS years_available,
+        SUM(COALESCE(sr.dividends_paid, 0)) AS total_dividends,
+        SUM(COALESCE(sr.share_repurchases, 0)) AS total_buybacks,
+        MAX(
+            CASE
+                WHEN sr.fiscal_year = 2018
+                THEN COALESCE(sr.dividends_paid, 0) + COALESCE(sr.share_repurchases, 0)
+            END
+        ) AS return_start,
+        MAX(
+            CASE
+                WHEN sr.fiscal_year = 2023
+                THEN COALESCE(sr.dividends_paid, 0) + COALESCE(sr.share_repurchases, 0)
+            END
+        ) AS return_end
+    FROM shareholder_returns sr
+    JOIN company_dim cd USING (cik)
+    GROUP BY cd.cik
+)
+SELECT
+    company_name AS name,
+    years_available,
+    ROUND(return_start / 1000000000.0, 2) AS return_2018_billions,
+    ROUND(return_end / 1000000000.0, 2) AS return_2023_billions,
+    ROUND((return_end - return_start) / 1000000000.0, 2) AS return_change_billions,
+    ROUND(total_dividends / 1000000000.0, 2) AS dividends_total_billions,
+    ROUND(total_buybacks / 1000000000.0, 2) AS buybacks_total_billions,
+    ROUND(
+        (total_dividends + total_buybacks) / 1000000000.0,
+        2
+    ) AS capital_return_billions,
+    ROUND(
+        (total_dividends + total_buybacks)
+        / NULLIF(years_available, 0)
+        / 1000000000.0,
+        2
+    ) AS avg_annual_return_billions
+FROM aggregated
+WHERE years_available >= 4
+  AND return_start IS NOT NULL
+  AND return_end IS NOT NULL
+  AND (total_dividends + total_buybacks) >= 2000000000
+ORDER BY capital_return_billions DESC, name
+LIMIT 8;
+",No results found.,,,0.75,template,,,,0.4203,0.0,0.0,0.0,0.0
+RUN_054,"12 Nov 2025, 1700 hours",custom,"Which large U.S. retailers returned the most capital to shareholders via dividends and share repurchases between FY2018 and FY2023, and how did their annual payouts change?",shareholder_return_trend,"WITH sector_base AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (
+            PARTITION BY cik
+            ORDER BY LENGTH(TRIM(name)), name
+        ) AS rn
+    FROM companies
+    WHERE ('ALL' = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%ALL%'))
+      AND (
+        1 = 0
+        OR (
+            sic IS NOT NULL
+            AND CAST(sic AS INTEGER) BETWEEN 5200 AND 5999
+        )
+      )
+),
+company_dim AS (
+    SELECT
+        cik,
+        name,
+        canonical_name
+    FROM sector_base
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2018 AND 2023
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE rn = 1
+),
+shareholder_returns AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'PaymentsOfDividendsCommonStock',
+                    'PaymentsOfDividends',
+                    'DividendsCommonStock'
+                )
+                THEN n.value
+            END
+        ) AS dividends_paid,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'PaymentsForRepurchaseOfCommonStock',
+                    'PaymentsForRepurchaseOfCapitalStock',
+                    'PaymentsForRepurchaseOfCommonStockAndPreferredStock'
+                )
+                THEN n.value
+            END
+        ) AS share_repurchases
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'PaymentsOfDividendsCommonStock',
+        'PaymentsOfDividends',
+        'DividendsCommonStock',
+        'PaymentsForRepurchaseOfCommonStock',
+        'PaymentsForRepurchaseOfCapitalStock',
+        'PaymentsForRepurchaseOfCommonStockAndPreferredStock'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+      AND n.qtrs IN (0, 4)
+    GROUP BY lf.cik, lf.fiscal_year
+),
+aggregated AS (
+    SELECT
+        cd.cik,
+        MAX(cd.name) AS company_name,
+        COUNT(
+            DISTINCT CASE
+                WHEN sr.fiscal_year BETWEEN 2018 AND 2023
+                     AND (sr.dividends_paid IS NOT NULL OR sr.share_repurchases IS NOT NULL)
+                THEN sr.fiscal_year
+            END
+        ) AS years_available,
+        SUM(COALESCE(sr.dividends_paid, 0)) AS total_dividends,
+        SUM(COALESCE(sr.share_repurchases, 0)) AS total_buybacks,
+        MAX(
+            CASE
+                WHEN sr.fiscal_year = 2018
+                THEN COALESCE(sr.dividends_paid, 0) + COALESCE(sr.share_repurchases, 0)
+            END
+        ) AS return_start,
+        MAX(
+            CASE
+                WHEN sr.fiscal_year = 2023
+                THEN COALESCE(sr.dividends_paid, 0) + COALESCE(sr.share_repurchases, 0)
+            END
+        ) AS return_end
+    FROM shareholder_returns sr
+    JOIN company_dim cd USING (cik)
+    GROUP BY cd.cik
+)
+SELECT
+    company_name AS name,
+    years_available,
+    ROUND(return_start / 1000000000.0, 2) AS return_2018_billions,
+    ROUND(return_end / 1000000000.0, 2) AS return_2023_billions,
+    ROUND((return_end - return_start) / 1000000000.0, 2) AS return_change_billions,
+    ROUND(total_dividends / 1000000000.0, 2) AS dividends_total_billions,
+    ROUND(total_buybacks / 1000000000.0, 2) AS buybacks_total_billions,
+    ROUND(
+        (total_dividends + total_buybacks) / 1000000000.0,
+        2
+    ) AS capital_return_billions,
+    ROUND(
+        (total_dividends + total_buybacks)
+        / NULLIF(years_available, 0)
+        / 1000000000.0,
+        2
+    ) AS avg_annual_return_billions
+FROM aggregated
+WHERE years_available >= 4
+  AND return_start IS NOT NULL
+  AND return_end IS NOT NULL
+  AND (total_dividends + total_buybacks) >= 2000000000
+ORDER BY capital_return_billions DESC, name
+LIMIT 8;
+","Found 8 results. Sample: [{'name': 'HOME DEPOT INC', 'years_available': 6, 'return_2018_billions': 14.67, 'return_2023_billions': 16.33, 'return_change_billions': 1.67, 'dividends_total_billions': 40.27, 'buybacks_total_billions': 47.18, 'capital_return_billions': 87.45, 'avg_annual_return_billions': 14.57}, {'name': 'WALMART INC.', 'years_available': 6, 'return_2018_billions': 13.51, 'return_2023_billions': 8.92, 'return_change_billions': -4.59, 'dividends_total_billions': 36.67, 'buybacks_total_billions': 38.24, 'capital_return_billions': 74.91, 'avg_annual_return_billions': 12.49}, {'name': 'STARBUCKS CORP', 'years_available': 6, 'return_2018_billions': 8.88, 'return_2023_billions': 3.42, 'return_change_billions': -5.46, 'dividends_total_billions': 12.24, 'buybacks_total_billions': 24.05, 'capital_return_billions': 36.29, 'avg_annual_return_billions': 6.05}, {'name': 'TARGET CORP', 'years_available': 6, 'return_2018_billions': 3.47, 'return_2023_billions': 2.05, 'return_change_billions': -1.42, 'dividends_total_billions': 9.7, 'buybacks_total_billions': 14.62, 'capital_return_billions': 24.31, 'avg_annual_return_billions': 4.05}, {'name': 'CVS HEALTH CORP', 'years_available': 6, 'return_2018_billions': 2.05, 'return_2023_billions': 5.15, 'return_change_billions': 3.11, 'dividends_total_billions': 16.0, 'buybacks_total_billions': 5.51, 'capital_return_billions': 21.51, 'avg_annual_return_billions': 3.58}]",,,0.75,template,,,,0.9534,0.0,0.0,0.0,0.0
+RUN_055,"12 Nov 2025, 1700 hours",custom,Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?,ebitda_margin_improvement_rank,"WITH sector_candidates AS (
+    SELECT
+        c.cik,
+        c.name,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.cik
+            ORDER BY
+                CASE WHEN UPPER(c.name) LIKE '% INC%' THEN 0 ELSE 1 END,
+                LENGTH(TRIM(c.name)),
+                UPPER(c.name)
+        ) AS rn
+    FROM companies c
+    WHERE (UPPER('Information Technology') = 'ALL' OR LOWER(c.gics_sector) LIKE LOWER('%Information Technology%'))
+),
+sector_companies AS (
+    SELECT
+        cik,
+        name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM sector_candidates
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2021 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM ranked_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'OperatingIncomeLoss',
+            'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'
+        ) THEN n.value END) AS operating_income,
+        MAX(CASE WHEN n.tag IN (
+            'DepreciationDepletionAndAmortization',
+            'DepreciationAndAmortization',
+            'DepreciationAmortizationAndAccretionNet',
+            'AmortizationOfIntangibleAssets',
+            'Depreciation'
+        ) THEN n.value END) AS depreciation,
+        MAX(CASE WHEN n.tag IN (
+            'Revenues',
+            'RevenueFromContractWithCustomerExcludingAssessedTax',
+            'SalesRevenueNet',
+            'NetSales'
+        ) THEN n.value END) AS revenue
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'OperatingIncomeLoss',
+        'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+        'DepreciationDepletionAndAmortization',
+        'DepreciationAndAmortization',
+        'DepreciationAmortizationAndAccretionNet',
+        'AmortizationOfIntangibleAssets',
+        'Depreciation',
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSales'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+margin_series AS (
+    SELECT
+        sc.canonical_name,
+        ANY_VALUE(sc.name) AS display_name,
+        av.fiscal_year,
+        AVG((COALESCE(av.operating_income, 0) + COALESCE(av.depreciation, 0)) / NULLIF(av.revenue, 0)) AS ebitda_margin,
+        MAX(av.revenue) AS revenue
+    FROM annual_values av
+    JOIN sector_companies sc USING (cik)
+    WHERE av.revenue IS NOT NULL
+      AND av.operating_income IS NOT NULL
+    GROUP BY sc.canonical_name, av.fiscal_year
+),
+aggregated AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(display_name) AS display_name,
+        MAX(CASE WHEN fiscal_year = 2021 THEN ebitda_margin END) AS margin_start,
+        MAX(CASE WHEN fiscal_year = 2024 THEN ebitda_margin END) AS margin_end,
+        MAX(CASE WHEN fiscal_year = 2024 THEN revenue END) AS revenue_end,
+        COUNT(DISTINCT CASE WHEN fiscal_year BETWEEN 2021 AND 2024 THEN fiscal_year END) AS years_available
+    FROM margin_series
+    GROUP BY canonical_name
+)
+SELECT
+    display_name AS name,
+    ROUND(margin_start * 100, 2) AS margin_2021_pct,
+    ROUND(margin_end * 100, 2) AS margin_2024_pct,
+    ROUND((margin_end - margin_start) * 100, 2) AS improvement_pp,
+    ROUND(revenue_end / 1000000000.0, 2) AS revenue_2024_billions
+FROM aggregated
+WHERE margin_start IS NOT NULL
+  AND margin_end IS NOT NULL
+  AND revenue_end >= 2000000000
+  AND ((margin_end - margin_start) * 100) >= 5
+ORDER BY improvement_pp DESC,
+         revenue_2024_billions DESC,
+         name
+LIMIT 10;
+
+","Found 10 results. Sample: [{'name': 'TRIMBLE INC.', 'margin_2021_pct': 17.09, 'margin_2024_pct': 60.76, 'improvement_pp': 43.66, 'revenue_2024_billions': 3.68}, {'name': 'PALO ALTO NETWORKS INC', 'margin_2021_pct': -1.03, 'margin_2024_pct': 15.84, 'improvement_pp': 16.87, 'revenue_2024_billions': 8.03}, {'name': 'FISERV INC', 'margin_2021_pct': 14.1, 'margin_2024_pct': 28.74, 'improvement_pp': 14.64, 'revenue_2024_billions': 20.46}, {'name': 'ARISTA NETWORKS, INC.', 'margin_2021_pct': 33.28, 'margin_2024_pct': 47.51, 'improvement_pp': 14.22, 'revenue_2024_billions': 7.0}, {'name': 'FORTINET INC', 'margin_2021_pct': 21.99, 'margin_2024_pct': 32.34, 'improvement_pp': 10.36, 'revenue_2024_billions': 5.96}]",,,0.8,template,,,,29.1433,0.0,0.0,0.0,0.0
+RUN_056,"12 Nov 2025, 1700 hours",custom,Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?,fcf_to_capex_trend,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Health Care' = 'ALL' OR UPPER(gics_sector) = UPPER('Health Care'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM ranked_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetCashProvidedByUsedInOperatingActivities',
+            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+        ) THEN n.value END) AS cfo,
+        MAX(CASE WHEN n.tag IN (
+            'PaymentsToAcquirePropertyPlantAndEquipment',
+            'PaymentsToAcquireProductiveAssets'
+        ) THEN n.value END) AS capex
+    FROM latest_filings lf
+    JOIN num n
+      ON n.adsh = lf.adsh
+     AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations',
+        'PaymentsToAcquirePropertyPlantAndEquipment',
+        'PaymentsToAcquireProductiveAssets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+filtered AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        cfo,
+        ABS(capex) AS capex_outlay,
+        cfo - ABS(capex) AS free_cash_flow,
+        CASE
+            WHEN cfo IS NULL OR capex IS NULL THEN NULL
+            WHEN cfo <= 400000000 THEN NULL
+            WHEN ABS(capex) < 200000000 THEN NULL
+            ELSE LEAST(
+                GREATEST((cfo - ABS(capex)) / NULLIF(cfo, 0), -1.0),
+                1.2
+            )
+        END AS fcf_retention_ratio,
+        CASE
+            WHEN cfo IS NULL OR capex IS NULL THEN NULL
+            WHEN cfo <= 400000000 THEN NULL
+            WHEN ABS(capex) < 200000000 THEN NULL
+            ELSE LEAST(ABS(capex) / NULLIF(cfo, 0), 1.2)
+        END AS capex_intensity_ratio
+    FROM annual_values
+),
+company_trend AS (
+    SELECT
+        company,
+        canonical_name,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(AVG(fcf_retention_ratio), 2) AS avg_fcf_retention,
+        ROUND(AVG(capex_intensity_ratio), 2) AS avg_capex_intensity,
+        ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END), 2) AS retention_2019,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN fcf_retention_ratio END), 2) AS retention_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN fcf_retention_ratio END), 2) AS retention_2021,
+        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN fcf_retention_ratio END), 2) AS retention_2022,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN fcf_retention_ratio END), 2) AS retention_2023,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END), 2) AS retention_2024,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_intensity_ratio END), 2) AS capex_intensity_2024,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN free_cash_flow END) / 1000000000.0, 2) AS fcf_2024_billions,
+        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_outlay END) / 1000000000.0, 2) AS capex_2024_billions
+    FROM filtered
+    GROUP BY company, canonical_name
+    HAVING COUNT(DISTINCT fiscal_year) >= 5
+       AND MIN(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END) IS NOT NULL
+       AND MIN(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END) IS NOT NULL
+)
+SELECT
+    name,
+    years_available,
+    avg_fcf_retention,
+    avg_capex_intensity,
+    retention_2019,
+    retention_2020,
+    retention_2021,
+    retention_2022,
+    retention_2023,
+    retention_2024,
+    capex_intensity_2024,
+    fcf_2024_billions,
+    capex_2024_billions
+FROM (
+    SELECT
+        company AS name,
+        canonical_name,
+        years_available,
+        avg_fcf_retention,
+        avg_capex_intensity,
+        retention_2019,
+        retention_2020,
+        retention_2021,
+        retention_2022,
+        retention_2023,
+        retention_2024,
+        capex_intensity_2024,
+        fcf_2024_billions,
+        capex_2024_billions,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY avg_fcf_retention DESC NULLS LAST, company
+        ) AS name_rank
+    FROM company_trend
+    WHERE avg_fcf_retention IS NOT NULL
+) ranked
+WHERE name_rank = 1
+ORDER BY avg_fcf_retention DESC NULLS LAST, name
+LIMIT 8;
+
+","Found 8 results. Sample: [{'name': 'AMGEN INC', 'years_available': 6, 'avg_fcf_retention': 0.91, 'avg_capex_intensity': 0.09, 'retention_2019': 0.93, 'retention_2020': 0.94, 'retention_2021': 0.9, 'retention_2022': 0.9, 'retention_2023': 0.87, 'retention_2024': 0.9, 'capex_intensity_2024': 0.1, 'fcf_2024_billions': 10.39, 'capex_2024_billions': 1.1}, {'name': 'REGENERON PHARMACEUTICALS INC', 'years_available': 6, 'avg_fcf_retention': 0.84, 'avg_capex_intensity': 0.16, 'retention_2019': 0.82, 'retention_2020': 0.77, 'retention_2021': 0.92, 'retention_2022': 0.88, 'retention_2023': 0.84, 'retention_2024': 0.83, 'capex_intensity_2024': 0.17, 'fcf_2024_billions': 3.66, 'capex_2024_billions': 0.76}, {'name': 'MEDTRONIC PLC', 'years_available': 6, 'avg_fcf_retention': 0.8, 'avg_capex_intensity': 0.2, 'retention_2019': 0.84, 'retention_2020': 0.83, 'retention_2021': 0.78, 'retention_2022': 0.81, 'retention_2023': 0.76, 'retention_2024': 0.77, 'capex_intensity_2024': 0.23, 'fcf_2024_billions': 5.2, 'capex_2024_billions': 1.59}, {'name': 'QUEST DIAGNOSTICS INC', 'years_available': 6, 'avg_fcf_retention': 0.74, 'avg_capex_intensity': 0.26, 'retention_2019': 0.68, 'retention_2020': 0.79, 'retention_2021': 0.82, 'retention_2022': 0.76, 'retention_2023': 0.68, 'retention_2024': 0.68, 'capex_intensity_2024': 0.32, 'fcf_2024_billions': 0.91, 'capex_2024_billions': 0.43}, {'name': 'BECTON DICKINSON & CO', 'years_available': 6, 'avg_fcf_retention': 0.72, 'avg_capex_intensity': 0.28, 'retention_2019': 0.71, 'retention_2020': 0.77, 'retention_2021': 0.74, 'retention_2022': 0.61, 'retention_2023': 0.71, 'retention_2024': 0.81, 'capex_intensity_2024': 0.19, 'fcf_2024_billions': 3.12, 'capex_2024_billions': 0.73}]",,,0.95,template,,,,21.6881,0.0,0.0,0.0,0.0
+RUN_056,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,"An error occurred while processing your question: Parser Error: syntax error at or near ""}""
+
+LINE 13:         {sic_filter_enabled} = 0
+                                    ^",,,0.0,,,,,21.916,0.0,0.0,0.0,0.0
+RUN_056,"12 Nov 2025, 1700 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 10;
+
+","Found 8 results. Sample: [{'name': 'HALLIBURTON CO', 'consecutive_years': 4, 'years_above_threshold': 4, 'years_reported': 5, 'streak_start_year': 2021, 'streak_end_year': 2024, 'first_year': 2020, 'last_year': 2024, 'avg_roe_pct': 23.26, 'roe_volatility_pct': 3.54, 'min_streak_roe_pct': 19.71, 'max_streak_roe_pct': 27.97, 'latest_year_reported': 2024, 'latest_year_roe_pct': 23.71}, {'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}]",,,0.8,template,,,,26.0136,0.0,0.0,0.0,0.0
+RUN_057,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",shareholder_return_trend,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('ALL' = 'ALL' OR UPPER(gics_sector) = UPPER('ALL'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2020 AND 2023
+),
+latest_filings AS (
+    SELECT * FROM ranked_filings WHERE rn = 1
+),
+annual_raw AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag = 'PaymentsOfDividends' THEN ABS(n.value) END) AS dividends_all,
+        MAX(CASE WHEN n.tag = 'PaymentsOfDividendsCommonStock' THEN ABS(n.value) END) AS dividends_common,
+        MAX(CASE WHEN n.tag = 'PaymentsForRepurchaseOfCommonStock' THEN ABS(n.value) END) AS buybacks,
+        MAX(CASE WHEN n.tag IN (
+            'NetCashProvidedByUsedInOperatingActivities',
+            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+        ) THEN ABS(n.value) END) AS cfo
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'PaymentsOfDividends',
+        'PaymentsOfDividendsCommonStock',
+        'PaymentsForRepurchaseOfCommonStock',
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+annual_payouts AS (
+    SELECT
+        company,
+        canonical_name,
+        cik,
+        fiscal_year,
+        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) AS dividends,
+        COALESCE(buybacks, 0) AS buybacks,
+        CASE WHEN cfo >= 5000000000 THEN cfo ELSE NULL END AS cfo,
+        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) + COALESCE(buybacks, 0) AS total_return
+    FROM annual_raw
+),
+filtered_payouts AS (
+    SELECT
+        company,
+        canonical_name,
+        cik,
+        fiscal_year,
+        dividends,
+        buybacks,
+        total_return,
+        CASE
+            WHEN cfo IS NULL OR cfo = 0 THEN NULL
+            ELSE LEAST(total_return / cfo, 4)
+        END AS payout_ratio
+    FROM annual_payouts
+    WHERE total_return >= 2000000000
+),
+company_trends AS (
+    SELECT
+        company,
+        canonical_name,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(AVG(total_return) / 1000000000.0, 2) AS avg_return_billions,
+        ROUND(AVG(payout_ratio), 2) AS avg_payout_ratio,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN total_return END) / 1000000000.0, 2) AS return_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN total_return END) / 1000000000.0, 2) AS return_2021,
+        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN total_return END) / 1000000000.0, 2) AS return_2022,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN total_return END) / 1000000000.0, 2) AS return_2023,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN payout_ratio END), 2) AS payout_ratio_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN payout_ratio END), 2) AS payout_ratio_2023,
+        ROUND(
+            (
+                MAX(CASE WHEN fiscal_year = 2023 THEN total_return END)
+                - MIN(CASE WHEN fiscal_year = 2020 THEN total_return END)
+            ) / 1000000000.0,
+            2
+        ) AS change_since_start
+    FROM filtered_payouts
+    GROUP BY company, canonical_name
+    HAVING COUNT(DISTINCT fiscal_year) >= 4
+       AND MIN(CASE WHEN fiscal_year = 2020 THEN total_return END) IS NOT NULL
+       AND MIN(CASE WHEN fiscal_year = 2023 THEN total_return END) IS NOT NULL
+)
+SELECT
+    name,
+    years_available,
+    avg_return_billions,
+    avg_payout_ratio,
+    return_2020 AS return_2020,
+    return_2021 AS return_2021,
+    return_2022 AS return_2022,
+    return_2023 AS return_2023,
+    change_since_start,
+    payout_ratio_2020 AS payout_ratio_2020,
+    payout_ratio_2023 AS payout_ratio_2023
+FROM (
+    SELECT
+        company AS name,
+        canonical_name,
+        years_available,
+        avg_return_billions,
+        avg_payout_ratio,
+        return_2020,
+        return_2021,
+        return_2022,
+        return_2023,
+        change_since_start,
+        payout_ratio_2020,
+        payout_ratio_2023,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY avg_return_billions DESC NULLS LAST, company
+        ) AS rn
+    FROM company_trends
+    WHERE avg_return_billions IS NOT NULL
+) ranked
+WHERE rn = 1
+ORDER BY avg_return_billions DESC NULLS LAST, name
+LIMIT 8;","Found 8 results. Sample: [{'name': 'APPLE INC', 'years_available': 4, 'avg_return_billions': 95.92, 'avg_payout_ratio': 0.93, 'return_2020': 86.44, 'return_2021': 100.44, 'return_2022': 104.24, 'return_2023': 92.58, 'change_since_start': 6.14, 'payout_ratio_2020': 1.07, 'payout_ratio_2023': 0.84}, {'name': 'ALPHABET INC.', 'years_available': 4, 'avg_return_billions': 50.56, 'avg_payout_ratio': 0.57, 'return_2020': 31.15, 'return_2021': 50.27, 'return_2022': 59.3, 'return_2023': 61.5, 'change_since_start': 30.36, 'payout_ratio_2020': 0.48, 'payout_ratio_2023': 0.6}, {'name': 'MICROSOFT CORP', 'years_available': 4, 'avg_return_billions': 43.72, 'avg_payout_ratio': 0.56, 'return_2020': 38.1, 'return_2021': 43.91, 'return_2022': 50.83, 'return_2023': 42.05, 'change_since_start': 3.94, 'payout_ratio_2020': 0.63, 'payout_ratio_2023': 0.48}, {'name': 'FACEBOOK INC', 'years_available': 4, 'avg_return_billions': 24.63, 'avg_payout_ratio': 0.44, 'return_2020': 6.27, 'return_2021': 44.54, 'return_2022': 27.96, 'return_2023': 19.77, 'change_since_start': 13.5, 'payout_ratio_2020': 0.16, 'payout_ratio_2023': 0.28}, {'name': 'JPMORGAN CHASE & CO', 'years_available': 4, 'avg_return_billions': 22.62, 'avg_payout_ratio': 0.65, 'return_2020': 19.21, 'return_2021': 31.27, 'return_2022': 16.72, 'return_2023': 23.29, 'change_since_start': 4.08, 'payout_ratio_2020': 0.24, 'payout_ratio_2023': 1.79}]",,,1.0,template,,,,25.6894,0.0,0.0,0.0,0.0
+RUN_058,"12 Nov 2025, 1700 hours",custom,How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?,top_tech_cfo_trend,"WITH sector_companies AS (
+    SELECT
+        c.cik,
+        MIN(c.name) AS company_name,
+        REGEXP_REPLACE(UPPER(TRIM(MIN(c.name))), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies c
+    WHERE (
+        UPPER('Information Technology') = 'ALL'
+        OR LOWER(c.gics_sector) LIKE LOWER('%Information Technology%')
+    )
+    GROUP BY c.cik
+),
+ranking_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.fy
+            ORDER BY s.filed DESC
+        ) AS rn
+    FROM sub s
+    JOIN sector_companies sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A', '20-F')
+      AND CAST(s.fy AS INTEGER) = 2023
+),
+latest_ranking AS (
+    SELECT *
+    FROM ranking_filings
+    WHERE rn = 1
+),
+ranking_metrics AS (
+    SELECT
+        lr.cik,
+        COALESCE(
+            MAX(CASE WHEN n.tag = 'Revenues' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'RevenueFromContractWithCustomerExcludingAssessedTax' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'SalesRevenueNet' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetSalesRevenue' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetSales' THEN n.value END)
+        ) AS revenue
+    FROM latest_ranking lr
+    JOIN num n ON n.adsh = lr.adsh AND n.ddate = lr.period
+    WHERE n.tag IN (
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSalesRevenue',
+        'NetSales'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lr.cik
+),
+ranked_companies AS (
+    SELECT
+        sc.cik,
+        sc.company_name,
+        sc.canonical_name,
+        rm.revenue,
+        ROW_NUMBER() OVER (
+            ORDER BY rm.revenue DESC NULLS LAST, sc.company_name
+        ) AS revenue_rank
+    FROM ranking_metrics rm
+    JOIN sector_companies sc USING (cik)
+    WHERE rm.revenue IS NOT NULL
+      AND rm.revenue >= 10000000000
+),
+selected_companies AS (
+    SELECT *
+    FROM ranked_companies
+    WHERE revenue_rank <= 10
+),
+quarterly_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.fp,
+        s.period AS quarter_end,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.period
+            ORDER BY s.filed DESC
+        ) AS filing_rank
+    FROM sub s
+    JOIN selected_companies sc USING (cik)
+    WHERE s.form IN ('10-Q', '10-Q/A')
+      AND s.fp IN ('Q1', 'Q2', 'Q3', 'Q4')
+      AND CAST(s.fy AS INTEGER) BETWEEN 2022 AND 2024
+      AND s.period BETWEEN DATE '2021-09-01' AND DATE '2024-12-31'
+),
+latest_quarters AS (
+    SELECT *
+    FROM quarterly_filings
+    WHERE filing_rank = 1
+),
+raw_cfo AS (
+    SELECT
+        l.cik,
+        l.fiscal_year,
+        l.fp,
+        DATE_TRUNC('day', l.quarter_end) AS quarter_end,
+        COALESCE(
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivities' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations' THEN n.value END),
+            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations' THEN n.value END)
+        ) AS cfo_ytd
+    FROM latest_quarters l
+    JOIN num n ON n.adsh = l.adsh AND n.ddate = l.quarter_end
+    WHERE n.tag IN (
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY l.cik, l.fiscal_year, l.fp, l.quarter_end
+),
+ordered_quarters AS (
+    SELECT
+        r.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY r.cik, r.fiscal_year
+            ORDER BY r.quarter_end
+        ) AS quarter_index,
+        LAG(r.cfo_ytd) OVER (
+            PARTITION BY r.cik, r.fiscal_year
+            ORDER BY r.quarter_end
+        ) AS prev_cfo_ytd
+    FROM raw_cfo r
+    WHERE r.cfo_ytd IS NOT NULL
+),
+quarterly_cfo AS (
+    SELECT
+        o.cik,
+        o.fiscal_year,
+        o.fp,
+        o.quarter_end,
+        CASE
+            WHEN o.quarter_index = 1 THEN o.cfo_ytd
+            WHEN o.prev_cfo_ytd IS NULL THEN NULL
+            ELSE o.cfo_ytd - o.prev_cfo_ytd
+        END AS cfo_quarter
+    FROM ordered_quarters o
+),
+filtered_series AS (
+    SELECT
+        sc.company_name AS company,
+        sc.canonical_name,
+        qc.quarter_end,
+        qc.fiscal_year,
+        qc.fp,
+        qc.cfo_quarter
+    FROM quarterly_cfo qc
+    JOIN selected_companies sc USING (cik)
+    WHERE qc.cfo_quarter IS NOT NULL
+      AND ABS(qc.cfo_quarter) <= 400000000000
+      AND qc.quarter_end BETWEEN DATE '2021-09-01' AND DATE '2024-12-31'
+),
+coverage AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS quarters_observed
+    FROM filtered_series
+    GROUP BY canonical_name
+    HAVING COUNT(*) >= 6
+),
+final_series AS (
+    SELECT
+        fs.company,
+        fs.canonical_name,
+        fs.quarter_end,
+        fs.fiscal_year,
+        fs.fp,
+        fs.cfo_quarter / 1000000000.0 AS cfo_quarter_scaled
+    FROM filtered_series fs
+    JOIN coverage c USING (canonical_name)
+)
+SELECT
+    company,
+    quarter_end,
+    fiscal_year,
+    fp AS fiscal_period,
+    ROUND(cfo_quarter_scaled, 3) AS operating_cfo_billions
+FROM final_series
+ORDER BY quarter_end, company
+LIMIT 500;
+
+","Top FY2024 YTD cash generators: APPLE INC $91.44B; ALPHABET INC. $86.19B; MICROSOFT CORP $81.35B. Largest YoY cash accelerations: MICROSOFT CORP +22.54B; NVIDIA CORP +13.20B; FACEBOOK INC +11.63B. Soft spots: CISCO SYSTEMS, INC. -6.77B; INTEL CORP -1.72B. Recent peak quarters: MICROSOFT CORP $31.92B (2024-03-31); ALPHABET INC. $30.70B (2024-09-30); APPLE INC $28.86B (2024-06-30).",,,0.95,template,,,,25.3413,0.0,0.0,0.0,0.0
+RUN_059,"12 Nov 2025, 1700 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",shareholder_return_trend,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Information Technology' = 'ALL' OR UPPER(gics_sector) = UPPER('Information Technology'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2020 AND 2023
+),
+latest_filings AS (
+    SELECT * FROM ranked_filings WHERE rn = 1
+),
+annual_raw AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag = 'PaymentsOfDividends' THEN ABS(n.value) END) AS dividends_all,
+        MAX(CASE WHEN n.tag = 'PaymentsOfDividendsCommonStock' THEN ABS(n.value) END) AS dividends_common,
+        MAX(CASE WHEN n.tag = 'PaymentsForRepurchaseOfCommonStock' THEN ABS(n.value) END) AS buybacks,
+        MAX(CASE WHEN n.tag IN (
+            'NetCashProvidedByUsedInOperatingActivities',
+            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+        ) THEN ABS(n.value) END) AS cfo
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'PaymentsOfDividends',
+        'PaymentsOfDividendsCommonStock',
+        'PaymentsForRepurchaseOfCommonStock',
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+annual_payouts AS (
+    SELECT
+        company,
+        canonical_name,
+        cik,
+        fiscal_year,
+        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) AS dividends,
+        COALESCE(buybacks, 0) AS buybacks,
+        CASE WHEN cfo >= 5000000000 THEN cfo ELSE NULL END AS cfo,
+        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) + COALESCE(buybacks, 0) AS total_return
+    FROM annual_raw
+),
+filtered_payouts AS (
+    SELECT
+        company,
+        canonical_name,
+        cik,
+        fiscal_year,
+        dividends,
+        buybacks,
+        total_return,
+        CASE
+            WHEN cfo IS NULL OR cfo = 0 THEN NULL
+            ELSE LEAST(total_return / cfo, 4)
+        END AS payout_ratio
+    FROM annual_payouts
+    WHERE total_return >= 2000000000
+),
+company_trends AS (
+    SELECT
+        company,
+        canonical_name,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(AVG(total_return) / 1000000000.0, 2) AS avg_return_billions,
+        ROUND(AVG(payout_ratio), 2) AS avg_payout_ratio,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN total_return END) / 1000000000.0, 2) AS return_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN total_return END) / 1000000000.0, 2) AS return_2021,
+        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN total_return END) / 1000000000.0, 2) AS return_2022,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN total_return END) / 1000000000.0, 2) AS return_2023,
+        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN payout_ratio END), 2) AS payout_ratio_2020,
+        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN payout_ratio END), 2) AS payout_ratio_2023,
+        ROUND(
+            (
+                MAX(CASE WHEN fiscal_year = 2023 THEN total_return END)
+                - MIN(CASE WHEN fiscal_year = 2020 THEN total_return END)
+            ) / 1000000000.0,
+            2
+        ) AS change_since_start
+    FROM filtered_payouts
+    GROUP BY company, canonical_name
+    HAVING COUNT(DISTINCT fiscal_year) >= 4
+       AND MIN(CASE WHEN fiscal_year = 2020 THEN total_return END) IS NOT NULL
+       AND MIN(CASE WHEN fiscal_year = 2023 THEN total_return END) IS NOT NULL
+)
+SELECT
+    name,
+    years_available,
+    avg_return_billions,
+    avg_payout_ratio,
+    return_2020 AS return_2020,
+    return_2021 AS return_2021,
+    return_2022 AS return_2022,
+    return_2023 AS return_2023,
+    change_since_start,
+    payout_ratio_2020 AS payout_ratio_2020,
+    payout_ratio_2023 AS payout_ratio_2023
+FROM (
+    SELECT
+        company AS name,
+        canonical_name,
+        years_available,
+        avg_return_billions,
+        avg_payout_ratio,
+        return_2020,
+        return_2021,
+        return_2022,
+        return_2023,
+        change_since_start,
+        payout_ratio_2020,
+        payout_ratio_2023,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY avg_return_billions DESC NULLS LAST, company
+        ) AS rn
+    FROM company_trends
+    WHERE avg_return_billions IS NOT NULL
+) ranked
+WHERE rn = 1
+ORDER BY avg_return_billions DESC NULLS LAST, name
+LIMIT 8;","Found 8 results. Sample: [{'name': 'APPLE INC', 'years_available': 4, 'avg_return_billions': 95.92, 'avg_payout_ratio': 0.93, 'return_2020': 86.44, 'return_2021': 100.44, 'return_2022': 104.24, 'return_2023': 92.58, 'change_since_start': 6.14, 'payout_ratio_2020': 1.07, 'payout_ratio_2023': 0.84}, {'name': 'ALPHABET INC.', 'years_available': 4, 'avg_return_billions': 50.56, 'avg_payout_ratio': 0.57, 'return_2020': 31.15, 'return_2021': 50.27, 'return_2022': 59.3, 'return_2023': 61.5, 'change_since_start': 30.36, 'payout_ratio_2020': 0.48, 'payout_ratio_2023': 0.6}, {'name': 'MICROSOFT CORP', 'years_available': 4, 'avg_return_billions': 43.72, 'avg_payout_ratio': 0.56, 'return_2020': 38.1, 'return_2021': 43.91, 'return_2022': 50.83, 'return_2023': 42.05, 'change_since_start': 3.94, 'payout_ratio_2020': 0.63, 'payout_ratio_2023': 0.48}, {'name': 'FACEBOOK INC', 'years_available': 4, 'avg_return_billions': 24.63, 'avg_payout_ratio': 0.44, 'return_2020': 6.27, 'return_2021': 44.54, 'return_2022': 27.96, 'return_2023': 19.77, 'change_since_start': 13.5, 'payout_ratio_2020': 0.16, 'payout_ratio_2023': 0.28}, {'name': 'ORACLE CORP', 'years_available': 4, 'avg_return_billions': 17.75, 'avg_payout_ratio': 1.39, 'return_2020': 22.31, 'return_2021': 24.0, 'return_2022': 19.7, 'return_2023': 4.97, 'change_since_start': -17.34, 'payout_ratio_2020': 1.7, 'payout_ratio_2023': 0.29}]",,,1.0,template,,,,21.9896,0.0,0.0,0.0,0.0
+RUN_060,"12 Nov 2025, 1700 hours",custom,"Show year-over-year ROE for NVIDIA, AMD, Intel, and Texas Instruments from 2019 to 2024.",semiconductor_roe_trend,"WITH provided_companies AS (
+    SELECT *
+    FROM (VALUES ('NVIDIA CORP'),('ADVANCED MICRO DEVICES INC'),('INTEL CORP'),('TEXAS INSTRUMENTS INC')) AS t(company_name)
+),
+company_dim AS (
+    SELECT DISTINCT
+        c.cik,
+        pc.company_name AS requested_name,
+        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        c.name AS dataset_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON UPPER(c.name) = UPPER(pc.company_name)
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.fy
+            ORDER BY s.filed DESC
+        ) AS filing_rank
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A', '20-F')
+      AND CAST(s.fy AS INTEGER) BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE filing_rank = 1
+),
+annual_metrics AS (
+    SELECT
+        cd.requested_name AS company,
+        cd.canonical_name,
+        CAST(l.fiscal_year AS INTEGER) AS fiscal_year,
+        COALESCE(
+            MAX(
+                CASE
+                    WHEN n.tag = 'NetIncomeLoss'
+                    THEN n.value
+                END
+            ),
+            MAX(
+                CASE
+                    WHEN n.tag = 'ProfitLoss'
+                    THEN n.value
+                END
+            ),
+            MAX(
+                CASE
+                    WHEN n.tag = 'NetIncomeLossAvailableToCommonStockholdersBasic'
+                    THEN n.value
+                END
+            )
+        ) AS net_income,
+        COALESCE(
+            MAX(
+                CASE
+                    WHEN n.tag = 'StockholdersEquity'
+                    THEN n.value
+                END
+            ),
+            MAX(
+                CASE
+                    WHEN n.tag = 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+                    THEN n.value
+                END
+            )
+        ) AS equity
+    FROM latest_filings l
+    JOIN num n ON n.adsh = l.adsh
+    JOIN company_dim cd USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'ProfitLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+      AND COALESCE(n.qtrs, 0) IN (0, 4)
+      AND (
+          n.ddate IS NULL
+          OR EXTRACT(YEAR FROM n.ddate) = CAST(l.fiscal_year AS INTEGER)
+      )
+    GROUP BY
+        cd.requested_name,
+        cd.canonical_name,
+        l.cik,
+        l.fiscal_year
+),
+coverage AS (
+    SELECT
+        canonical_name,
+        COUNT(DISTINCT fiscal_year) AS year_count
+    FROM annual_metrics
+    GROUP BY canonical_name
+    HAVING COUNT(DISTINCT fiscal_year) >= 6
+),
+final_series AS (
+    SELECT
+        am.company,
+        am.fiscal_year,
+        ROUND(am.net_income / 1e6, 2) AS net_income_millions,
+        ROUND(am.equity / 1e6, 2) AS equity_millions,
+        ROUND(
+            100 * am.net_income
+            / NULLIF(am.equity, 0),
+            2
+        ) AS roe_pct
+    FROM annual_metrics am
+    JOIN coverage c USING (canonical_name)
+    WHERE am.net_income IS NOT NULL
+      AND am.equity IS NOT NULL
+      AND am.fiscal_year BETWEEN 2019 AND 2024
+      AND ABS(
+          100 * am.net_income
+          / NULLIF(am.equity, 0)
+      ) <= 200
+)
+SELECT
+    company,
+    fiscal_year,
+    net_income_millions,
+    equity_millions,
+    roe_pct
+FROM final_series
+ORDER BY company, fiscal_year
+LIMIT 400;
+
+","Semiconductor ROE snapshot:
+Advanced Micro Devices Inc: 2019 12.06% → 2024 2.85% (-9.21%); FY2024 net income +1.64B on equity $57.57B
+Intel Corp: 2019 27.16% → 2024 -18.89% (-46.05%); FY2024 net income -18.76B on equity $99.27B
+Nvidia Corp: 2019 44.33% → 2024 69.24% (+24.91%); FY2024 net income +29.76B on equity $42.98B
+Texas Instruments Inc: 2019 56.33% → 2024 28.39% (-27.94%); FY2024 net income +4.80B on equity $16.90B",,,0.7,template,,,,30.3815,0.0,0.0,0.0,0.0
+RUN_061,"12 Nov 2025, 1700 hours",custom,"Compare quarterly gross margin trends for Apple, Dell, and HP over the past 8 quarters.",hardware_gross_margin_trend,"WITH provided_companies AS (
+    SELECT
+        TRIM(company_name) AS requested_name,
+        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_key
+    FROM (VALUES ('APPLE INC'),('DELL TECHNOLOGIES INC.'),('HP INC')) AS t(company_name)
+),
+company_dim AS (
+    SELECT DISTINCT
+        c.cik,
+        pc.requested_name,
+        c.name AS company_name,
+        pc.canonical_key
+    FROM companies c
+    JOIN provided_companies pc
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_key
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        s.period AS period_end,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.fp,
+        s.filed,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.period
+            ORDER BY s.filed DESC
+        ) AS filing_rank
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-Q', '10-Q/A')
+      AND s.fp IN ('Q1', 'Q2', 'Q3', 'Q4')
+      AND s.period >= DATE '2022-01-01'
+),
+latest_filings AS (
+    SELECT
+        rf.adsh,
+        rf.cik,
+        rf.period_end,
+        rf.fiscal_year,
+        rf.fp,
+        ROW_NUMBER() OVER (
+            PARTITION BY rf.cik
+            ORDER BY rf.period_end DESC
+        ) AS seq
+    FROM ranked_filings rf
+    WHERE rf.filing_rank = 1
+),
+selected_filings AS (
+    SELECT *
+    FROM latest_filings
+    WHERE seq <= 8
+),
+quarter_values AS (
+    SELECT
+        sf.cik,
+        sf.period_end,
+        sf.fiscal_year,
+        sf.fp,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'Revenues',
+                    'RevenueFromContractWithCustomerExcludingAssessedTax',
+                    'SalesRevenueNet',
+                    'NetSalesRevenue',
+                    'NetSales'
+                )
+                AND COALESCE(n.qtrs, 1) IN (0, 1)
+                THEN n.value
+            END
+        ) AS revenue,
+        MAX(
+            CASE
+                WHEN n.tag IN (
+                    'CostOfRevenue',
+                    'CostOfGoodsAndServicesSold',
+                    'CostOfGoodsSold'
+                )
+                AND COALESCE(n.qtrs, 1) IN (0, 1)
+                THEN n.value
+            END
+        ) AS cost_of_revenue
+    FROM selected_filings sf
+    JOIN num n
+      ON n.adsh = sf.adsh
+     AND n.ddate = sf.period_end
+    WHERE n.tag IN (
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'NetSalesRevenue',
+        'NetSales',
+        'CostOfRevenue',
+        'CostOfGoodsAndServicesSold',
+        'CostOfGoodsSold'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sf.cik, sf.period_end, sf.fiscal_year, sf.fp
+),
+coverage AS (
+    SELECT cik
+    FROM quarter_values
+    WHERE revenue IS NOT NULL
+      AND cost_of_revenue IS NOT NULL
+    GROUP BY cik
+    HAVING COUNT(*) >= 8
+),
+normalized AS (
+    SELECT
+        cd.company_name AS company,
+        cd.requested_name,
+        q.period_end,
+        q.fiscal_year,
+        q.fp,
+        q.revenue,
+        q.cost_of_revenue,
+        CASE
+            WHEN q.revenue IS NULL OR q.revenue = 0 THEN NULL
+            ELSE (q.revenue - q.cost_of_revenue) / q.revenue
+        END AS gross_margin_ratio
+    FROM quarter_values q
+    JOIN company_dim cd USING (cik)
+    JOIN coverage cv USING (cik)
+),
+ranked_series AS (
+    SELECT
+        n.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY n.company
+            ORDER BY n.period_end
+        ) AS seq_asc,
+        ROW_NUMBER() OVER (
+            PARTITION BY n.company
+            ORDER BY n.period_end DESC
+        ) AS seq_desc
+    FROM normalized n
+),
+summary AS (
+    SELECT
+        company,
+        MIN(period_end) AS baseline_period,
+        MAX(period_end) AS latest_period,
+        MAX(CASE WHEN seq_asc = 1 THEN gross_margin_ratio END) AS baseline_margin,
+        MAX(CASE WHEN seq_desc = 1 THEN gross_margin_ratio END) AS latest_margin,
+        MAX(CASE WHEN seq_desc = 1 THEN revenue END) AS latest_revenue,
+        MAX(CASE WHEN seq_desc = 1 THEN cost_of_revenue END) AS latest_cost,
+        COUNT(*) AS quarters_available
+    FROM ranked_series
+    GROUP BY company
+)
+SELECT
+    rs.company,
+    summary.quarters_available,
+    summary.baseline_period,
+    summary.latest_period,
+    ROUND(summary.baseline_margin * 100, 1) AS baseline_margin_pct,
+    ROUND(summary.latest_margin * 100, 1) AS latest_margin_pct,
+    ROUND((summary.latest_margin - summary.baseline_margin) * 100, 1) AS margin_change_pp,
+    ROUND(summary.latest_revenue / 1e9, 2) AS latest_revenue_billions,
+    ROUND(summary.latest_cost / 1e9, 2) AS latest_cost_billions,
+    rs.period_end,
+    rs.fiscal_year,
+    rs.fp,
+    CONCAT(
+        CAST(EXTRACT(year FROM rs.period_end) AS VARCHAR),
+        ' Q',
+        CAST(EXTRACT(quarter FROM rs.period_end) AS VARCHAR)
+    ) AS quarter_label,
+    ROUND(rs.revenue / 1e9, 3) AS revenue_billions,
+    ROUND(rs.cost_of_revenue / 1e9, 3) AS cost_of_revenue_billions,
+    ROUND(rs.gross_margin_ratio * 100, 1) AS gross_margin_pct,
+    rs.seq_asc AS quarter_index_asc,
+    rs.seq_desc AS quarter_index_desc
+FROM ranked_series rs
+JOIN summary USING (company)
+ORDER BY rs.company, rs.period_end;","Hardware gross margin trajectories:
+Apple Inc.: 43.00% (2022 Q4) → 47.10% (2025 Q1) +4.1 pp on $95.36B revenue - pricing power strengthened (8 quarters).
+Dell Technologies Inc.: 23.10% (2022 Q4) → 21.10% (2025 Q2) -2.0 pp on $23.38B revenue - material compression (8 quarters).
+HP Inc.: 20.30% (2023 Q1) → 20.70% (2025 Q2) +0.4 pp on $13.22B revenue - margins held steady (8 quarters).
+Coverage spans 8 quarters (2022-10-31 → 2025-04-30).","Hardware gross margin trajectories:
+Apple Inc.: 43.00% (2022 Q4) → 47.10% (2025 Q1) +4.1 pp on $95.36B revenue - pricing power strengthened (8 quarters).
+Dell Technologies Inc.: 23.10% (2022 Q4) → 21.10% (2025 Q2) -2.0 pp on $23.38B revenue - material compression (8 quarters).
+HP Inc.: 20.30% (2023 Q1) → 20.70% (2025 Q2) +0.4 pp on $13.22B revenue - margins held steady (8 quarters).
+Coverage spans 8 quarters (2022-10-31 → 2025-04-30).",5.0,0.7,template,,,,23.4749,0.0,0.0,0.0,0.0
+RUN_062,"12 Nov 2025, 1700 hours",custom,"Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024.",cash_to_assets_ratio_trend,"WITH provided_companies AS (
+    SELECT
+        TRIM(company_name) AS provided_name,
+        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM (VALUES ('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')) AS t(company_name)
+),
+sector_candidates AS (
+    SELECT
+        c.cik,
+        c.name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies c
+    WHERE 0 = 1
+      AND (
+        UPPER('ALL') = 'ALL'
+        OR LOWER(c.gics_sector) LIKE LOWER('%ALL%')
+      )
+),
+list_candidates AS (
+    SELECT
+        c.cik,
+        pc.provided_name AS display_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_name
+),
+combined_companies AS (
+    SELECT cik, display_name FROM list_candidates
+    UNION ALL
+    SELECT cik, display_name FROM sector_candidates
+),
+company_dim AS (
+    SELECT
+        cik,
+        ANY_VALUE(display_name) AS display_name
+    FROM combined_companies
+    GROUP BY cik
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.fy
+            ORDER BY s.filed DESC, s.period DESC NULLS LAST
+        ) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE rn = 1
+      AND period IS NOT NULL
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag = 'CashAndCashEquivalentsAtCarryingValue' THEN n.value END) AS cash_and_equivalents,
+        MAX(CASE WHEN n.tag = 'CashCashEquivalentsAndShortTermInvestments' THEN n.value END) AS cash_and_short_term,
+        MAX(CASE WHEN n.tag = 'Assets' THEN n.value END) AS total_assets
+    FROM latest_filings lf
+    JOIN num n
+      ON n.adsh = lf.adsh
+     AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'CashAndCashEquivalentsAtCarryingValue',
+        'CashCashEquivalentsAndShortTermInvestments',
+        'Assets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+normalized AS (
+    SELECT
+        av.cik,
+        av.fiscal_year,
+        COALESCE(av.cash_and_equivalents, av.cash_and_short_term) AS cash_balance,
+        av.total_assets
+    FROM annual_values av
+),
+ratios AS (
+    SELECT
+        cd.display_name AS company,
+        n.fiscal_year,
+        n.cash_balance,
+        n.total_assets,
+        CASE
+            WHEN n.total_assets IS NULL
+                 OR n.total_assets = 0
+                 OR n.cash_balance IS NULL
+            THEN NULL
+            ELSE n.cash_balance / n.total_assets
+        END AS cash_to_assets_ratio
+    FROM normalized n
+    JOIN company_dim cd USING (cik)
+),
+coverage AS (
+    SELECT
+        company,
+        COUNT(DISTINCT CASE WHEN cash_to_assets_ratio IS NOT NULL THEN fiscal_year END) AS ratios_available
+    FROM ratios
+    GROUP BY company
+)
+SELECT
+    r.company,
+    r.fiscal_year,
+    ROUND(r.cash_balance / 1000000000.0, 2) AS cash_billions,
+    ROUND(r.total_assets / 1000000000.0, 2) AS assets_billions,
+    ROUND(r.cash_to_assets_ratio, 4) AS cash_to_assets_ratio,
+    ROUND(r.cash_to_assets_ratio * 100, 2) AS cash_to_assets_ratio_pct
+FROM ratios r
+JOIN coverage c USING (company)
+WHERE r.cash_to_assets_ratio IS NOT NULL
+  AND c.ratios_available >= 4
+ORDER BY r.company, r.fiscal_year;
+
+","Cash-to-assets ratio leaders:
+6) ADOBE INC.: FY2024 cash-to-assets 25.18% ($7.61B cash on $30.23B assets).
+18) SALESFORCE, INC.: FY2024 cash-to-assets 8.60% ($8.85B cash on $102.93B assets).
+12) MICROSOFT CORP: FY2024 cash-to-assets 3.58% ($18.32B cash on $512.16B assets).",,,0.850,template,,,None,22.2583,0.0000,0.0000,0.0000,0.0000

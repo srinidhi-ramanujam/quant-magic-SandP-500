@@ -94,6 +94,7 @@ class SQLGenerator:
         Returns:
             GeneratedSQL if successful, None if custom SQL needed or unable to generate
         """
+        self._current_question = question
         with log_component_timing(context, "sql_generation"):
             # Step 1: Deterministic matching
             intelligence_match = self.intelligence.match_pattern(question)
@@ -331,6 +332,46 @@ class SQLGenerator:
                 if not current_company or canonical_company != current_normalized:
                     updated["company"] = canonical_company
 
+        if "company_values" in template.parameters and entities.companies:
+            question_upper = getattr(self, "_current_question", "").upper()
+            resolved: list[str] = []
+            seen_keys: set[str] = set()
+            deferred: list[str] = []
+            for raw_company in entities.companies:
+                if not raw_company:
+                    continue
+                normalized = normalize_company_name(raw_company)
+                if not normalized:
+                    continue
+                canonical = self._canonicalize_company_from_dataset(normalized)
+                if not canonical:
+                    continue
+                tokens = [
+                    token
+                    for token in re.sub(r"[^A-Z0-9 ]", " ", canonical.upper()).split()
+                    if len(token) >= 3
+                ]
+                if question_upper and tokens:
+                    if not any(token in question_upper for token in tokens):
+                        deferred.append(canonical)
+                        continue
+                key = self._standardize_company_key(canonical)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                safe_name = canonical.replace("'", "''")
+                resolved.append(f"('{safe_name}')")
+            if not resolved and deferred:
+                for canonical in deferred:
+                    key = self._standardize_company_key(canonical)
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
+                    safe_name = canonical.replace("'", "''")
+                    resolved.append(f"('{safe_name}')")
+            if resolved:
+                updated["company_values"] = ",".join(resolved)
+
         if "sector" in template.parameters and entities.sectors:
             canonical_sector = next((s for s in entities.sectors if s), "")
             if canonical_sector:
@@ -464,6 +505,22 @@ class SQLGenerator:
                 defaults["min_net_income"] = "500000000"
             if "max_ratio" in missing_params:
                 defaults["max_ratio"] = "3"
+
+        if template.template_id == "cash_to_assets_ratio_trend":
+            if "company_values" in missing_params:
+                defaults["company_values"] = (
+                    "('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')"
+                )
+            if "use_sector_filter" in missing_params:
+                defaults["use_sector_filter"] = "0"
+            if "sector" in missing_params:
+                defaults["sector"] = "ALL"
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2019"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2024"
+            if "min_years" in missing_params:
+                defaults["min_years"] = "4"
 
         if "limit" in missing_params and "limit" not in defaults:
             defaults["limit"] = "10"
@@ -940,10 +997,11 @@ class SQLGenerator:
             question, template
         )
         context.add_metadata("template_retriever_score", f"{result.score:.3f}")
+        confidence = max(0.0, min(float(result.score), 1.0))
 
         return IntelligenceMatch(
             template=template,
-            match_confidence=result.score,
+            match_confidence=confidence,
             matched_parameters=matched_params,
             fallback_to_llm=False,
         )

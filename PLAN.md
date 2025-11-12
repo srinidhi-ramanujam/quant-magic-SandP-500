@@ -178,6 +178,10 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 3. Add focused unit tests per family that validate metric math against DuckDB snapshots.
 4. Re-run `scripts/run_eval_suite.py --suite time_series` and append telemetry to `evaluation/EVAL_WORKBOOK.csv`.
 
+**Progress Log**
+- [x] TS_018 `cash_to_assets_ratio_trend`: Added Microsoft/Adobe/Salesforce liquidity template with FY2019–FY2024 coverage, refreshed FAISS intents + parquet metadata, updated evaluator ground truth, CLI formatter, telemetry, and pytest guardrail (`tests/test_sql_templates.py`).
+- [x] TS_017 `ebitda_margin_improvement_rank`: Ground-truthed FY2021→FY2024 Technology EBITDA margin leaders with a $2B revenue floor and 5 pp improvement guardrail, refreshed JSON/validator artifacts, rebuilt FAISS + parquet metadata, wired formatter/CLI + pytest coverage, logged RUN_036 via `run_eval_suite`, and noted the alias dedupe needed to collapse legacy names (e.g., Trimble, Priceline) across 76 Tech filers with 2024 10-Ks.
+
 **Progress (Nov 10)**
 - Ground-truthed TS_001 using a DuckDB profit-margin consistency query; JSON + validator entries now include the exact SQL, sample data, and insights, so the `profit_margin_consistency_trend` template has a concrete reference implementation.
 - Registered `profit_margin_consistency_trend` in the template catalog / metadata / FAISS store so hybrid retrieval can route Technology profit-margin questions without falling back to the LLM.
@@ -193,6 +197,50 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 - Ground-truthed TS_011 (Technology hardware asset-turnover trends) with a new `asset_turnover_trend` template, updated JSON/validator expectations, wired formatter output, and logged RUN_028 to capture the latest telemetry.
   - Template now supports sector-wide/SIC-configurable cohorts with $10B revenue gating and has regression coverage in `tests/test_sql_templates.py`; README documents how to tune the parameters and validate via CLI/eval harness.
 - Ground-truthed TS_012 (Healthcare CFO-to-net income quality trends) via the new `cfo_to_net_income_trend` template, including canonical company dedupe, cash-to-earnings capping, updated JSON/validator artifacts, formatter support, SQL template regression tests, and telemetry run RUN_030.
+- Ground-truthed TS_015 (IT shareholder capital returns) with the refreshed `shareholder_return_trend` template, updated JSON/validator rows, formatter narratives, regression coverage, and telemetry run RUN_057 capturing FY2020–FY2023 dividends + buybacks vs payout ratios.
+- Ground-truthed TS_014 (Healthcare free cash flow versus capex coverage) with the `fcf_to_capex_trend` template, refreshed JSON/validator assets, rebuilt FAISS, extended formatter/tests, and logged RUN_033 (Quality=5) via CLI and `run_eval_suite`.
+- Ground-truthed TS_013 (Energy 15%+ ROE streak screen) with the `energy_roe_threshold_detector` template: validated DuckDB results (Halliburton, Devon, Marathon, Chesapeake, EOG), refreshed JSON + validator assets, extended CLI formatter coverage, rebuilt FAISS, logged the CLI/eval telemetry run, and added regression coverage in `tests/test_sql_templates.py`.
+- Ground-truthed TS_019 (Semiconductor ROE trendlines) with the `semiconductor_roe_trend` template: validated FY2019–FY2024 DuckDB coverage for NVIDIA/AMD/Intel/Texas Instruments, refreshed evaluation JSON + validator assets, extended CLI formatter/tests, rebuilt FAISS, and logged RUN_060 via CLI + `run_eval_suite`.
+- Ground-truthed TS_020 (Apple/Dell/HP gross margin trend) with the `hardware_gross_margin_trend` template: validated 8-quarter coverage via DuckDB, refreshed evaluation JSON + validator assets, extended CLI formatting/tests, rebuilt FAISS, and logged RUN_061 (Quality=5) via CLI + `run_eval_suite`.
+
+#### Time-Series Template Backlog (Agent Handoff)
+
+| ID | Question Focus | Template Needed | Status |
+|----|----------------|-----------------|--------|
+| TS_013 | Energy ROE streaks (15%+ for ≥3 yrs) | `energy_roe_threshold_detector` | ✅ Completed (12 Nov 2025) |
+| TS_014 | Free-cash-flow vs capex trend | `fcf_to_capex_trend` | Complete (RUN_033) |
+| TS_017 | Technology EBITDA margin delta (FY2021→FY2024) | `ebitda_margin_improvement_rank` | ✅ Completed (RUN_036) |
+| TS_015 | Dividend + buyback shareholder return | `shareholder_return_trend` | ✅ Completed (RUN_057) |
+| TS_016 | `top_tech_cfo_trend` – top 10 Tech CFO trend (FY2023 revenue cohort) | ✅ Completed 12 Nov 2025 – SQL template, CLI formatter, evaluation + validator refreshed | 
+| TS_019 | Semiconductor ROE trendlines (FY2019–FY2024 for NVIDIA/AMD/Intel/TI) | `semiconductor_roe_trend` | ✅ Completed 12 Nov 2025 – SQL template, CLI formatter, evaluation/validator refreshed |
+| TS_020 | Apple/Dell/HP gross margin trend (latest 8 quarters) | `hardware_gross_margin_trend` | ✅ Completed 12 Nov 2025 – Template + formatter + evaluation assets refreshed (RUN_061) |
+| TS_017–TS_025 | COVID recovery, sector KPI deltas (Retail, Transport, Banking, etc.) | Custom templates per question | Pending |
+
+Each remaining TS item should follow the **Agent Work Template** below so multiple agents can execute in parallel without ambiguity.
+
+##### Agent Work Template (per TS question)
+1. **Question + Data Validation**  
+   - Re-read the entry in `evaluation/questions/time_series_analysis.json` and confirm the dataset (DuckDB parquet) includes companies, tags, and time span needed.  
+   - If data is insufficient, document the gap and propose an adjusted question before coding.
+2. **Template / SQL Implementation**  
+   - If an appropriate template already exists, update its parameters; otherwise create a new `sql_templates/<template_id>.sql` file modeled after TS_011/TS_012.  
+   - Ensure canonical company handling, sector filters, guardrails (NULL handling, min coverage, caps) and parameter placeholders for sector, time span, min coverage, limits, thresholds.  
+   - Register the template in `data/parquet/query_intelligence.parquet`, `data/parquet/template_metadata.parquet`, and `data/template_intents.json`; rebuild FAISS via `python scripts/build_vector_store.py`.
+3. **DuckDB Ground Truth + JSON/Validator Updates**  
+   - Run the template via `QueryEngine` to capture the actual numbers.  
+   - Update the corresponding `expected_answer.sample_analysis`, `sample_data`, `business_insight`, `key_findings`, `investment_implications` in `evaluation/questions/time_series_analysis.json`.  
+   - Mirror the SQL + summary in `time-series-validator.csv` (Question, SQL_template, SQL_generated, Answer_expected, Quality).
+4. **Formatter & CLI Verification**  
+   - Add or extend formatter helpers in `src/response_formatter.py` when the template needs bespoke phrasing.  
+   - Run `python -m src.cli "<TS question>" --debug` to confirm deterministic routing and human-friendly output.
+5. **Telemetry + Tests**  
+   - Log a fresh run using `python scripts/run_eval_suite.py --question "<TS question>" --no-json` so `evaluation/EVAL_WORKBOOK.csv` captures RUN_xxx with Quality=5.  
+   - Add a regression entry to `tests/test_sql_templates.py` (and any additional targeted tests) covering the new template.
+6. **Docs + Plan Update**  
+   - Update README/PLAN when the new pattern introduces tuning knobs or completion milestones.  
+   - Summarize the work in PLAN under Time-Series Template Roadmap with template id + status.
+
+
 
 ---
 

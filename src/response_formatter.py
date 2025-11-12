@@ -41,6 +41,7 @@ class ResponseFormatter:
             "net_debt_to_ebitda_trend": self._format_net_debt_to_ebitda_trend,
             "asset_turnover_trend": self._format_asset_turnover_trend,
             "cfo_to_net_income_trend": self._format_cfo_to_net_income_trend,
+            "cash_to_assets_ratio_trend": self._format_cash_to_assets_ratio_trend,
         }
 
     def format(
@@ -583,6 +584,75 @@ class ResponseFormatter:
 
         heading = f"Technology hardware asset-turnover trend ({start_year}-{end_year}):"
         return heading + "\n" + "\n".join(bullets)
+
+    def _format_cash_to_assets_ratio_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No cash-to-assets coverage was found for the requested companies."
+
+        data = query_result.data
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+        if not isinstance(data, pd.DataFrame) or data.empty:
+            return None
+
+        required_cols = {"company", "fiscal_year", "cash_to_assets_ratio_pct"}
+        if not required_cols.issubset({str(col) for col in data.columns}):
+            # fall back to generic formatter if unexpected schema
+            return None
+
+        normalized = data.copy()
+        normalized["fiscal_year"] = pd.to_numeric(
+            normalized.get("fiscal_year"), errors="coerce"
+        ).astype("Int64")
+
+        bullets: list[str] = []
+        grouped = normalized.groupby("company")
+        for idx, (company, group) in enumerate(grouped, start=1):
+            group = group.sort_values("fiscal_year").dropna(subset=["fiscal_year"])
+            if group.empty:
+                continue
+
+            start_row = group.iloc[0]
+            end_row = group.iloc[-1]
+            start_year = int(start_row["fiscal_year"])
+            end_year = int(end_row["fiscal_year"])
+
+            start_ratio_raw = self._clean_numeric(
+                start_row.get("cash_to_assets_ratio_pct")
+            )
+            end_ratio_raw = self._clean_numeric(
+                end_row.get("cash_to_assets_ratio_pct")
+            )
+            change = (
+                end_ratio_raw - start_ratio_raw
+                if start_ratio_raw is not None and end_ratio_raw is not None
+                else None
+            )
+
+            latest_cash = self._format_billions(
+                self._clean_numeric(end_row.get("cash_billions"))
+            )
+            latest_assets = self._format_billions(
+                self._clean_numeric(end_row.get("assets_billions"))
+            )
+
+            start_ratio = self._format_percentage(start_ratio_raw)
+            end_ratio = self._format_percentage(end_ratio_raw)
+            change_pct = self._format_percentage(change, signed=True)
+
+            bullets.append(
+                f"{idx}) {company}: {start_ratio} ({start_year}) → {end_ratio} ({end_year}) {change_pct}; "
+                f"FY{end_year} cash {latest_cash} vs assets {latest_assets}."
+            )
+
+        if not bullets:
+            return None
+
+        window = f"{normalized['fiscal_year'].min()}-{normalized['fiscal_year'].max()}"
+        heading = f"Cash-to-assets liquidity trend ({window}):"
+        return heading + "\n" + "\n".join(bullets[:6])
 
     def _format_cfo_to_net_income_trend(
         self, query_result: QueryResult

@@ -2,6 +2,8 @@
 Execute representative SQL templates against DuckDB to ensure they are schema-compatible.
 """
 
+from typing import Dict
+
 import pandas as pd
 import pytest
 
@@ -59,10 +61,92 @@ TEMPLATE_CASES = {
         "min_net_income": "500000000",
         "max_ratio": "3",
     },
+    "top_tech_cfo_trend": {
+        "sector": "Information Technology",
+        "ranking_year": "2023",
+        "min_revenue": "10000000000",
+        "top_n": "10",
+        "start_year": "2022",
+        "end_year": "2024",
+        "start_period": "2021-09-01",
+        "end_period": "2024-12-31",
+        "min_quarters": "6",
+        "max_abs_cfo": "400000000000",
+        "value_scale": "1000000000.0",
+        "result_limit": "500",
+    },
+    "hardware_gross_margin_trend": {
+        "company_values": "('APPLE INC'),('DELL TECHNOLOGIES INC.'),('HP INC')",
+        "quarter_count": "8",
+        "min_period": "2022-01-01",
+    },
+    "ebitda_margin_improvement_rank": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2024",
+        "min_revenue": "2000000000",
+        "min_improvement_pp": "5",
+        "limit": "10",
+    },
+    "fcf_to_capex_trend": {
+        "sector": "Health Care",
+        "start_year": "2019",
+        "year_2": "2020",
+        "year_3": "2021",
+        "year_4": "2022",
+        "year_5": "2023",
+        "end_year": "2024",
+        "min_years": "5",
+        "min_cfo": "400000000",
+        "min_capex_abs": "200000000",
+        "max_fcf_retention": "1.2",
+        "min_fcf_retention": "-1.0",
+        "max_capex_intensity": "1.2",
+        "limit": "5",
+    },
+    "cash_to_assets_ratio_trend": {
+        "company_values": "('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')",
+        "use_sector_filter": "0",
+        "sector": "ALL",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": "4",
+    },
+    "shareholder_return_trend": {
+        "sector": "Information Technology",
+        "start_year": "2020",
+        "year_2": "2021",
+        "year_3": "2022",
+        "end_year": "2023",
+        "min_years": "4",
+        "min_total_return": "2000000000",
+        "min_cfo": "5000000000",
+        "max_payout_ratio": "4",
+        "limit": "8",
+    },
+    "semiconductor_roe_trend": {
+        "company_values": "('NVIDIA CORP'),('ADVANCED MICRO DEVICES INC'),('INTEL CORP'),('TEXAS INSTRUMENTS INC')",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": "6",
+        "max_abs_roe": "200",
+        "result_limit": "200",
+    },
+    "energy_roe_threshold_detector": {
+        "sector": "Energy",
+        "start_year": "2020",
+        "end_year": "2024",
+        "min_consecutive_years": "3",
+        "min_years_reported": "3",
+        "roe_threshold": "15",
+        "min_equity": "100000000",
+        "max_roe_pct": "150",
+        "limit": "5",
+    },
 }
 
 
-def render_template(template_id: str, params: dict[str, str]) -> str:
+def render_template(template_id: str, params: Dict[str, str]) -> str:
     sql = TEMPLATE_DF.loc[template_id, "sql_template"]
     for key, value in params.items():
         sql = sql.replace(f"{{{key}}}", value)
