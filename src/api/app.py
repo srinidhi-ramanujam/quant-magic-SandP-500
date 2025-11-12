@@ -14,6 +14,7 @@ from src.llm_guard import (
     ensure_llm_available,
 )
 from src.models import FormattedResponse, QueryRequest
+from src.session_logger import log_interaction
 from src.services import QueryService, QueryServiceResult
 
 
@@ -47,6 +48,17 @@ class QueryResponseModel(BaseModel):
         default=None,
         description="Pipeline error message when success is False.",
     )
+    presentation: Optional[Dict[str, Any]] = Field(
+        default=None, description="Optional polished presentation payload."
+    )
+    reasoning_trace: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Structured reasoning trace describing template + row counts.",
+    )
+    sql_collapsible_hint: Optional[str] = Field(
+        default=None,
+        description="Short summary displayed next to the SQL toggle in the UI.",
+    )
 
     @classmethod
     def from_service_result(
@@ -74,7 +86,32 @@ class QueryResponseModel(BaseModel):
             sources=response.sources or None,
             debug=response.debug_info if debug is _DEBUG_SENTINEL else debug,
             error=response.error,
+            presentation=response.presentation.model_dump()
+            if response.presentation
+            else None,
+            reasoning_trace=response.reasoning_trace.model_dump()
+            if response.reasoning_trace
+            else None,
+            sql_collapsible_hint=_build_sql_hint(result),
         )
+
+
+def _build_sql_hint(result: QueryServiceResult) -> Optional[str]:
+    """Generate a concise summary for the SQL toggle."""
+    generated = result.generated_sql
+    if not generated:
+        return None
+
+    parts: list[str] = []
+    if generated.template_id:
+        parts.append(f"template `{generated.template_id}`")
+    elif generated.generation_method:
+        parts.append(generated.generation_method)
+
+    if result.query_result:
+        parts.append(f"{result.query_result.row_count} rows")
+
+    return " · ".join(parts) if parts else None
 
 
 app = FastAPI(
@@ -161,7 +198,12 @@ async def run_query(request: QueryRequest) -> QueryResponseModel:
         ) from exc
 
     try:
-        result = service.run(request.question, debug_mode=request.debug_mode)
+        result = service.run(
+            request.question,
+            debug_mode=request.debug_mode,
+            history=request.history,
+            include_presentation=request.include_formatted_answer,
+        )
     except LLMAvailabilityError as exc:
         raise HTTPException(
             status_code=503,
@@ -169,6 +211,15 @@ async def run_query(request: QueryRequest) -> QueryResponseModel:
         ) from exc
 
     response = result.response
+    log_interaction(
+        channel="api",
+        question=request.question,
+        response=response,
+        context=result.context,
+        entities=result.entities,
+        generated_sql=result.generated_sql,
+        debug_mode=request.debug_mode,
+    )
 
     debug_payload = response.debug_info if request.debug_mode else None
     return QueryResponseModel.from_service_result(result, response, debug=debug_payload)

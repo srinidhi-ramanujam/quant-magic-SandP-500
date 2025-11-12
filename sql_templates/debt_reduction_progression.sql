@@ -95,12 +95,13 @@ joined AS (
         cd.canonical_name,
         ANY_VALUE(cd.name) AS display_name,
         ANY_VALUE(cd.gics_sector) AS gics_sector,
-        debt_2021,
-        debt_2022,
-        debt_2023,
-        debt_2021 - debt_2023 AS debt_reduction
+        MIN(r.debt_2021) AS debt_2021,
+        MIN(r.debt_2022) AS debt_2022,
+        MIN(r.debt_2023) AS debt_2023,
+        MIN(r.debt_2021 - r.debt_2023) AS debt_reduction
     FROM ranked r
     JOIN company_dim cd USING (cik)
+    GROUP BY cd.canonical_name
 )
 SELECT
     display_name AS name,

@@ -390,7 +390,82 @@ class SQLGenerator:
         if "min_revenue" in missing_params:
             defaults["min_revenue"] = "5000000000"
 
-        if "limit" in missing_params:
+        if "company_values" in missing_params:
+            if template.template_id == "inventory_turnover_trend":
+                defaults["company_values"] = (
+                    "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+                )
+            elif template.template_id == "net_debt_to_ebitda_trend":
+                defaults["company_values"] = (
+                    "('DELTA AIR LINES, INC.'),('SOUTHWEST AIRLINES CO'),('UNITED AIRLINES HOLDINGS, INC.')"
+                )
+            elif template.template_id == "asset_turnover_trend":
+                defaults["company_values"] = (
+                    "('APPLE INC'),('INTEL CORP'),('NVIDIA CORP'),('CISCO SYSTEMS, INC.'),('QUALCOMM INC/DE'),('BROADCOM INC.')"
+                )
+
+        if "quarter_count" in missing_params:
+            defaults["quarter_count"] = "6"
+
+        if "min_period" in missing_params:
+            defaults["min_period"] = "2022-01-01"
+
+        if (
+            "start_year" in missing_params
+            and template.template_id == "net_debt_to_ebitda_trend"
+        ):
+            defaults["start_year"] = "2019"
+        if (
+            "end_year" in missing_params
+            and template.template_id == "net_debt_to_ebitda_trend"
+        ):
+            defaults["end_year"] = "2023"
+
+        if template.template_id == "asset_turnover_trend":
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2020"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2023"
+            if "year_2" in missing_params:
+                defaults["year_2"] = "2021"
+            if "year_3" in missing_params:
+                defaults["year_3"] = "2022"
+            if "min_years" in missing_params:
+                defaults["min_years"] = "4"
+            if "sector" in missing_params:
+                defaults["sector"] = "Information Technology"
+            if "limit" in missing_params:
+                defaults["limit"] = "8"
+            if "min_revenue" in missing_params:
+                defaults["min_revenue"] = "10000000000"
+            if "sic_filter_enabled" in missing_params:
+                defaults["sic_filter_enabled"] = "1"
+            if "sic_min" in missing_params:
+                defaults["sic_min"] = "3570"
+            if "sic_max" in missing_params:
+                defaults["sic_max"] = "3699"
+
+        if template.template_id == "cfo_to_net_income_trend":
+            if "sector" in missing_params:
+                defaults["sector"] = "Health Care"
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2019"
+            if "year_2" in missing_params:
+                defaults["year_2"] = "2020"
+            if "year_3" in missing_params:
+                defaults["year_3"] = "2022"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2023"
+            if "min_years" in missing_params:
+                defaults["min_years"] = "4"
+            if "limit" in missing_params:
+                defaults["limit"] = "8"
+            if "min_net_income" in missing_params:
+                defaults["min_net_income"] = "500000000"
+            if "max_ratio" in missing_params:
+                defaults["max_ratio"] = "3"
+
+        if "limit" in missing_params and "limit" not in defaults:
             defaults["limit"] = "10"
 
         if "rank" in missing_params:
@@ -542,47 +617,27 @@ class SQLGenerator:
                 if not self.azure_client or not self.azure_client.is_available():
                     raise ValueError("Azure OpenAI client not available")
 
-                # Prepare API call parameters based on model
                 model_name = self.azure_client.config.deployment_name or ""
-                requires_special_params = any(
-                    x in model_name.lower() for x in ["o1", "gpt-5"]
+                response = self.azure_client.client.responses.create(
+                    model=model_name,
+                    instructions=(
+                        "You are a SQL template selection assistant. "
+                        "Respond with JSON following the provided schema."
+                    ),
+                    input=prompt,
+                    max_output_tokens=500,
                 )
-
-                if requires_special_params:
-                    # gpt-5 and o1 models require special parameters
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[{"role": "user", "content": prompt}],
-                        max_completion_tokens=500,
-                    )
-                else:
-                    # Standard models
-                    response = self.azure_client.client.chat.completions.create(
-                        model=model_name,
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": "You are a SQL template selection assistant.",
-                            },
-                            {"role": "user", "content": prompt},
-                        ],
-                        temperature=self.config.template_selection_temperature,
-                        max_completion_tokens=500,
-                    )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
                 # Extract content from response
-                content = response.choices[0].message.content
+                content = self.azure_client._parse_api_response(response)
 
                 # Parse JSON response
                 llm_output = self._parse_llm_response(content)
 
                 # Extract token usage
-                token_usage = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                }
+                token_usage = self.azure_client._extract_token_usage(response)
 
                 # Parse into LLMTemplateSelectionResponse
                 llm_response = LLMTemplateSelectionResponse(**llm_output)

@@ -1,7 +1,7 @@
 Question_ID,Testrun_ID,Timestamp,Tier,Question,Category,Time_span,Business_context,SQL_template,SQL_generated,Answer_expected,Answer_received,Quality,Visual_hint
-TS_001,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,Which Technology companies have shown the most consistent profitability improvement over the last 5 years (2019-2023)?,profitability,FY2019-FY2023,Long-term profitability analysis for technology investment strategy and competitive positioning assessment,profit_margin_consistency_trend,"WITH tech_companies AS (SELECT DISTINCT cik, name FROM companies WHERE LOWER(gics_sector) LIKE LOWER('%Technology%')), base_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM sub s JOIN tech_companies t USING (cik) WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2019 AND 2023), filings AS (SELECT adsh, cik, fiscal_year, period FROM base_filings WHERE rn = 1), values AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income, MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue FROM filings f JOIN num n ON f.adsh = n.adsh AND n.ddate = f.period WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') GROUP BY f.cik, f.fiscal_year), margins AS (SELECT t.name, v.cik, v.fiscal_year, v.net_income / NULLIF(v.revenue, 0) AS profit_margin FROM values v JOIN tech_companies t ON v.cik = t.cik WHERE v.net_income IS NOT NULL AND v.revenue IS NOT NULL), ordered AS (SELECT m.*, LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin, LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year FROM margins m) SELECT name, ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END) * 100, 2) AS margin_2019_pct, ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END) * 100, 2) AS margin_2020_pct, ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END) * 100, 2) AS margin_2021_pct, ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END) * 100, 2) AS margin_2022_pct, ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) * 100, 2) AS margin_2023_pct, ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END)) * 100, 2) AS improvement_pct, SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps FROM ordered GROUP BY name HAVING COUNT(DISTINCT fiscal_year) = 5 ORDER BY consistency_steps DESC, improvement_pct DESC, name LIMIT 5;","ON Semi 3.84→26.46 (+22.62pp, 4/4 steps); ADP 16.17→18.94 (+2.77pp, 4/4); Emerson 12.55→87.17 (+74.62pp, divestiture boost, 3/4); Uber -60.13→5.06 (+65.19pp, 3/4); First Solar -3.75→25.03 (+28.79pp, 3/4).",,5,Line chart showing profit margin trends
-TS_003,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Which companies across all sectors have shown the most significant debt reduction over the past 3 years (2021-2023), and what was the quarterly progression?",leverage,FY2021-FY2023,Assess company deleveraging momentum in the post-pandemic recovery.,debt_reduction_progression,"WITH company_dim AS (SELECT cik, name, gics_sector FROM (SELECT cik, name, gics_sector, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn FROM read_parquet('data/parquet/companies_with_sectors.parquet')) WHERE rn = 1), annual_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period FROM read_parquet('data/parquet/sub.parquet') s WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2021 AND 2023), debt_inputs AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation') THEN n.value END) AS total_debt_tag, MAX(CASE WHEN n.tag IN ('LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts') THEN n.value END) AS long_term_debt, MAX(CASE WHEN n.tag IN ('DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') THEN n.value END) AS short_term_debt FROM annual_filings f JOIN read_parquet('data/parquet/num.parquet') n ON f.adsh = n.adsh AND n.ddate = f.period WHERE n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation','LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts','DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') GROUP BY f.cik, f.fiscal_year), total_debt AS (SELECT cik, fiscal_year, COALESCE(total_debt_tag, long_term_debt + COALESCE(short_term_debt, 0), long_term_debt, short_term_debt) AS total_debt FROM debt_inputs), ranked AS (SELECT td.cik, MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021, MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022, MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023 FROM total_debt td GROUP BY td.cik HAVING COUNT(DISTINCT fiscal_year) = 3), joined AS (SELECT cd.name, cd.gics_sector, debt_2021, debt_2022, debt_2023, (debt_2021 - debt_2023) AS debt_reduction FROM ranked r JOIN company_dim cd USING (cik)) SELECT name, gics_sector, debt_2021, debt_2022, debt_2023, debt_reduction FROM joined WHERE debt_reduction > 0 ORDER BY debt_reduction DESC LIMIT 5;","AT&T led with ~$40B reduction (22.6%), followed by AIG (-$29.9B, 99%), US Bancorp (-$29.1B, 65%), Deere (-$27.5B, 60%), and Apple (-$13.8B, 12.7%).",,5,Waterfall chart showing debt reduction progression
-TS_004,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Compare the current ratio trends for Healthcare companies from 2019 to 2023, identifying companies with improving liquidity positions.",liquidity,FY2019-FY2023,Track healthcare liquidity improvements for CFO risk reviews.,current_ratio_trend,"WITH company_dim AS (SELECT cik, name, gics_sector, REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name FROM companies WHERE gics_sector = 'Health Care'), filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM sub s JOIN company_dim d USING (cik) WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2019 AND 2023), latest AS (SELECT adsh, cik, fiscal_year, period FROM filings WHERE rn = 1), ratios AS (SELECT lf.cik, lf.fiscal_year, (MAX(CASE WHEN n.tag = 'AssetsCurrent' THEN n.value END) / NULLIF(MAX(CASE WHEN n.tag = 'LiabilitiesCurrent' THEN n.value END), 0)) AS current_ratio FROM latest lf JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period WHERE n.tag IN ('AssetsCurrent','LiabilitiesCurrent') GROUP BY lf.cik, lf.fiscal_year), pivoted AS (SELECT d.canonical_name, ANY_VALUE(d.name) AS display_name, ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN current_ratio END), 2) AS ratio_2019, ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN current_ratio END), 2) AS ratio_2020, ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN current_ratio END), 2) AS ratio_2021, ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN current_ratio END), 2) AS ratio_2022, ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN current_ratio END), 2) AS ratio_2023 FROM ratios r JOIN company_dim d USING (cik) GROUP BY d.canonical_name HAVING COUNT(DISTINCT fiscal_year) = 5) SELECT display_name AS name, ratio_2019, ratio_2020, ratio_2021, ratio_2022, ratio_2023, ROUND(ratio_2023 - ratio_2019, 2) AS improvement FROM pivoted WHERE ratio_2019 IS NOT NULL AND ratio_2023 IS NOT NULL ORDER BY improvement DESC LIMIT 10;","Hologic (+1.79pp), ResMed (+1.06pp), Zoetis (+0.73pp), Cooper Companies (+0.71pp), STERIS (+0.68pp), and IDEXX (+0.63pp) show the steepest FY2019→FY2023 current-ratio gains among Health Care names.",,5,Line chart with trend indicators
+TS_001,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,Which Technology companies have shown the most consistent profitability improvement over the last 5 years (2019-2023)?,profitability,FY2019-FY2023,Long-term profitability analysis for technology investment strategy and competitive positioning assessment,profit_margin_consistency_trend,"WITH tech_companies AS (SELECT DISTINCT cik, name FROM companies WHERE LOWER(gics_sector) LIKE LOWER('%Technology%')), base_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM sub s JOIN tech_companies t USING (cik) WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2019 AND 2023), filings AS (SELECT adsh, cik, fiscal_year, period FROM base_filings WHERE rn = 1), values AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income, MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue FROM filings f JOIN num n ON f.adsh = n.adsh AND n.ddate = f.period WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') GROUP BY f.cik, f.fiscal_year), margins AS (SELECT t.name, v.cik, v.fiscal_year, v.net_income / NULLIF(v.revenue, 0) AS profit_margin FROM values v JOIN tech_companies t ON v.cik = t.cik WHERE v.net_income IS NOT NULL AND v.revenue IS NOT NULL), ordered AS (SELECT m.*, LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin, LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year FROM margins m) SELECT name, ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END) * 100, 2) AS margin_2019_pct, ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END) * 100, 2) AS margin_2020_pct, ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END) * 100, 2) AS margin_2021_pct, ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END) * 100, 2) AS margin_2022_pct, ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) * 100, 2) AS margin_2023_pct, ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END)) * 100, 2) AS improvement_pct, SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps FROM ordered GROUP BY name HAVING COUNT(DISTINCT fiscal_year) = 5 ORDER BY consistency_steps DESC, improvement_pct DESC, name LIMIT 5;","ON Semi 3.84→26.46 (+22.62pp, 4/4 steps); ADP 16.17→18.94 (+2.77pp, 4/4); Emerson 12.55→87.17 (+74.62pp, divestiture boost, 3/4); Uber -60.13→5.06 (+65.19pp, 3/4); First Solar -3.75→25.03 (+28.79pp, 3/4).",,5.0,Line chart showing profit margin trends
+TS_003,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Which companies across all sectors have shown the most significant debt reduction over the past 3 years (2021-2023), and what was the quarterly progression?",leverage,FY2021-FY2023,Assess company deleveraging momentum in the post-pandemic recovery.,debt_reduction_progression,"WITH company_dim AS (SELECT cik, name, gics_sector FROM (SELECT cik, name, gics_sector, ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn FROM read_parquet('data/parquet/companies_with_sectors.parquet')) WHERE rn = 1), annual_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period FROM read_parquet('data/parquet/sub.parquet') s WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2021 AND 2023), debt_inputs AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation') THEN n.value END) AS total_debt_tag, MAX(CASE WHEN n.tag IN ('LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts') THEN n.value END) AS long_term_debt, MAX(CASE WHEN n.tag IN ('DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') THEN n.value END) AS short_term_debt FROM annual_filings f JOIN read_parquet('data/parquet/num.parquet') n ON f.adsh = n.adsh AND n.ddate = f.period WHERE n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation','LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts','DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') GROUP BY f.cik, f.fiscal_year), total_debt AS (SELECT cik, fiscal_year, COALESCE(total_debt_tag, long_term_debt + COALESCE(short_term_debt, 0), long_term_debt, short_term_debt) AS total_debt FROM debt_inputs), ranked AS (SELECT td.cik, MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021, MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022, MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023 FROM total_debt td GROUP BY td.cik HAVING COUNT(DISTINCT fiscal_year) = 3), joined AS (SELECT cd.name, cd.gics_sector, debt_2021, debt_2022, debt_2023, (debt_2021 - debt_2023) AS debt_reduction FROM ranked r JOIN company_dim cd USING (cik)) SELECT name, gics_sector, debt_2021, debt_2022, debt_2023, debt_reduction FROM joined WHERE debt_reduction > 0 ORDER BY debt_reduction DESC LIMIT 5;","AT&T led with ~$40B reduction (22.6%), followed by AIG (-$29.9B, 99%), US Bancorp (-$29.1B, 65%), Deere (-$27.5B, 60%), and Apple (-$13.8B, 12.7%).",,5.0,Waterfall chart showing debt reduction progression
+TS_004,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Compare the current ratio trends for Healthcare companies from 2019 to 2023, identifying companies with improving liquidity positions.",liquidity,FY2019-FY2023,Track healthcare liquidity improvements for CFO risk reviews.,current_ratio_trend,"WITH company_dim AS (SELECT cik, name, gics_sector, REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name FROM companies WHERE gics_sector = 'Health Care'), filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM sub s JOIN company_dim d USING (cik) WHERE s.form IN ('10-K','10-K/A') AND s.fy BETWEEN 2019 AND 2023), latest AS (SELECT adsh, cik, fiscal_year, period FROM filings WHERE rn = 1), ratios AS (SELECT lf.cik, lf.fiscal_year, (MAX(CASE WHEN n.tag = 'AssetsCurrent' THEN n.value END) / NULLIF(MAX(CASE WHEN n.tag = 'LiabilitiesCurrent' THEN n.value END), 0)) AS current_ratio FROM latest lf JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period WHERE n.tag IN ('AssetsCurrent','LiabilitiesCurrent') GROUP BY lf.cik, lf.fiscal_year), pivoted AS (SELECT d.canonical_name, ANY_VALUE(d.name) AS display_name, ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN current_ratio END), 2) AS ratio_2019, ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN current_ratio END), 2) AS ratio_2020, ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN current_ratio END), 2) AS ratio_2021, ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN current_ratio END), 2) AS ratio_2022, ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN current_ratio END), 2) AS ratio_2023 FROM ratios r JOIN company_dim d USING (cik) GROUP BY d.canonical_name HAVING COUNT(DISTINCT fiscal_year) = 5) SELECT display_name AS name, ratio_2019, ratio_2020, ratio_2021, ratio_2022, ratio_2023, ROUND(ratio_2023 - ratio_2019, 2) AS improvement FROM pivoted WHERE ratio_2019 IS NOT NULL AND ratio_2023 IS NOT NULL ORDER BY improvement DESC LIMIT 10;","Hologic (+1.79pp), ResMed (+1.06pp), Zoetis (+0.73pp), Cooper Companies (+0.71pp), STERIS (+0.68pp), and IDEXX (+0.63pp) show the steepest FY2019→FY2023 current-ratio gains among Health Care names.",,5.0,Line chart with trend indicators
 TS_005,TS_SUITE_LIVE,"11 Nov 2025, 1253 hours",time_series,Which Technology companies expanded operating margins the most between FY2022 and FY2023?,profitability,FY2022-FY2023,Rank large-cap Technology names by operating leverage gains in the latest fiscal year.,operating_margin_delta,"WITH sector_companies AS (
     SELECT DISTINCT cik, name
     FROM companies
@@ -48,7 +48,7 @@ FROM agg
 WHERE revenue_2023 >= 5000000000
   AND margin_2023 IS NOT NULL AND margin_2022 IS NOT NULL
 ORDER BY improvement_pp DESC
-LIMIT 10;","Fidelity National Information Services (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta Platforms (+10.0pp), and Palo Alto Networks (+9.1pp) lead once a $5B revenue floor is applied.","FIS (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta (+10.0pp), Palo Alto Networks (+9.1pp); Workday, Fiserv, Hubbell follow once the $5B revenue floor is applied.",5,Horizontal bar ranking margin delta
+LIMIT 10;","Fidelity National Information Services (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta Platforms (+10.0pp), and Palo Alto Networks (+9.1pp) lead once a $5B revenue floor is applied.","FIS (+125.9pp), NVIDIA (+35.3pp), Salesforce (+11.1pp), DoorDash (+10.4pp), Meta (+10.0pp), Palo Alto Networks (+9.1pp); Workday, Fiserv, Hubbell follow once the $5B revenue floor is applied.",5.0,Horizontal bar ranking margin delta
 TS_006,TS_SUITE_LIVE,"11 Nov 2025, 1321 hours",time_series,"Which Technology companies have shown declining ROE over the past 3 years even as revenue kept growing, and how large is the divergence between the two trends?",profitability,FY2021-FY2023,Surface ROE deterioration despite revenue growth to flag efficiency risks.,roe_revenue_divergence,"WITH sector_companies AS (
     SELECT DISTINCT cik, name
     FROM companies
@@ -96,7 +96,7 @@ SELECT name,
 FROM agg
 WHERE revenue_2023 > revenue_2021 AND roe_2023 < roe_2021
 ORDER BY roe_change_pp ASC
-LIMIT 10;","Qualcomm (-57pp ROE, +6.7% revenue), AMD (-27pp, +38%), Oracle (-23.7pp, +23%), Apple (-18.7pp, +4.8%), Gen Digital (-17.5pp, +36%) lead the list of names with revenue growth but deteriorating ROE between FY2021 and FY2023.","CLI run returned Qualcomm, AMD, Oracle, Apple, Gen Digital among others; each shows ROE decline of 17-57pp while revenue grew 5-38% between FY2021 and FY2023.",5,Dual bars showing ROE delta vs revenue growth
+LIMIT 10;","Qualcomm (-57pp ROE, +6.7% revenue), AMD (-27pp, +38%), Oracle (-23.7pp, +23%), Apple (-18.7pp, +4.8%), Gen Digital (-17.5pp, +36%) lead the list of names with revenue growth but deteriorating ROE between FY2021 and FY2023.","CLI run returned Qualcomm, AMD, Oracle, Apple, Gen Digital among others; each shows ROE decline of 17-57pp while revenue grew 5-38% between FY2021 and FY2023.",5.0,Dual bars showing ROE delta vs revenue growth
 TS_007,TS_SUITE_LIVE,"11 Nov 2025, 1536 hours",time_series,"Show the working capital trends for Industrial companies from 2020 to 2024, identifying companies with improving cash conversion cycles.",liquidity,FY2020-FY2023,Monitor industrial working capital and cash conversion cycle improvements.,working_capital_cash_cycle_trend,"WITH sector_companies AS (
     SELECT cik, name,
            REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
@@ -160,12 +160,347 @@ SELECT name,
 FROM agg
 WHERE wc_2020 IS NOT NULL AND wc_2023 IS NOT NULL
 ORDER BY wc_change_days
-LIMIT 10;","Southwest (-285d), Boeing (-153d), Delta (-133d), CSX (-80d), Illinois Tool Works (-79d), and Lam Research (-90d) now run with materially lower working-capital days; Lam is the only one with full CCC data (164d→223d) showing WIP still elevated.","CLI run surfaced Southwest (-286d), Boeing (-153d), Delta (-133d), Lam Research (-90d) and IDEX (-90d) as the top working-capital compressors between FY2020 and FY2023; CCC data only available for Lam (up +59d).",5,Slope chart of working capital days
-TS_008,TS_SUITE_PLAN,"11 Nov 2025, 1900 hours",time_series,"How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?",profitability,FY2019-FY2023,Measure staples pricing power and margin resilience amid inflation.,gross_margin_trend_sector,"WITH sector_companies AS (SELECT cik, MIN(name) AS name, REGEXP_REPLACE(UPPER(TRIM(MIN(name))), '[^A-Z0-9]', '', 'g') AS canonical_name FROM read_parquet('data/parquet/companies_with_sectors.parquet') WHERE (UPPER('Consumer Staples') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Consumer Staples%')) GROUP BY cik), ranked_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM read_parquet('data/parquet/sub.parquet') s JOIN sector_companies sc USING (cik) WHERE s.form IN ('10-K','10-K/A','20-F') AND s.fy BETWEEN 2019 AND 2023), annual_filings AS (SELECT adsh, cik, fiscal_year, period FROM ranked_filings WHERE rn = 1), values AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet','NetSalesRevenue','NetSales') THEN n.value END) AS revenue, MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') THEN n.value END) AS cost_of_revenue, MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit FROM annual_filings f JOIN read_parquet('data/parquet/num.parquet') n ON n.adsh = f.adsh AND n.ddate = f.period WHERE n.tag IN ('GrossProfit','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet','NetSalesRevenue','NetSales','CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') GROUP BY f.cik, f.fiscal_year), margins AS (SELECT sc.canonical_name, sc.name AS display_name, v.fiscal_year, ROUND(100 * COALESCE(v.gross_profit, v.revenue - v.cost_of_revenue) / NULLIF(v.revenue, 0), 1) AS gross_margin_pct, v.revenue FROM values v JOIN sector_companies sc USING (cik) WHERE v.revenue IS NOT NULL AND v.cost_of_revenue IS NOT NULL), pivoted AS (SELECT canonical_name, ANY_VALUE(display_name) AS name, MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_2019, MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_2023, MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_2023 FROM margins GROUP BY canonical_name HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2019, 2023) THEN fiscal_year END) = 2) SELECT name, ROUND(margin_2019, 1) AS margin_2019_pct, ROUND(margin_2023, 1) AS margin_2023_pct, ROUND(margin_2023 - margin_2019, 1) AS change_pp, ROUND(revenue_2023 / 1000000000.0, 2) AS revenue_2023_billions FROM pivoted WHERE revenue_2023 >= 5000000000 ORDER BY change_pp DESC, name LIMIT 10;","ADM +1.6pp and Constellation +0.6pp still expanded margins, while PepsiCo (-0.9pp) and Philip Morris (-1.4pp) slipped modestly; Tyson (-6.8pp) and Monster (-6.9pp) now anchor the downside.",,,"Slope chart with inflation-resilience annotations"
-TS_009,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",efficiency,Rolling 6 quarters,Evaluate retailer supply chain efficiency via inventory turnover.,inventory_turnover_trend,,Quarterly inventory metrics with efficiency rankings,,,Bar chart race showing inventory turnover leaders
-TS_010,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,Track the net debt-to-EBITDA progression for major Airlines companies from pre-COVID (2019) through recovery (2024).,leverage,2019-2024,Understand airline leverage normalization after COVID shocks.,net_debt_to_ebitda_trend,,Leverage ratio recovery timeline,,,Area chart showing debt burden evolution
-TS_011,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,Compare the asset turnover efficiency trends for major Technology hardware companies over the past 4 years (2020-2023).,efficiency,2020-2023,Benchmark hardware asset efficiency as demand cycles shift.,asset_turnover_trend,,Asset efficiency rankings with trend analysis,,,Line chart showing asset turnover leaders
-TS_012,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Show the cash flow from operations to net income ratio trends for Healthcare companies from 2019 to 2024, identifying quality of earnings patterns.",quality_of_earnings,2019-2024,Assess healthcare earnings quality by comparing cash vs accrual trends.,cfo_to_net_income_ratio_trend,,Earnings quality metrics with cash flow analysis,,,Quality score heatmap over time
+LIMIT 10;","Southwest (-285d), Boeing (-153d), Delta (-133d), CSX (-80d), Illinois Tool Works (-79d), and Lam Research (-90d) now run with materially lower working-capital days; Lam is the only one with full CCC data (164d→223d) showing WIP still elevated.","CLI run surfaced Southwest (-286d), Boeing (-153d), Delta (-133d), Lam Research (-90d) and IDEX (-90d) as the top working-capital compressors between FY2020 and FY2023; CCC data only available for Lam (up +59d).",5.0,Slope chart of working capital days
+TS_008,TS_SUITE_PLAN,"11 Nov 2025, 1900 hours",time_series,"How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?",profitability,FY2019-FY2023,Measure staples pricing power and margin resilience amid inflation.,gross_margin_trend_sector,"WITH sector_companies AS (SELECT cik, MIN(name) AS name, REGEXP_REPLACE(UPPER(TRIM(MIN(name))), '[^A-Z0-9]', '', 'g') AS canonical_name FROM read_parquet('data/parquet/companies_with_sectors.parquet') WHERE (UPPER('Consumer Staples') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%Consumer Staples%')) GROUP BY cik), ranked_filings AS (SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn FROM read_parquet('data/parquet/sub.parquet') s JOIN sector_companies sc USING (cik) WHERE s.form IN ('10-K','10-K/A','20-F') AND s.fy BETWEEN 2019 AND 2023), annual_filings AS (SELECT adsh, cik, fiscal_year, period FROM ranked_filings WHERE rn = 1), values AS (SELECT f.cik, f.fiscal_year, MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet','NetSalesRevenue','NetSales') THEN n.value END) AS revenue, MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') THEN n.value END) AS cost_of_revenue, MAX(CASE WHEN n.tag = 'GrossProfit' THEN n.value END) AS gross_profit FROM annual_filings f JOIN read_parquet('data/parquet/num.parquet') n ON n.adsh = f.adsh AND n.ddate = f.period WHERE n.tag IN ('GrossProfit','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet','NetSalesRevenue','NetSales','CostOfRevenue','CostOfGoodsAndServicesSold','CostOfGoodsSold') GROUP BY f.cik, f.fiscal_year), margins AS (SELECT sc.canonical_name, sc.name AS display_name, v.fiscal_year, ROUND(100 * COALESCE(v.gross_profit, v.revenue - v.cost_of_revenue) / NULLIF(v.revenue, 0), 1) AS gross_margin_pct, v.revenue FROM values v JOIN sector_companies sc USING (cik) WHERE v.revenue IS NOT NULL AND v.cost_of_revenue IS NOT NULL), pivoted AS (SELECT canonical_name, ANY_VALUE(display_name) AS name, MAX(CASE WHEN fiscal_year = 2019 THEN gross_margin_pct END) AS margin_2019, MAX(CASE WHEN fiscal_year = 2023 THEN gross_margin_pct END) AS margin_2023, MAX(CASE WHEN fiscal_year = 2023 THEN revenue END) AS revenue_2023 FROM margins GROUP BY canonical_name HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN (2019, 2023) THEN fiscal_year END) = 2) SELECT name, ROUND(margin_2019, 1) AS margin_2019_pct, ROUND(margin_2023, 1) AS margin_2023_pct, ROUND(margin_2023 - margin_2019, 1) AS change_pp, ROUND(revenue_2023 / 1000000000.0, 2) AS revenue_2023_billions FROM pivoted WHERE revenue_2023 >= 5000000000 ORDER BY change_pp DESC, name LIMIT 10;","ADM +1.6pp and Constellation +0.6pp still expanded margins, while PepsiCo (-0.9pp) and Philip Morris (-1.4pp) slipped modestly; Tyson (-6.8pp) and Monster (-6.9pp) now anchor the downside.",,,Slope chart with inflation-resilience annotations
+TS_009,TS_SUITE_PLAN,"12 Nov 2025, 1000 hours",time_series,"Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",efficiency,Rolling 6 quarters,Evaluate retailer supply chain efficiency via inventory turnover.,inventory_turnover_trend,"WITH provided_companies AS (VALUES ('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')), company_dim AS (SELECT DISTINCT c.cik, pc.column0 AS company_name FROM companies c JOIN provided_companies pc ON UPPER(c.name) = UPPER(pc.column0)), ranked AS (SELECT s.adsh, s.cik, s.period AS period_end, s.fp, s.filed, ROW_NUMBER() OVER (PARTITION BY s.cik, s.period ORDER BY s.filed DESC) AS period_rank FROM sub s JOIN company_dim cd USING (cik) WHERE s.form IN ('10-Q','10-Q/A')), latest AS (SELECT rf.adsh, rf.cik, rf.period_end, rf.fp, ROW_NUMBER() OVER (PARTITION BY rf.cik ORDER BY rf.period_end DESC) AS seq FROM ranked rf WHERE period_rank = 1), filtered AS (SELECT * FROM latest WHERE seq <= 6), quarter_values AS (SELECT f.cik, f.period_end, MAX(CASE WHEN n.tag IN ('InventoryNet','Inventory','InventoryCurrent') AND COALESCE(n.qtrs,0)=0 THEN n.value END) AS inventory, MAX(CASE WHEN n.tag IN ('CostOfRevenue','CostOfGoodsSold','CostOfGoodsAndServicesSold') AND COALESCE(n.qtrs,0)=1 THEN n.value END) AS cost_of_revenue FROM filtered f JOIN num n ON n.adsh = f.adsh AND n.ddate = f.period_end WHERE n.tag IN ('InventoryNet','Inventory','InventoryCurrent','CostOfRevenue','CostOfGoodsSold','CostOfGoodsAndServicesSold') AND COALESCE(TRIM(n.segments),'')='' AND COALESCE(TRIM(n.coreg),'')='' GROUP BY f.cik, f.period_end), summary AS (SELECT cd.column0 AS company, MAX(CASE WHEN seq=1 THEN period_end END) AS latest_period, MAX(CASE WHEN seq=6 THEN period_end END) AS baseline_period, MAX(CASE WHEN seq=1 THEN ROUND((cost_of_revenue*4)/NULLIF(inventory,0),2) END) AS latest_turnover, MAX(CASE WHEN seq=6 THEN ROUND((cost_of_revenue*4)/NULLIF(inventory,0),2) END) AS baseline_turnover, MAX(CASE WHEN seq=1 THEN ROUND((inventory/NULLIF(cost_of_revenue,0))*365,0) END) AS latest_dio, MAX(CASE WHEN seq=6 THEN ROUND((inventory/NULLIF(cost_of_revenue,0))*365,0) END) AS baseline_dio FROM quarter_values q JOIN filtered f USING (cik, period_end) JOIN company_dim cd USING (cik) GROUP BY cd.column0) SELECT company, latest_period, baseline_period, latest_turnover, baseline_turnover, ROUND(latest_turnover - baseline_turnover,2) AS turnover_change, latest_dio, baseline_dio, ROUND(latest_dio - baseline_dio,0) AS dio_change FROM summary ORDER BY turnover_change DESC;",Amazon +1.01x turnover / -22 DIO days; Costco +0.61x / -7 days; Walmart flat; Target (-0.36x) and Home Depot (-0.84x) show rising DIO.,,,Slope chart or heatmap of turnover vs DIO deltas
+TS_010,TS_SUITE_PLAN,"12 Nov 2025, 1000 hours",time_series,"Track the net debt-to-EBITDA progression for Delta, Southwest, and United from FY2019 through the latest available filings (FY2023).",leverage,2019-2023,Understand airline leverage normalization after COVID shocks.,net_debt_to_ebitda_trend,"WITH provided_companies AS (
+    SELECT *
+    FROM (VALUES {company_values}) AS t(company_name)
+),
+company_dim AS (
+    SELECT DISTINCT c.cik, pc.company_name AS display_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON UPPER(c.name) = UPPER(pc.company_name)
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN {start_year} AND {end_year}
+),
+latest_filings AS (
+    SELECT * FROM ranked_filings WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'LongTermDebt',
+            'LongTermDebtNoncurrent',
+            'LongTermDebtAndCapitalLeaseObligations'
+        ) THEN n.value END) AS long_term_debt,
+        MAX(CASE WHEN n.tag IN (
+            'DebtCurrent',
+            'ShortTermBorrowings',
+            'ShortTermDebtAndCurrentPortionOfLongTermDebt',
+            'CurrentPortionOfLongTermDebt'
+        ) THEN n.value END) AS short_term_debt,
+        MAX(CASE WHEN n.tag IN (
+            'CashAndCashEquivalentsAtCarryingValue',
+            'CashCashEquivalentsAndShortTermInvestments'
+        ) THEN n.value END) AS cash,
+        MAX(CASE WHEN n.tag IN (
+            'OperatingIncomeLoss',
+            'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'
+        ) THEN n.value END) AS operating_income,
+        MAX(CASE WHEN n.tag IN (
+            'DepreciationDepletionAndAmortization',
+            'DepreciationAndAmortization',
+            'DepreciationAmortizationAndAccretionNet'
+        ) THEN n.value END) AS depreciation
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations',
+        'DebtCurrent','ShortTermBorrowings','ShortTermDebtAndCurrentPortionOfLongTermDebt','CurrentPortionOfLongTermDebt',
+        'CashAndCashEquivalentsAtCarryingValue','CashCashEquivalentsAndShortTermInvestments',
+        'OperatingIncomeLoss','IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
+        'DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'
+    )
+      AND COALESCE(TRIM(n.segments),'') = ''
+      AND COALESCE(TRIM(n.coreg),'') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+metrics AS (
+    SELECT
+        cd.display_name AS company,
+        av.fiscal_year,
+        (COALESCE(long_term_debt, 0) + COALESCE(short_term_debt, 0)) AS gross_debt,
+        COALESCE(cash, 0) AS cash,
+        (COALESCE(long_term_debt, 0) + COALESCE(short_term_debt, 0) - COALESCE(cash, 0)) AS net_debt,
+        operating_income,
+        depreciation,
+        operating_income + COALESCE(depreciation, 0) AS ebitda,
+        CASE
+            WHEN operating_income IS NULL OR depreciation IS NULL THEN NULL
+            WHEN (operating_income + COALESCE(depreciation, 0)) <= 0 THEN NULL
+            WHEN ABS(operating_income + COALESCE(depreciation, 0)) < 100000000 THEN NULL
+            ELSE (COALESCE(long_term_debt, 0) + COALESCE(short_term_debt, 0) - COALESCE(cash, 0)) /
+                 (operating_income + COALESCE(depreciation, 0))
+        END AS net_debt_to_ebitda
+    FROM annual_values av
+    JOIN company_dim cd USING (cik)
+)
+SELECT
+    company,
+    fiscal_year,
+    ROUND(net_debt / 1000000000.0, 2) AS net_debt_billions,
+    ROUND(ebitda / 1000000000.0, 2) AS ebitda_billions,
+    ROUND(net_debt_to_ebitda, 2) AS net_debt_to_ebitda
+FROM metrics
+ORDER BY company, fiscal_year;","Delta fell from 18x+ leverage in 2020 to 1.8x by FY2023; United improved from 38x to 2.8x; Southwest stayed in net cash throughout, so ratios are effectively NM.","Delta delevered from 4.4x in FY2021 to 1.8x by FY2023 after the COVID spike, United improved from 38x to 2.8x, and Southwest stayed in net cash (~0.6x) throughout.",5.0,Slope chart highlighting leverage collapse and recovery
+TS_011,TS_SUITE_PLAN,"11 Nov 2025, 2300 hours",time_series,Compare the asset turnover efficiency trends for major Technology hardware companies from FY2020 through FY2023.,efficiency,2020-2023,Benchmark hardware asset efficiency as demand cycles shift.,asset_turnover_trend,"WITH sector_companies AS (
+    SELECT DISTINCT cik, name AS display_name
+    FROM companies
+    WHERE ('{sector}' = 'ALL' OR UPPER(gics_sector) = UPPER('{sector}'))
+      AND (
+        {sic_filter_enabled} = 0
+        OR (
+            sic IS NOT NULL
+            AND CAST(sic AS INTEGER) BETWEEN {sic_min} AND {sic_max}
+        )
+      )
+),
+company_dim AS (
+    SELECT DISTINCT c.cik, sc.display_name
+    FROM companies c
+    JOIN sector_companies sc ON c.cik = sc.cik
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN {start_year} AND {end_year}
+),
+latest_filings AS (
+    SELECT * FROM ranked_filings WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        cd.display_name AS company,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(
+            CASE WHEN n.tag IN (
+                'Revenues',
+                'RevenueFromContractWithCustomerExcludingAssessedTax',
+                'SalesRevenueNet'
+            ) THEN n.value END
+        ) AS revenue,
+        MAX(CASE WHEN n.tag = 'Assets' THEN n.value END) AS assets
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_dim cd USING (cik)
+    WHERE n.tag IN (
+        'Revenues',
+        'RevenueFromContractWithCustomerExcludingAssessedTax',
+        'SalesRevenueNet',
+        'Assets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY cd.display_name, lf.cik, lf.fiscal_year
+),
+ratios AS (
+    SELECT
+        company,
+        fiscal_year,
+        revenue,
+        assets,
+        CASE
+            WHEN revenue IS NULL OR assets IS NULL OR assets = 0 THEN NULL
+            ELSE revenue / assets
+        END AS asset_turnover
+    FROM annual_values
+),
+company_turnover AS (
+    SELECT
+        company,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(MAX(CASE WHEN fiscal_year = {start_year} THEN asset_turnover END), 2) AS turnover_{start_year},
+        ROUND(MAX(CASE WHEN fiscal_year = {year_2} THEN asset_turnover END), 2) AS turnover_{year_2},
+        ROUND(MAX(CASE WHEN fiscal_year = {year_3} THEN asset_turnover END), 2) AS turnover_{year_3},
+        ROUND(MAX(CASE WHEN fiscal_year = {end_year} THEN asset_turnover END), 2) AS turnover_{end_year},
+        ROUND(MAX(CASE WHEN fiscal_year = {start_year} THEN asset_turnover END), 2) AS turnover_start,
+        ROUND(MAX(CASE WHEN fiscal_year = {end_year} THEN asset_turnover END), 2) AS turnover_end,
+        ROUND(
+            MAX(CASE WHEN fiscal_year = {end_year} THEN asset_turnover END)
+            - MIN(CASE WHEN fiscal_year = {start_year} THEN asset_turnover END),
+            2
+        ) AS change_since_start,
+        MAX(CASE WHEN fiscal_year = {end_year} THEN revenue END) AS latest_revenue
+    FROM ratios
+    GROUP BY company
+    HAVING COUNT(DISTINCT fiscal_year) >= {min_years}
+)
+SELECT
+    name,
+    years_available,
+    turnover_start,
+    turnover_end,
+    change_since_start,
+    turnover_{start_year} AS turnover_{start_year},
+    turnover_{year_2} AS turnover_{year_2},
+    turnover_{year_3} AS turnover_{year_3},
+    turnover_{end_year} AS turnover_{end_year}
+FROM (
+    SELECT
+        company AS name,
+        years_available,
+        turnover_start,
+        turnover_end,
+        change_since_start,
+        turnover_{start_year},
+        turnover_{year_2},
+        turnover_{year_3},
+        turnover_{end_year},
+        ROW_NUMBER() OVER (
+            ORDER BY change_since_start DESC NULLS LAST, company
+        ) AS rn
+    FROM company_turnover
+    WHERE latest_revenue IS NOT NULL AND latest_revenue >= {min_revenue}
+) ranked
+WHERE rn <= {limit}
+ORDER BY change_since_start DESC NULLS LAST, name;","NVIDIA (+0.35x), Dell/Denali (+0.31x), Apple (+0.24x), Otis (+0.21x), Broadcom (+0.18x) lead FY2020-2023 asset-turnover gains after filtering IT SIC 3570-3699 and >=$10B revenue.","CLI summary aligns with DuckDB: NVIDIA +0.35x, Apple +0.24x, Broadcom +0.18x while Intel declines 0.23x.",5.0,Line chart showing asset turnover leaders
+TS_012,TS_SUITE_PLAN,"11 Nov 2025, 2300 hours",time_series,"Show the cash flow from operations to net income ratio trends for Healthcare companies from FY2019 through FY2023, identifying quality of earnings patterns.",quality_of_earnings,2019-2024,Assess healthcare earnings quality by comparing cash vs accrual trends.,cfo_to_net_income_trend,"WITH sector_companies AS (
+    SELECT cik,
+           name AS display_name,
+           REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+           ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('{sector}' = 'ALL' OR UPPER(gics_sector) = UPPER('{sector}'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+ranked_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        s.filed,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN {start_year} AND {end_year}
+),
+latest_filings AS (
+    SELECT * FROM ranked_filings WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetCashProvidedByUsedInOperatingActivities',
+            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'
+        ) THEN n.value END) AS cfo,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetCashProvidedByUsedInOperatingActivities',
+        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',
+        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations',
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, lf.cik, lf.fiscal_year
+),
+ratios AS (
+    SELECT
+        company,
+        fiscal_year,
+        cfo,
+        net_income,
+        CASE
+            WHEN net_income IS NULL OR cfo IS NULL THEN NULL
+            WHEN net_income <= {min_net_income} OR cfo <= 0 THEN NULL
+            ELSE LEAST(cfo / net_income, {max_ratio})
+        END AS cfo_to_ni
+    FROM annual_values
+),
+company_quality AS (
+    SELECT
+        company,
+        REGEXP_REPLACE(UPPER(TRIM(company)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        COUNT(DISTINCT fiscal_year) AS years_available,
+        ROUND(AVG(cfo_to_ni), 2) AS avg_ratio,
+        ROUND(MAX(CASE WHEN fiscal_year = {start_year} THEN cfo_to_ni END), 2) AS ratio_{start_year},
+        ROUND(MAX(CASE WHEN fiscal_year = {end_year} THEN cfo_to_ni END), 2) AS ratio_{end_year},
+        ROUND(
+            MAX(CASE WHEN fiscal_year = {end_year} THEN cfo_to_ni END)
+            - MIN(CASE WHEN fiscal_year = {start_year} THEN cfo_to_ni END),
+            2
+        ) AS change_since_start,
+        ROUND(MAX(CASE WHEN fiscal_year = {year_2} THEN cfo_to_ni END), 2) AS ratio_{year_2},
+        ROUND(MAX(CASE WHEN fiscal_year = {year_3} THEN cfo_to_ni END), 2) AS ratio_{year_3}
+    FROM ratios
+    GROUP BY company
+    HAVING COUNT(DISTINCT fiscal_year) >= {min_years}
+       AND MIN(CASE WHEN fiscal_year = {start_year} THEN cfo_to_ni END) IS NOT NULL
+       AND MIN(CASE WHEN fiscal_year = {year_3} THEN cfo_to_ni END) IS NOT NULL
+)
+SELECT
+    name,
+    years_available,
+    avg_ratio,
+    change_since_start,
+    ratio_{start_year} AS ratio_{start_year},
+    ratio_{year_2} AS ratio_{year_2},
+    ratio_{year_3} AS ratio_{year_3},
+    ratio_{end_year} AS ratio_{end_year}
+FROM (
+    SELECT
+        company AS name,
+        canonical_name,
+        years_available,
+        avg_ratio,
+        change_since_start,
+        ratio_{start_year},
+        ratio_{year_2},
+        ratio_{year_3},
+        ratio_{end_year},
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY avg_ratio DESC NULLS LAST, company
+        ) AS name_rank
+    FROM company_quality
+    WHERE avg_ratio IS NOT NULL
+) ranked
+WHERE name_rank = 1
+ORDER BY avg_ratio DESC NULLS LAST, name
+LIMIT {limit};","DaVita, AbbVie, Becton, Bristol Myers, HCA show CFO/NI ratios between 1.7x-3.0x across FY2019-2023, signaling resilient Healthcare earnings quality.","DaVita (~2.6x), AbbVie (~2.3x), Becton (~2.3x), Bristol (~2.1x), HCA (~1.8x) maintain strong CFO/NI coverage across FY2019-2023.",5.0,Quality score heatmap over time
 TS_013,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,profitability,2020-2024,Identify energy firms maintaining high ROE through commodity swings.,energy_roe_threshold_detector,,ROE consistency analysis with volatility metrics,,,Consistency score matrix with ROE bands
 TS_014,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Analyze the quarterly earnings volatility and predictability patterns for Healthcare companies over the past 6 years, identifying companies with the most consistent earnings quality for dividend sustainability.",quality_of_earnings,6 years,Earnings quality and predictability analysis for dividend policy decisions and investor communication strategies,earnings_volatility_screen,,earnings_quality_analysis,,,Heatmap showing earnings volatility vs predictability with dividend coverage ratios
 TS_015,TS_SUITE_PLAN,"10 Nov 2025, 1700 hours",time_series,"Track the working capital optimization and cash conversion cycle improvements for major Retail companies over 6 years, measuring inventory management and supplier relationship efficiency.",efficiency,6 years,Working capital efficiency analysis to optimize cash flow generation and supplier relationship management for improved financial performance,retail_cash_conversion_cycle_trend,,working_capital_efficiency_analysis,,,Working capital components trend analysis with efficiency improvement waterfall charts

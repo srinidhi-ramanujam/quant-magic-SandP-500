@@ -8,8 +8,9 @@ For Phase 0, handles:
 """
 
 from datetime import datetime
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 import math
+import re
 
 import pandas as pd
 
@@ -32,10 +33,14 @@ class ResponseFormatter:
             "current_ratio_trend": self._format_current_ratio_trend,
             "operating_margin_delta": self._format_operating_margin_delta,
             "gross_margin_trend_sector": self._format_gross_margin_trend_sector,
+            "inventory_turnover_trend": self._format_inventory_turnover_trend,
             "roe_revenue_divergence": self._format_roe_revenue_divergence,
             "working_capital_cash_cycle_trend": (
                 self._format_working_capital_cash_cycle_trend
             ),
+            "net_debt_to_ebitda_trend": self._format_net_debt_to_ebitda_trend,
+            "asset_turnover_trend": self._format_asset_turnover_trend,
+            "cfo_to_net_income_trend": self._format_cfo_to_net_income_trend,
         }
 
     def format(
@@ -248,8 +253,8 @@ class ResponseFormatter:
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No debt reductions found for the requested period."
-        data = query_result.data
-        if not isinstance(data, pd.DataFrame):
+        data = self._as_dataframe(query_result.data)
+        if data is None or data.empty:
             return None
 
         rows = data.head(5)
@@ -283,8 +288,8 @@ class ResponseFormatter:
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No profitability improvements were found for the requested period."
-        data = query_result.data
-        if not isinstance(data, pd.DataFrame):
+        data = self._as_dataframe(query_result.data)
+        if data is None or data.empty:
             return None
 
         rows = data.head(5)
@@ -424,6 +429,209 @@ class ResponseFormatter:
 
         return "Sector gross margin shifts:\n" + "\n".join(bullets)
 
+    def _format_inventory_turnover_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return (
+                "No inventory turnover data was available for the requested companies."
+            )
+        data = query_result.data
+        if not isinstance(data, pd.DataFrame):
+            return None
+
+        bullets = []
+        for idx, (_, row) in enumerate(data.iterrows(), start=1):
+            company = row.get("company", "Company")
+            latest_period = self._format_period_label(row.get("latest_period_end"))
+            baseline_period = self._format_period_label(
+                row.get("baseline_period_end") or row.get("baseline_period")
+            )
+            latest_turnover = self._format_ratio(row.get("latest_turnover"))
+            baseline_turnover = self._format_ratio(
+                row.get("baseline_turnover") or row.get("start_turnover")
+            )
+            turnover_change = self._format_ratio(
+                self._clean_numeric(row.get("turnover_change")), signed=True
+            )
+            dio_change = self._format_days(
+                self._clean_numeric(row.get("dio_change")), signed=True
+            )
+            latest_dio = self._format_days(row.get("latest_dio"))
+            baseline_dio = self._format_days(
+                row.get("baseline_dio") or row.get("start_dio")
+            )
+
+            bullets.append(
+                f"{idx}) {company}: {baseline_turnover} ({baseline_period}) → "
+                f"{latest_turnover} ({latest_period}) {turnover_change}; "
+                f"DIO {baseline_dio} → {latest_dio} ({dio_change})"
+            )
+
+        return "Inventory turnover trend (last 6 quarters):\n" + "\n".join(bullets)
+
+    def _format_net_debt_to_ebitda_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No leverage data was available for the requested airlines."
+
+        data = query_result.data
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+        if not isinstance(data, pd.DataFrame):
+            return None
+        if data.empty:
+            return "No leverage data was available for the requested airlines."
+
+        def _ratio_label(value: Any) -> str:
+            cleaned = self._clean_numeric(value)
+            return "NM" if cleaned is None else self._format_ratio(cleaned)
+
+        bullets: list[str] = []
+        df = data.sort_values(["company", "fiscal_year"])
+        for idx, (company, group) in enumerate(df.groupby("company", dropna=False), 1):
+            if group.empty:
+                continue
+
+            group = group.sort_values("fiscal_year")
+            start_year = int(group["fiscal_year"].min())
+            end_year = int(group["fiscal_year"].max())
+
+            start_ratio = _ratio_label(
+                group.loc[
+                    group["fiscal_year"] == start_year, "net_debt_to_ebitda"
+                ].iloc[0]
+            )
+            end_ratio = _ratio_label(
+                group.loc[group["fiscal_year"] == end_year, "net_debt_to_ebitda"].iloc[
+                    0
+                ]
+            )
+
+            valid = group.dropna(subset=["net_debt_to_ebitda"])
+            if valid.empty:
+                peak_text = "leverage undefined (EBITDA <= 0 each year)"
+            else:
+                peak_row = valid.loc[valid["net_debt_to_ebitda"].idxmax()]
+                peak_value = self._clean_numeric(peak_row["net_debt_to_ebitda"])
+                peak_year = int(peak_row["fiscal_year"])
+                peak_text = (
+                    "remained in net cash territory"
+                    if peak_value is not None and peak_value <= 0
+                    else f"peak {self._format_ratio(peak_value)} in {peak_year}"
+                )
+
+            latest_row = group.loc[group["fiscal_year"] == end_year].iloc[-1]
+            net_debt = self._format_billions(
+                self._clean_numeric(latest_row.get("net_debt_billions"))
+            )
+            ebitda = self._format_billions(
+                self._clean_numeric(latest_row.get("ebitda_billions"))
+            )
+
+            bullets.append(
+                f"{idx}) {company}: {start_ratio} ({start_year}) → {end_ratio} ({end_year}); "
+                f"{peak_text}. FY{end_year} net debt {net_debt}, EBITDA {ebitda}."
+            )
+
+        return "Airline net debt-to-EBITDA progression (FY2019-FY2023):\n" + "\n".join(
+            bullets
+        )
+
+    def _format_asset_turnover_trend(self, query_result: QueryResult) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No asset-turnover coverage was found for the requested companies."
+
+        data = query_result.data
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+        if not isinstance(data, pd.DataFrame) or data.empty:
+            return None
+
+        turnover_cols = sorted(
+            [
+                col
+                for col in data.columns
+                if re.match(r"turnover_(\d{4})$", col, re.IGNORECASE)
+            ],
+            key=lambda c: int(re.findall(r"(\d{4})", c)[0]),
+        )
+        if not turnover_cols:
+            return None
+
+        start_year = re.findall(r"(\d{4})", turnover_cols[0])[0]
+        end_year = re.findall(r"(\d{4})", turnover_cols[-1])[0]
+
+        rows = data.head(6)
+        bullets: list[str] = []
+        for idx, (_, row) in enumerate(rows.iterrows(), start=1):
+            name = row.get("name", "Company")
+            change_raw = self._clean_numeric(row.get("change_since_start"))
+            change_str = self._format_ratio(change_raw, signed=True)
+            trend_word = "improved" if change_raw and change_raw > 0 else "declined"
+            start_val = row.get(f"turnover_{start_year}") or row.get("turnover_start")
+            end_val = row.get(f"turnover_{end_year}") or row.get("turnover_end")
+            start_label = self._format_ratio(self._clean_numeric(start_val))
+            end_label = self._format_ratio(self._clean_numeric(end_val))
+            coverage = int(row.get("years_available", 0) or 0)
+
+            bullets.append(
+                f"{idx}) {name}: {start_label} ({start_year}) → {end_label} ({end_year}) "
+                f"{change_str} ({trend_word}); coverage {coverage} yrs."
+            )
+
+        heading = f"Technology hardware asset-turnover trend ({start_year}-{end_year}):"
+        return heading + "\n" + "\n".join(bullets)
+
+    def _format_cfo_to_net_income_trend(
+        self, query_result: QueryResult
+    ) -> Optional[str]:
+        if query_result.row_count == 0:
+            return "No CFO-to-net income coverage was found for the requested cohort."
+
+        data = query_result.data
+        if isinstance(data, list):
+            data = pd.DataFrame(data)
+        if not isinstance(data, pd.DataFrame) or data.empty:
+            return None
+
+        ratio_cols = sorted(
+            [
+                col
+                for col in data.columns
+                if col.startswith("ratio_") and col.split("_")[-1].isdigit()
+            ],
+            key=lambda c: int(c.split("_")[-1]),
+        )
+        if not ratio_cols:
+            return None
+
+        start_year = ratio_cols[0].split("_")[-1]
+        end_year = ratio_cols[-1].split("_")[-1]
+
+        bullets: list[str] = []
+        for idx, (_, row) in enumerate(data.head(6).iterrows(), start=1):
+            name = row.get("name", "Company")
+            start_ratio = self._format_ratio(
+                self._clean_numeric(row.get(f"ratio_{start_year}"))
+            )
+            end_ratio = self._format_ratio(
+                self._clean_numeric(row.get(f"ratio_{end_year}"))
+            )
+            avg_ratio = self._format_ratio(self._clean_numeric(row.get("avg_ratio")))
+            change = self._format_ratio(
+                self._clean_numeric(row.get("change_since_start")), signed=True
+            )
+            coverage = int(self._clean_numeric(row.get("years_available")) or 0)
+            bullets.append(
+                f"{idx}) {name}: {start_ratio} ({start_year}) → {end_ratio} ({end_year}) {change}; "
+                f"avg {avg_ratio} CFO/NI over {coverage} yrs."
+            )
+
+        heading = f"Healthcare CFO-to-net income trend ({start_year}-{end_year}):"
+        return heading + "\n" + "\n".join(bullets)
+
     def _format_roe_revenue_divergence(
         self, query_result: QueryResult
     ) -> Optional[str]:
@@ -527,6 +735,16 @@ class ResponseFormatter:
         return "Working capital leaders (days):\n" + "\n".join(bullets)
 
     @staticmethod
+    def _as_dataframe(data):
+        if isinstance(data, pd.DataFrame):
+            return data
+        if isinstance(data, list):
+            if not data:
+                return pd.DataFrame()
+            return pd.DataFrame(data)
+        return None
+
+    @staticmethod
     def _get_first_value(row, keys) -> Optional[float]:
         for key in keys:
             if key in row and row[key] is not None:
@@ -584,6 +802,18 @@ class ResponseFormatter:
         if value is None:
             return "n/a"
         return f"{value:+.2f} days" if signed else f"{value:.2f} days"
+
+    @staticmethod
+    def _format_period_label(value) -> str:
+        if value is None:
+            return "Unknown period"
+        try:
+            import pandas as pd
+
+            ts = pd.to_datetime(value)
+            return ts.strftime("%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            return str(value)
 
     def _format_generic_response(
         self,

@@ -10,6 +10,7 @@ This module contains all prompts for the 4-stage LLM pipeline:
 All prompts are designed for Azure OpenAI gpt-5 deployment with structured output.
 """
 
+import json
 import re
 from textwrap import dedent
 from typing import List, Dict, Optional, Any
@@ -747,3 +748,92 @@ def get_sql_semantic_validation_prompt(
     ).strip()
 
     return {"instructions": instructions, "input": input_prompt}
+
+
+# ==============================================================================
+# STAGE 5: ANSWER FORMATTING PROMPT
+# ==============================================================================
+
+
+def _serialize_history(history: List[Dict[str, str]], limit: int = 3) -> str:
+    """Render recent chat history into a concise text block."""
+    if not history:
+        return "None provided."
+
+    trimmed = history[-limit:]
+    lines: List[str] = []
+    for turn in trimmed:
+        role = (turn.get("role") or "user").strip().upper()
+        content = (turn.get("content") or "").strip()
+        if not content:
+            continue
+        lines.append(f"{role}: {content}")
+
+    return "\n".join(lines) if lines else "None provided."
+
+
+def get_answer_formatter_prompt(
+    *,
+    question: str,
+    base_answer: str,
+    result_rows: List[Dict[str, Any]],
+    template_hint: Optional[str],
+    history: List[Dict[str, str]],
+) -> str:
+    """
+    Build the prompt for the LLM-powered answer formatter.
+
+    Args:
+        question: Original user question
+        base_answer: Deterministic/template answer already produced
+        result_rows: Trimmed query result rows (list of dicts)
+        template_hint: Optional template identifier or description
+        history: Recent conversation history
+
+    Returns:
+        Structured prompt instructing the LLM to produce JSON
+    """
+
+    history_block = _serialize_history(history)
+    result_json = json.dumps(result_rows[:5], ensure_ascii=False)
+    template_line = template_hint or "Not provided"
+
+    prompt = dedent(
+        f"""
+        You are a financial analyst formatter. Turn raw SQL results into a polished, insight-driven business summary.
+
+        CONTEXT
+        - Original question: "{question}"
+        - Template hint: {template_line}
+        - Deterministic answer to improve: "{base_answer}"
+        - Recent conversation (oldest → newest):
+        {history_block}
+
+        DATA (top rows as JSON):
+        {result_json}
+
+        REQUIREMENTS
+        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the FY time frame (FY2020-FY2023). Make it read like an analyst note, not a raw data recap.
+        2. Highlights: produce 2-3 short, insight-focused bullets when data is available (leaders vs laggards, biggest deltas, noteworthy growth). Use [] ONLY when the dataset is empty.
+        3. Table: echo the most helpful columns if data exists.
+           {{
+             "columns": [...],
+             "rows": [{{"col1": "value"}}],
+             "truncated": true/false
+           }}
+           Set table to null if no data or if narrative already covers everything.
+        4. Warnings: note truncation, sparse data, or assumptions (use [] if none).
+        5. DO NOT hallucinate metrics. Cite only from DATA. If DATA is empty, explain that.
+        6. Output MUST be minified JSON matching:
+           {{
+             "narrative": "...",
+             "highlights": [],
+             "table": null or {{...}},
+             "warnings": []
+           }}
+
+        Keep tone professional and decisive. Include currency symbols (e.g., "$14.2B") or ratio formatting when appropriate, and explicitly call out improvements vs declines.
+        """
+    ).strip()
+
+    return prompt

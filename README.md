@@ -47,43 +47,22 @@ Prerequisites:
 
 The script binds FastAPI to `http://localhost:8000` and Vite to `http://localhost:5173`, streams logs, and stops both services when you hit `Ctrl+C`.
 
-### Chat Interface
-The new chat interface features:
-- **ASCENDION branding** with Quant Magic title
-- **Fixed left sidebar**: Chat history, quick access menu, settings
-- **Scrollable chat area**: User messages (indigo gradient) + AI responses (dark theme)
-- **Real-time API status**: Green indicator when backend is connected
-- **Auto-resizing input**: Textarea grows with content, Enter to send
+Per run, the script creates `.logs/session-<timestamp>/` (deleted when you stop the stack) containing:
+- `api.log` / `ui.log`: live server output (cleared on next start)
+- `requests.jsonl`: structured question/answer records with request IDs, SQL, and entities  
+Once you stop the script, restart it to clear old logs and begin a fresh session.
+
+### Chat Interface & Formatter
+- **Chat UI**: React + Tailwind interface with ASCENDION branding, sidebar session list, auto-resizing input, and live API health indicator.
+- **Formatted answers**: API/UI requests include `history` + `include_formatted_answer=true` so the LLM formatter can produce narratives, highlights, tables, and warnings; toggle off via CLI flag.
+- **Reasoning panel**: Assistant messages expose a collapsible “Reasoning & SQL” section summarising template/method/row counts with the full query for copy-to-clipboard.
 
 ---
 
-## Current Status - November 6, 2025
+## Status Snapshot
 
-### ✅ Phase 0: Foundation (COMPLETE)
-- **10/10 PoC questions** correct (<1.1s response time)
-- **Data layer**: 15.5M+ financial facts, 589 S&P 500 companies
-- **CLI**: Interactive REPL + single-shot modes
-- **Test suite**: 55 tests passing (100%)
-
-### ✅ Phase 1: AI Integration (COMPLETE)
-- **LLM-first pipeline**: GPT-5 drives entity extraction and template selection when credentials are present; the system auto-falls back to deterministic mode with clear telemetry when Azure is unavailable.
-- **Azure OpenAI**: GPT-5 integration with retry logic and dynamic circuit-breaker fallback
-- **LLM Entity Extraction**: 13/13 tests passing (integration tests skipped unless `ENABLE_AZURE_INTEGRATION_TESTS=true`)
-- **Hybrid Template Selection**: Deterministic fast path + LLM confirmation/fallback
-- **27 SQL Templates**: 7 categories (company, sector, financial metrics, ratios, time series) with automated schema validation
-- **Test suite**: 118 tests passing, 2 skipped (integration gated), 2 xpassed
-
-### ✅ Frontend: Chat Interface (COMPLETE)
-- **Modern UI**: Production-ready chat interface with ASCENDION branding
-- **Layout**: Fixed left sidebar with chat history + scrollable conversation area
-- **Color Scheme**: Professional indigo/blue palette optimized for financial data
-- **Features**: Real-time API status, auto-resizing input, chat session management
-- **Tech Stack**: React + TypeScript + Tailwind CSS + Vite
-
-### 🚀 Next: Phase 2 - SQL Generation & Coverage
-- Custom SQL generation for non-template questions
-- Two-pass validation (syntax + semantic)
-- Target: 86+/171 simple questions (50%+)
+- **Phase 0/1**: Foundation + LLM integration complete (Azure OpenAI, hybrid template routing, 27 templates, 100+ tests). No further action required.
+- **Phase 2 (Active)**: Custom SQL generation + validation + coverage push (goal: 86+/171 simple questions). See `PLAN.md` for live roadmap.
 
 ---
 
@@ -402,6 +381,26 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
   4. **Template SQL** is populated with extracted parameters, validated by `SQLValidator` (static + semantic passes).
   5. **Query execution** happens in DuckDB via `QueryEngine`, returning a pandas DataFrame.
   6. **ResponseFormatter** formats the result (count, lookup, table) and attaches telemetry (latency, validator result). The CLI or API returns the final answer.
+
+### Time-Series Asset Turnover Template
+- `sql_templates/asset_turnover_trend.sql` powers TS_011 and any future asset-efficiency cohorts. It accepts:
+  - `sector` (default `Information Technology`) to scope by GICS sector, set to `ALL` for cross-sector runs.
+  - `sic_filter_enabled`, `sic_min`, `sic_max` to optionally gate results to a SIC range (defaults 3570–3699 for hardware).
+  - `start_year`, `year_2`, `year_3`, `end_year`, `min_years` to define the fiscal window and minimum coverage.
+  - `min_revenue` (default $10B) to exclude subscale names and `limit` (default 6) to control ranking length.
+- After editing the template or its metadata, rerun `python scripts/build_vector_store.py` so hybrid retrieval learns the new intent.
+- Validation commands:
+  ```bash
+  python -m src.cli "Compare the asset turnover efficiency trends for major Technology hardware companies from FY2020 through FY2023." --debug
+  python scripts/run_eval_suite.py --question "Compare the asset turnover efficiency trends for major Technology hardware companies from FY2020 through FY2023." --no-json
+  ```
+- Expected FY2020–FY2023 output with the default SIC and revenue filters: NVIDIA (+0.35x), Dell/Denali (+0.31x), Apple (+0.24x), Otis (+0.21x), Broadcom (+0.18x).
+- `sql_templates/cfo_to_net_income_trend.sql` powers TS_012 and ranks Healthcare cohorts by CFO/Net income ratios. Parameters mirror the sector template above (`sector`, fiscal-year window, minimum coverage, limit, `min_net_income`, `max_ratio`). The query dedupes company names, caps outlier ratios at 3× to avoid distortion, and defaults to FY2019–FY2023. To validate:
+  ```bash
+  python -m src.cli "Show the cash flow from operations to net income ratio trends for Healthcare companies from FY2019 through FY2023, identifying quality of earnings patterns." --debug
+  python scripts/run_eval_suite.py --question "Show the cash flow from operations to net income ratio trends for Healthcare companies from FY2019 through FY2023, identifying quality of earnings patterns." --no-json
+  ```
+  Expected output: DaVita (~2.6x), AbbVie (~2.3x), Becton (~2.3x), Bristol (~2.1x), HCA (~1.8x) with richer bullets explaining cash conversion.
 
 ### Commit & PR Expectations
 - Use Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise present-tense summaries under 72 characters.
