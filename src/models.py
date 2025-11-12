@@ -652,7 +652,7 @@ class LLMEntityResponse(BaseModel):
     processing_time_ms: int = Field(
         default=0, ge=0, description="LLM processing time in milliseconds"
     )
-    token_usage: Dict[str, int] = Field(
+    token_usage: Dict[str, float] = Field(
         default_factory=dict,
         description="Token usage breakdown (prompt_tokens, completion_tokens)",
     )
@@ -765,7 +765,7 @@ class LLMTemplateSelectionResponse(BaseModel):
     processing_time_ms: int = Field(
         default=0, ge=0, description="LLM processing time in milliseconds"
     )
-    token_usage: Dict[str, int] = Field(
+    token_usage: Dict[str, float] = Field(
         default_factory=dict,
         description="Token usage breakdown (prompt_tokens, completion_tokens)",
     )

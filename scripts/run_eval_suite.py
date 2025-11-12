@@ -16,12 +16,17 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import json
+import os
 import re
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
+import logging
+from logging.handlers import RotatingFileHandler
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -57,6 +62,36 @@ FIELDNAMES = [
     "Query_execution_s",
     "Response_formatting_s",
 ]
+
+LOG_DIR = Path("evaluation/logs")
+LOG_FILE = LOG_DIR / "run_eval.log"
+
+
+def configure_file_logging() -> None:
+    """Attach a rotating log handler that compresses older logs."""
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    handler = RotatingFileHandler(
+        LOG_FILE, maxBytes=5_000_000, backupCount=5, encoding="utf-8"
+    )
+
+    def namer(default_name: str) -> str:
+        return default_name + ".gz"
+
+    def rotator(source: str, dest: str) -> None:
+        with open(source, "rb") as src, gzip.open(dest, "wb") as dst:
+            shutil.copyfileobj(src, dst)
+        os.remove(source)
+
+    handler.namer = namer
+    handler.rotator = rotator
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)-7s | %(name)s | %(message)s")
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(handler)
+    if root_logger.level > logging.INFO:
+        root_logger.setLevel(logging.INFO)
 
 
 def load_questions(suite: str) -> List[Dict]:
@@ -397,6 +432,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    configure_file_logging()
+
     suites = args.suite or []
     custom_questions = args.question or []
 
@@ -406,6 +443,8 @@ def main() -> None:
     run_id = next_run_id(EVAL_WORKBOOK)
     timestamp = format_timestamp(datetime.now())
     emit_json = not args.no_json
+
+    logging.info("===== Eval run %s @ %s =====", run_id, timestamp)
 
     cli = FinancialCLI()
 

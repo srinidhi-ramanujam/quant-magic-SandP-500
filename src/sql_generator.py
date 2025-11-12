@@ -522,6 +522,24 @@ class SQLGenerator:
             if "min_years" in missing_params:
                 defaults["min_years"] = "4"
 
+        if template.template_id == "energy_roe_threshold_detector":
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2020"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2024"
+            if "min_consecutive_years" in missing_params:
+                defaults["min_consecutive_years"] = "3"
+            if "min_years_reported" in missing_params:
+                defaults["min_years_reported"] = "3"
+            if "roe_threshold" in missing_params:
+                defaults["roe_threshold"] = "15"
+            if "min_equity" in missing_params:
+                defaults["min_equity"] = "100000000"
+            if "max_roe_pct" in missing_params:
+                defaults["max_roe_pct"] = "150"
+            if "limit" in missing_params and "limit" not in defaults:
+                defaults["limit"] = "5"
+
         if "limit" in missing_params and "limit" not in defaults:
             defaults["limit"] = "10"
 

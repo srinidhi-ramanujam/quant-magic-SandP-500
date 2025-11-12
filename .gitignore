@@ -41,6 +41,7 @@ htmlcov/
 
 # Logs
 *.log
+evaluation/logs/
 
 # OS
 .DS_Store

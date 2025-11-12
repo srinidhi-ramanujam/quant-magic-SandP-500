@@ -27658,3 +27658,1758 @@ ORDER BY r.company, r.fiscal_year;
 6) ADOBE INC.: FY2024 cash-to-assets 25.18% ($7.61B cash on $30.23B assets).
 18) SALESFORCE, INC.: FY2024 cash-to-assets 8.60% ($8.85B cash on $102.93B assets).
 12) MICROSOFT CORP: FY2024 cash-to-assets 3.58% ($18.32B cash on $512.16B assets).",,,0.850,template,,,None,22.2583,0.0000,0.0000,0.0000,0.0000
+RUN_063,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,24.1997,0.0000,0.0000,0.0000,0.0000
+RUN_064,"12 Nov 2025, 2000 hours",custom,Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,22.6107,0.0000,0.0000,0.0000,0.0000
+RUN_065,"12 Nov 2025, 2000 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,23.7572,0.0000,0.0000,0.0000,0.0000
+RUN_066,"12 Nov 2025, 2000 hours",custom,How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,25.2943,0.0000,0.0000,0.0000,0.0000
+RUN_067,"12 Nov 2025, 2000 hours",custom,Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,21.9503,0.0000,0.0000,0.0000,0.0000
+RUN_068,"12 Nov 2025, 2000 hours",custom,"Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024.",cash_to_assets_ratio_trend,"WITH provided_companies AS (
+    SELECT
+        TRIM(company_name) AS provided_name,
+        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM (VALUES ('TRACK'),('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')) AS t(company_name)
+),
+sector_candidates AS (
+    SELECT
+        c.cik,
+        c.name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies c
+    WHERE 0 = 1
+      AND (
+        UPPER('ALL') = 'ALL'
+        OR LOWER(c.gics_sector) LIKE LOWER('%ALL%')
+      )
+),
+list_candidates AS (
+    SELECT
+        c.cik,
+        pc.provided_name AS display_name
+    FROM companies c
+    JOIN provided_companies pc
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_name
+),
+combined_companies AS (
+    SELECT cik, display_name FROM list_candidates
+    UNION ALL
+    SELECT cik, display_name FROM sector_candidates
+),
+company_dim AS (
+    SELECT
+        cik,
+        ANY_VALUE(display_name) AS display_name
+    FROM combined_companies
+    GROUP BY cik
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.cik, s.fy
+            ORDER BY s.filed DESC, s.period DESC NULLS LAST
+        ) AS rn
+    FROM sub s
+    JOIN company_dim cd USING (cik)
+    WHERE s.form IN ('10-K', '10-K/A')
+      AND s.fy BETWEEN 2019 AND 2024
+),
+latest_filings AS (
+    SELECT *
+    FROM annual_filings
+    WHERE rn = 1
+      AND period IS NOT NULL
+),
+annual_values AS (
+    SELECT
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag = 'CashAndCashEquivalentsAtCarryingValue' THEN n.value END) AS cash_and_equivalents,
+        MAX(CASE WHEN n.tag = 'CashCashEquivalentsAndShortTermInvestments' THEN n.value END) AS cash_and_short_term,
+        MAX(CASE WHEN n.tag = 'Assets' THEN n.value END) AS total_assets
+    FROM latest_filings lf
+    JOIN num n
+      ON n.adsh = lf.adsh
+     AND n.ddate = lf.period
+    WHERE n.tag IN (
+        'CashAndCashEquivalentsAtCarryingValue',
+        'CashCashEquivalentsAndShortTermInvestments',
+        'Assets'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY lf.cik, lf.fiscal_year
+),
+normalized AS (
+    SELECT
+        av.cik,
+        av.fiscal_year,
+        COALESCE(av.cash_and_equivalents, av.cash_and_short_term) AS cash_balance,
+        av.total_assets
+    FROM annual_values av
+),
+ratios AS (
+    SELECT
+        cd.display_name AS company,
+        n.fiscal_year,
+        n.cash_balance,
+        n.total_assets,
+        CASE
+            WHEN n.total_assets IS NULL
+                 OR n.total_assets = 0
+                 OR n.cash_balance IS NULL
+            THEN NULL
+            ELSE n.cash_balance / n.total_assets
+        END AS cash_to_assets_ratio
+    FROM normalized n
+    JOIN company_dim cd USING (cik)
+),
+coverage AS (
+    SELECT
+        company,
+        COUNT(DISTINCT CASE WHEN cash_to_assets_ratio IS NOT NULL THEN fiscal_year END) AS ratios_available
+    FROM ratios
+    GROUP BY company
+)
+SELECT
+    r.company,
+    r.fiscal_year,
+    ROUND(r.cash_balance / 1000000000.0, 2) AS cash_billions,
+    ROUND(r.total_assets / 1000000000.0, 2) AS assets_billions,
+    ROUND(r.cash_to_assets_ratio, 4) AS cash_to_assets_ratio,
+    ROUND(r.cash_to_assets_ratio * 100, 2) AS cash_to_assets_ratio_pct
+FROM ratios r
+JOIN coverage c USING (company)
+WHERE r.cash_to_assets_ratio IS NOT NULL
+  AND c.ratios_available >= 4
+ORDER BY r.company, r.fiscal_year;
+
+","Cash-to-assets liquidity trend (2019-2024):
+1) ADOBE INC.: 12.76% (2019) → 25.18% (2024) +12.42%; FY2024 cash $7.61B vs assets $30.23B.
+2) MICROSOFT CORP: 3.96% (2019) → 3.58% (2024) -0.38%; FY2024 cash $18.32B vs assets $512.16B.
+3) SALESFORCE, INC.: 7.52% (2019) → 8.60% (2024) +1.08%; FY2024 cash $8.85B vs assets $102.93B.",,,0.850,template,,,None,24.3006,0.0000,0.0000,0.0000,0.0000
+RUN_069,"12 Nov 2025, 2000 hours",custom,"Show year-over-year ROE for NVIDIA, AMD, Intel, and Texas Instruments from 2019 to 2024.",,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,20.1456,0.0000,0.0000,0.0000,0.0000
+RUN_070,"12 Nov 2025, 2000 hours",custom,"Compare quarterly gross margin trends for Apple, Dell, and HP over the past 8 quarters.",,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,23.6676,0.0000,0.0000,0.0000,0.0000
+RUN_071,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,21.0821,0.0000,0.0000,0.0000,0.0000
+RUN_072,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,22.5455,0.0000,0.0000,0.0000,0.0000
+RUN_073,"12 Nov 2025, 2000 hours",custom,How many S&P 500 companies are in the Information Technology sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%information technology%'),There are 165 companies in the Information Technology sector.,,,0.950,template,,,None,26.0143,0.0000,0.0000,0.0000,0.0000
+RUN_074,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,22.6431,0.0000,0.0000,0.0000,0.0000
+RUN_075,"12 Nov 2025, 2000 hours",custom,Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,23.9578,0.0000,0.0000,0.0000,0.0000
+RUN_076,"12 Nov 2025, 2000 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,20.4136,0.0000,0.0000,0.0000,0.0000
+RUN_077,"12 Nov 2025, 2000 hours",custom,How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,20.3595,0.0000,0.0000,0.0000,0.0000
+RUN_078,"12 Nov 2025, 2000 hours",custom,Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,22.1436,0.0000,0.0000,0.0000,0.0000
+RUN_079,"12 Nov 2025, 2000 hours",connectivity,How many S&P 500 companies are in the Information Technology sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%information technology%'),There are 165 companies in the Information Technology sector.,,,0.950,template,,,None,22.4496,0.0000,0.0000,0.0000,0.0000
+RUN_080,"12 Nov 2025, 2000 hours",connectivity,How many S&P 500 companies are in the Information Technology sector?,sector_company_count,SELECT COUNT(*) as count FROM companies WHERE UPPER(gics_sector) LIKE UPPER('%information technology%'),There are 165 companies in the Information Technology sector.,,,0.950,template,,,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1518.0, 'completion_tokens': 326.0, 'total_tokens': 1844.0, 'reasoning_tokens': 256.0, 'regular_output_tokens': 70.0, 'reasoning_percentage': 78.52760736196319}, 'latency_ms': 3590, 'success': True}]",17.2932,0.0000,0.0000,0.0000,0.0000
+RUN_081,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,21.9033,0.0000,0.0000,0.0000,0.0000
+RUN_082,"12 Nov 2025, 2000 hours",custom,"Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,24.3585,0.0000,0.0000,0.0000,0.0000
+RUN_082,"12 Nov 2025, 2000 hours",custom,Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,25.3487,0.0000,0.0000,0.0000,0.0000
+RUN_083,"12 Nov 2025, 2000 hours",custom,How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,22.7151,0.0000,0.0000,0.0000,0.0000
+RUN_084,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,20.5775,0.0000,0.0000,0.0000,0.0000
+RUN_085,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,24.1997,0.0000,0.0000,0.0000,0.0000
+RUN_086,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.800,template,,,None,23.0860,0.0000,0.0000,0.0000,0.0000
+RUN_087,"12 Nov 2025, 2000 hours",custom,Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.,energy_roe_threshold_detector,"WITH sector_companies AS (
+    SELECT
+        cik,
+        name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,
+        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn
+    FROM companies
+    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))
+),
+company_seed AS (
+    SELECT cik, display_name, canonical_name
+    FROM sector_companies
+    WHERE rn = 1
+),
+annual_filings AS (
+    SELECT
+        s.adsh,
+        s.cik,
+        CAST(s.fy AS INTEGER) AS fiscal_year,
+        s.period,
+        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
+    FROM sub s
+    JOIN company_seed sc USING (cik)
+    WHERE s.form IN ('10-K','10-K/A')
+      AND s.fy BETWEEN 2020 AND 2024
+),
+latest_filings AS (
+    SELECT adsh, cik, fiscal_year, period
+    FROM annual_filings
+    WHERE rn = 1
+),
+annual_values AS (
+    SELECT
+        sc.display_name AS company,
+        sc.canonical_name,
+        lf.cik,
+        lf.fiscal_year,
+        MAX(CASE WHEN n.tag IN (
+            'NetIncomeLoss',
+            'NetIncomeLossAvailableToCommonStockholdersBasic',
+            'NetIncomeLossAvailableToCommonStockholdersDiluted'
+        ) THEN n.value END) AS net_income,
+        MAX(CASE WHEN n.tag IN (
+            'StockholdersEquity',
+            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+        ) THEN n.value END) AS equity
+    FROM latest_filings lf
+    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period
+    JOIN company_seed sc USING (cik)
+    WHERE n.tag IN (
+        'NetIncomeLoss',
+        'NetIncomeLossAvailableToCommonStockholdersBasic',
+        'NetIncomeLossAvailableToCommonStockholdersDiluted',
+        'StockholdersEquity',
+        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'
+    )
+      AND COALESCE(TRIM(n.segments), '') = ''
+      AND COALESCE(TRIM(n.coreg), '') = ''
+    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year
+),
+roe_values AS (
+    SELECT
+        company,
+        canonical_name,
+        fiscal_year,
+        CASE
+            WHEN net_income IS NULL OR equity IS NULL THEN NULL
+            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL
+            ELSE LEAST(
+                150,
+                GREATEST(
+                    -150,
+                    (net_income / NULLIF(equity, 0)) * 100
+                )
+            )
+        END AS roe_pct
+    FROM annual_values
+),
+filtered_years AS (
+    SELECT *
+    FROM roe_values
+    WHERE fiscal_year BETWEEN 2020 AND 2024
+      AND roe_pct IS NOT NULL
+),
+streak_index AS (
+    SELECT
+        *,
+        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,
+        CASE
+            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (
+                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END
+                ORDER BY fiscal_year
+            )
+            ELSE NULL
+        END AS streak_group
+    FROM filtered_years
+),
+consecutive_runs AS (
+    SELECT
+        canonical_name,
+        COUNT(*) AS streak_length,
+        MIN(fiscal_year) AS streak_start_year,
+        MAX(fiscal_year) AS streak_end_year
+    FROM streak_index
+    WHERE above_threshold = 1
+    GROUP BY canonical_name, streak_group
+),
+longest_streak AS (
+    SELECT
+        canonical_name,
+        streak_length,
+        streak_start_year,
+        streak_end_year,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY streak_length DESC, streak_end_year DESC
+        ) AS streak_rank
+    FROM consecutive_runs
+),
+company_longest AS (
+    SELECT
+        canonical_name,
+        streak_length AS max_consecutive_years,
+        streak_start_year,
+        streak_end_year
+    FROM longest_streak
+    WHERE streak_rank = 1
+),
+roe_summary AS (
+    SELECT
+        canonical_name,
+        ANY_VALUE(company) AS company,
+        COUNT(*) AS years_reported,
+        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,
+        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,
+        ROUND(
+            COALESCE(
+                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),
+                0
+            ),
+            2
+        ) AS roe_volatility_pct,
+        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,
+        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,
+        MIN(fiscal_year) AS first_year,
+        MAX(fiscal_year) AS last_year
+    FROM streak_index
+    GROUP BY canonical_name
+),
+latest_values AS (
+    SELECT
+        canonical_name,
+        CAST(fiscal_year AS INTEGER) AS fiscal_year,
+        roe_pct,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY fiscal_year DESC
+        ) AS rn
+    FROM filtered_years
+),
+latest_per_company AS (
+    SELECT
+        canonical_name,
+        fiscal_year AS latest_year_reported,
+        ROUND(roe_pct, 2) AS latest_year_roe_pct
+    FROM latest_values
+    WHERE rn = 1
+),
+finalized AS (
+    SELECT
+        rs.company AS name,
+        rs.canonical_name,
+        rs.years_reported,
+        rs.years_above_threshold,
+        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,
+        cl.streak_start_year,
+        cl.streak_end_year,
+        rs.avg_roe_pct,
+        rs.roe_volatility_pct,
+        rs.min_streak_roe_pct,
+        rs.max_streak_roe_pct,
+        rs.first_year,
+        rs.last_year,
+        lp.latest_year_reported,
+        lp.latest_year_roe_pct
+    FROM roe_summary rs
+    LEFT JOIN company_longest cl USING (canonical_name)
+    LEFT JOIN latest_per_company lp USING (canonical_name)
+)
+SELECT
+    name,
+    max_consecutive_years AS consecutive_years,
+    years_above_threshold,
+    years_reported,
+    streak_start_year,
+    streak_end_year,
+    first_year,
+    last_year,
+    avg_roe_pct,
+    roe_volatility_pct,
+    min_streak_roe_pct,
+    max_streak_roe_pct,
+    latest_year_reported,
+    latest_year_roe_pct
+FROM (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY canonical_name
+            ORDER BY
+                max_consecutive_years DESC,
+                avg_roe_pct DESC,
+                roe_volatility_pct ASC,
+                name
+        ) AS name_rank
+    FROM finalized
+    WHERE max_consecutive_years >= 3
+      AND years_above_threshold >= 3
+      AND years_reported >= 3
+      AND avg_roe_pct IS NOT NULL
+)
+WHERE name_rank = 1
+ORDER BY
+    consecutive_years DESC,
+    avg_roe_pct DESC,
+    roe_volatility_pct ASC,
+    name
+LIMIT 5;
+
+","Found 5 results. Sample: [{'name': 'DEVON ENERGY CORP/DE', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 37.95, 'roe_volatility_pct': 13.26, 'min_streak_roe_pct': 29.93, 'max_streak_roe_pct': 53.25, 'latest_year_reported': 2023, 'latest_year_roe_pct': 30.67}, {'name': 'MARATHON PETROLEUM CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 34.71, 'roe_volatility_pct': 6.85, 'min_streak_roe_pct': 29.86, 'max_streak_roe_pct': 42.55, 'latest_year_reported': 2023, 'latest_year_roe_pct': 31.74}, {'name': 'CHESAPEAKE ENERGY CORP', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 3, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2021, 'last_year': 2023, 'avg_roe_pct': 31.1, 'roe_volatility_pct': 20.13, 'min_streak_roe_pct': 16.66, 'max_streak_roe_pct': 54.1, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.55}, {'name': 'EOG RESOURCES INC', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.46, 'roe_volatility_pct': 5.17, 'min_streak_roe_pct': 21.03, 'max_streak_roe_pct': 31.31, 'latest_year_reported': 2023, 'latest_year_roe_pct': 27.03}, {'name': 'CONOCOPHILLIPS', 'consecutive_years': 3, 'years_above_threshold': 3, 'years_reported': 4, 'streak_start_year': 2021, 'streak_end_year': 2023, 'first_year': 2020, 'last_year': 2023, 'avg_roe_pct': 26.31, 'roe_volatility_pct': 11.14, 'min_streak_roe_pct': 17.79, 'max_streak_roe_pct': 38.91, 'latest_year_reported': 2023, 'latest_year_roe_pct': 22.23}]",,,0.900,template,,,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1534.0, 'completion_tokens': 872.0, 'total_tokens': 2406.0, 'reasoning_tokens': 768.0, 'regular_output_tokens': 104.0, 'reasoning_percentage': 88.07339449541286}, 'latency_ms': 12428, 'success': True}]",13.2063,0.0000,0.0000,0.0000,0.0000

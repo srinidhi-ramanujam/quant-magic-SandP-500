@@ -71,6 +71,10 @@ class Config(BaseModel):
     entity_extraction_timeout: int = Field(
         default=30, description="Timeout for entity extraction in seconds"
     )
+    entity_extraction_max_tokens: int = Field(
+        default=1500,
+        description="Max output tokens budget for entity extraction Responses API call",
+    )
 
     # Stage 2: Template Selection Settings
     template_selection_fast_path_threshold: float = Field(

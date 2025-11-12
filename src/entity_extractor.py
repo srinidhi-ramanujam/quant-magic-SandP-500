@@ -418,13 +418,20 @@ class EntityExtractor:
                         "Respond with minified JSON only (no prose)."
                     ),
                     input=prompt,
-                    max_output_tokens=500,
+                    max_output_tokens=self.config.entity_extraction_max_tokens,
                 )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
                 # Extract content from response
                 content = self.azure_client._parse_api_response(response)
+                if not content.strip():
+                    dump = (
+                        response.model_dump()
+                        if hasattr(response, "model_dump")
+                        else str(response)
+                    )
+                    self.logger.warning("LLM response content empty: %s", dump)
 
                 # Parse JSON from LLM response
                 llm_output = self._parse_llm_response(content)
@@ -478,7 +485,12 @@ class EntityExtractor:
 
             except json.JSONDecodeError as e:
                 last_error = f"JSON parsing error: {e}"
-                self.logger.warning(f"Attempt {attempt + 1} failed: {last_error}")
+                self.logger.warning(
+                    "Attempt %s failed: %s\nLLM raw output: %s",
+                    attempt + 1,
+                    last_error,
+                    content if "content" in locals() else "",
+                )
                 if attempt < max_retries:
                     time.sleep(1 * (attempt + 1))  # Exponential backoff
                     continue
@@ -544,6 +556,9 @@ class EntityExtractor:
 
         # Parse JSON
         if not json_str:
+            self.logger.warning(
+                "LLM entity extractor received empty response: %s", response_text
+            )
             raise json.JSONDecodeError("Empty LLM response", json_str, 0)
         try:
             result = json.loads(json_str)

@@ -498,7 +498,9 @@ Please provide:
         try:
             # Method 1: output_text attribute (simplest)
             if hasattr(response, "output_text"):
-                return response.output_text
+                text = response.output_text
+                if text:
+                    return text
 
             # Method 2: Structured output parsing (GPT-5 format)
             if hasattr(response, "output"):
@@ -512,7 +514,12 @@ Please provide:
                                 return text_value
 
             # Fallback: convert to string
-            return str(response)
+            fallback = str(response)
+            if not fallback:
+                logger.warning(
+                    "Azure OpenAI response had no textual content: %s", response
+                )
+            return fallback
 
         except Exception as e:
             logger.error(f"Error parsing API response: {e}")
