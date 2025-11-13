@@ -442,6 +442,58 @@ class TestHelperMethods:
             assert token_usage["reasoning_tokens"] == 150
             assert token_usage["reasoning_percentage"] == 75.0  # 150/200 * 100
 
+    def test_parse_api_response_ignores_reasoning_blocks(self):
+        """Parsing should succeed even when reasoning items are present."""
+
+        class FakeReasoning:
+            def __init__(self):
+                self.type = "reasoning"
+                self.content = None
+
+        class FakeTextContent:
+            def __init__(self, text: str):
+                self.type = "text"
+                self.text = text
+
+        class FakeOutput:
+            def __init__(self, content):
+                self.content = content
+
+        class FakeResponse:
+            def __init__(self):
+                self.output_text = ""
+                self.output = [
+                    FakeReasoning(),
+                    FakeOutput([FakeTextContent('{"companies": ["APPLE INC"]}')]),
+                ]
+                self.incomplete_details = None
+
+            def model_dump(self):
+                return {
+                    "output": [
+                        {"type": "reasoning", "content": None},
+                        {
+                            "type": "message",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": '{"companies": ["APPLE INC"]}',
+                                }
+                            ],
+                        },
+                    ]
+                }
+
+        config = LLMConfig(
+            azure_endpoint="https://test.openai.azure.com/", api_key="test-key-12345"
+        )
+
+        with patch("src.azure_client.OpenAI"):
+            client = AzureOpenAIClient(config=config)
+            parsed = client._parse_api_response(FakeResponse())
+
+        assert parsed.strip() == '{"companies": ["APPLE INC"]}'
+
 
 class TestFactoryFunction:
     """Test factory function."""

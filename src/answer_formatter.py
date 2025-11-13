@@ -133,13 +133,14 @@ class AnswerFormatter:
 
         prompt_preview = prompt[:2000]
 
+        request_kwargs = {
+            "model": model_name,
+            "input": prompt,
+            "max_output_tokens": self.max_tokens,
+        }
+
         try:
-            response = self.azure_client.client.responses.create(
-                model=model_name,
-                input=prompt,
-                max_output_tokens=self.max_tokens,
-                temperature=self.temperature,
-            )
+            response = self.azure_client.client.responses.create(**request_kwargs)
         except Exception as exc:  # noqa: BLE001 - convert to availability error
             self.logger.warning("AnswerFormatter failed [%s]: %s", request_id, exc)
             return FormatterOutcome(

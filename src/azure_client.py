@@ -533,17 +533,39 @@ Please provide:
             def _extract_from_output(output_obj: Any) -> Optional[str]:
                 if not output_obj:
                     return None
+
                 if isinstance(output_obj, dict):
                     return _extract_text_candidate(output_obj.get("content"))
-                if isinstance(output_obj, list):
+
+                if isinstance(output_obj, (list, tuple)):
                     for entry in output_obj:
-                        content_items = getattr(entry, "content", None)
-                        if content_items is None and isinstance(entry, dict):
+                        entry_type = getattr(entry, "type", None)
+                        # Skip explicit reasoning blocks – they do not contain the JSON payload.
+                        if entry_type == "reasoning":
+                            continue
+
+                        if isinstance(entry, dict):
                             content_items = entry.get("content")
+                        else:
+                            content_items = getattr(entry, "content", entry)
+
                         candidate = _extract_text_candidate(content_items)
                         if candidate:
                             return candidate
-                return None
+                    return None
+
+                # Pydantic response objects expose `.content`; fall back to generic recursion.
+                if hasattr(output_obj, "content"):
+                    return _extract_text_candidate(getattr(output_obj, "content"))
+
+                return _extract_text_candidate(output_obj)
+
+            incomplete_details = getattr(response, "incomplete_details", None)
+            if incomplete_details:
+                reason = getattr(incomplete_details, "reason", None)
+                logger.warning(
+                    "Azure OpenAI response marked incomplete (reason=%s)", reason
+                )
 
             # Method 1: output_text attribute (simplest)
             if hasattr(response, "output_text"):

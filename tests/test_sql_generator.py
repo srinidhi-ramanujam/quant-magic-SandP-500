@@ -500,3 +500,23 @@ def test_fact_count_with_footnotes_template():
 
     assert not df.empty
     assert df.iloc[0]["fact_count"] > 0
+
+
+def test_repair_known_sql_issues():
+    """Heuristic repairs should fix schema typos in guided SQL."""
+    generator = SQLGenerator(use_llm=False)
+
+    raw_sql = (
+        "SELECT num.segments AS segs, sub.form FROM num "
+        "JOIN sub ON num.adsh = sub.adsh "
+        "WHERE sub.form IN ('10-k','10-k/a') "
+        "AND num.tag = 'netincomeloss' AND num.qtrs IN (0,4);"
+    )
+
+    repaired = generator._repair_known_sql_issues(raw_sql)
+
+    assert "num.segments" not in repaired.lower()
+    assert "NULL AS segs" in repaired
+    assert "'10-K'" in repaired and "'10-K/A'" in repaired
+    assert "NetIncomeLoss" in repaired
+    assert "qtrs = 0" in repaired

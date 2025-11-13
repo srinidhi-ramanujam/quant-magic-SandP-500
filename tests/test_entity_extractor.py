@@ -107,3 +107,25 @@ def test_ambiguous_entity_handling(deterministic_extractor):
 
     # Should identify question type
     assert entities.question_type is not None
+
+
+def test_filters_noise_company_tokens(deterministic_extractor):
+    """Ensure question phrasing tokens don't become pseudo company names."""
+    extractor = deterministic_extractor
+
+    context_delta = create_request_context("delta-question")
+    question_delta = "Track the net debt-to-EBITDA progression for Delta, Southwest, and United airlines."
+    entities_delta = extractor.extract(question_delta, context_delta)
+
+    assert all(
+        not name.startswith("TRACK") and name.lower() != "track"
+        for name in entities_delta.companies
+    )
+    assert any("DELTA" in name for name in entities_delta.companies)
+
+    context_retail = create_request_context("retail-question")
+    question_retail = (
+        "Which retail companies improved inventory turnover trends recently?"
+    )
+    entities_retail = extractor.extract(question_retail, context_retail)
+    assert "WHICH RETAIL" not in entities_retail.companies

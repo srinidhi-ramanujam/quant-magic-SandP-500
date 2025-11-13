@@ -18,6 +18,7 @@ from src.models import (
     LLMRequest,
     LLMTemplateSelectionRequest,
     LLMTemplateSelectionResponse,
+    LLMResponse,
 )
 from src.intelligence_loader import get_intelligence_loader
 from src.telemetry import get_logger, RequestContext, log_component_timing
@@ -30,6 +31,7 @@ from src.query_engine import quick_query
 from src.query_engine import QueryEngine
 from src.hybrid_retrieval import TemplateIntentRetriever
 from src.llm_guard import LLMAvailabilityError
+from src.template_metadata import TemplateMetadataStore
 
 
 RATIO_KEYWORD_HINTS: Dict[Tuple[str, ...], Dict[str, Any]] = {
@@ -97,6 +99,29 @@ INDUSTRY_KEYWORDS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+SECTOR_SYNONYMS: Dict[str, set[str]] = {
+    "information technology": {"information technology", "technology", "tech"},
+    "health care": {"health care", "healthcare", "health"},
+    "financials": {"financials", "financial", "bank", "banks", "banking"},
+    "consumer discretionary": {
+        "consumer discretionary",
+        "discretionary",
+        "retail",
+        "retailer",
+    },
+    "consumer staples": {"consumer staples", "staples"},
+    "energy": {"energy", "oil", "gas"},
+    "industrials": {"industrials", "industrial", "airline", "airlines"},
+    "communication services": {
+        "communication services",
+        "communications",
+        "telecom",
+    },
+    "utilities": {"utilities", "utility"},
+    "materials": {"materials"},
+    "real estate": {"real estate", "reit", "property"},
+}
+
 VOLATILITY_KEYWORDS = [
     "coefficient of variation",
     "volatility",
@@ -144,6 +169,12 @@ class SQLGenerator:
         self._company_lookup_cache: Dict[str, str] = {}
         self._company_name_index: Optional[Dict[str, str]] = None
         self._company_token_index: Optional[Dict[str, List[str]]] = None
+
+        try:
+            self.template_metadata_store = TemplateMetadataStore()
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("Template metadata unavailable: %s", exc)
+            self.template_metadata_store = None
 
         # Initialize Azure OpenAI client for template selection if enabled
         self.azure_client = None
@@ -195,10 +226,32 @@ class SQLGenerator:
             GeneratedSQL if successful, None if custom SQL needed or unable to generate
         """
         self._current_question = question
+        question_lower = question.lower()
         with log_component_timing(context, "sql_generation"):
             # Step 1: Deterministic matching
             intelligence_match = self.intelligence.match_pattern(question)
             use_llm_available = bool(self.azure_client) and self.use_llm
+
+            if (
+                intelligence_match.template is not None
+                and not self._is_template_compatible(
+                    intelligence_match.template, entities, question_lower
+                )
+            ):
+                self.logger.info(
+                    "Rejected template %s due to incompatibility with question",
+                    intelligence_match.template.template_id,
+                )
+                context.add_metadata(
+                    "template_rejection",
+                    intelligence_match.template.template_id,
+                )
+                intelligence_match = IntelligenceMatch(
+                    template=None,
+                    match_confidence=0.0,
+                    matched_parameters={},
+                    fallback_to_llm=True,
+                )
 
             if (
                 intelligence_match.template is None
@@ -256,6 +309,22 @@ class SQLGenerator:
                 self.logger.info("LLM fallback path (confidence=%.2f)", confidence)
                 context.add_metadata("template_selection_method", "llm_fallback")
                 candidates = self.intelligence.get_all_templates()
+
+            candidates = self._filter_compatible_templates(
+                candidates, entities, question_lower, context
+            )
+
+            if not candidates:
+                self.logger.info(
+                    "All candidate templates rejected; attempting custom SQL generation"
+                )
+                context.add_metadata(
+                    "template_selection_method", "llm_fallback_filtered"
+                )
+                custom_sql = self._generate_custom_sql(entities, question, context)
+                if custom_sql:
+                    return custom_sql
+                return None
 
             # Step 4: Call LLM for template selection or custom SQL recommendation
             result = self._select_template_with_llm(
@@ -1148,37 +1217,64 @@ Generate appropriate SQL that addresses the question. Use the template guidance 
 Return only the SQL query, no explanation.
 """
 
-            llm_request = LLMRequest(
-                query=guided_prompt,
-                context=request_context,
-                similar_queries=context.metadata.get("similar_queries", []),
-                template_attempts=[
-                    {"template_id": template.template_id, "guidance": True}
-                ],
-            )
+            base_request_context = dict(request_context)
+            similar_queries = context.metadata.get("similar_queries", [])
 
-            response = self.azure_client.generate_sql(llm_request)
+            def run_guided_llm(prompt_text: str, retry_tag: Optional[str] = None) -> LLMResponse:
+                payload = dict(base_request_context)
+                if retry_tag:
+                    payload["retry_reason"] = retry_tag
+
+                template_attempts = [
+                    {"template_id": template.template_id, "guidance": True}
+                ]
+                if retry_tag:
+                    template_attempts[0]["retry_reason"] = retry_tag
+
+                llm_request = LLMRequest(
+                    query=prompt_text,
+                    context=payload,
+                    similar_queries=similar_queries,
+                    template_attempts=template_attempts,
+                )
+                return self.azure_client.generate_sql(llm_request)
+
+            response = run_guided_llm(guided_prompt)
+            retry_attempted = False
+
+            sql_text = (response.generated_sql or "").strip()
+            if not sql_text or not re.match(r"^(WITH|SELECT)\b", sql_text, re.IGNORECASE):
+                strict_prompt = (
+                    guided_prompt
+                    + "\n\nIMPORTANT: Return only a single SQL statement starting with SELECT or WITH. Do not include explanations, comments, or code fences."
+                )
+                response = run_guided_llm(strict_prompt, retry_tag="missing_select")
+                retry_attempted = True
+                sql_text = (response.generated_sql or "").strip()
 
             attempt_record = {
                 "template_guidance": template.template_id,
-                "sql": response.generated_sql,
+                "sql": sql_text,
                 "confidence": response.confidence,
                 "token_usage": response.token_usage,
                 "latency_ms": response.processing_time_ms,
             }
+            if retry_attempted:
+                attempt_record["retry_attempted"] = True
 
-            if not response.success or not response.generated_sql:
+            if not response.success or not sql_text:
                 attempt_record["success"] = False
-                attempt_record["failure_reason"] = (
-                    response.explanation or "LLM response missing SQL"
-                )
+                failure_reason = response.explanation or "LLM response missing SQL"
+                attempt_record["failure_reason"] = failure_reason
                 context.metadata.setdefault("guided_sql_attempts", []).append(
                     attempt_record
                 )
                 self.logger.warning(
-                    "Template-guided SQL generation failed: %s", response.explanation
+                    "Template-guided SQL generation failed: %s", failure_reason
                 )
                 return None
+
+            response.generated_sql = sql_text
 
             # Validate the generated SQL
             (
@@ -1192,8 +1288,32 @@ Return only the SQL query, no explanation.
                 context,
             )
 
+            repaired_sql = response.generated_sql
+            repairs_applied = False
+            if not validation_ok:
+                candidate_sql = self._repair_known_sql_issues(response.generated_sql)
+                if candidate_sql != response.generated_sql:
+                    self.logger.info(
+                        "Applying heuristic repairs to guided SQL for template %s",
+                        template.template_id,
+                    )
+                    repairs_applied = True
+                    (
+                        validation_ok,
+                        validation_reason,
+                        validation_confidence,
+                    ) = self.validator.validate(
+                        candidate_sql,
+                        question,
+                        entities.model_dump(),
+                        context,
+                    )
+                    repaired_sql = candidate_sql
+
             attempt_record["success"] = response.success and validation_ok
             attempt_record["validation_confidence"] = validation_confidence
+            if repairs_applied:
+                attempt_record["repairs_applied"] = True
             if validation_reason:
                 attempt_record["failure_reason"] = validation_reason
 
@@ -1207,6 +1327,8 @@ Return only the SQL query, no explanation.
                     validation_reason,
                 )
                 return None
+
+            response.generated_sql = repaired_sql
 
             llm_calls = context.metadata.setdefault("llm_calls", [])
             llm_calls.append(
@@ -1476,7 +1598,7 @@ Return only the SQL query, no explanation.
 
             elif param.endswith("threshold"):
                 threshold_match = re.search(
-                    r"(?:above|over|greater than|at least)\s+(\d+(?:\.\d+)?)\s*(%|percent|percentage)?",
+                    r"(?:above|over|greater than|at least|exceeding|more than)\s+\$?([\d,.,]+)\s*(trillion|billion|million|thousand|bn|m|k|percent|%)?",
                     question_lower,
                 )
                 if threshold_match:
@@ -1689,6 +1811,14 @@ Return only the SQL query, no explanation.
         if not template:
             return None
 
+        if not self._is_template_compatible(template, entities, question.lower()):
+            self.logger.info(
+                "Embedding retriever template %s rejected due to incompatibility",
+                template.template_id,
+            )
+            context.add_metadata("template_rejection", template.template_id)
+            return None
+
         matched_params = self.intelligence.extract_parameters_for_template(
             question, template
         )
@@ -1701,6 +1831,182 @@ Return only the SQL query, no explanation.
             matched_parameters=matched_params,
             fallback_to_llm=False,
         )
+
+    def _filter_compatible_templates(
+        self,
+        templates: List[QueryTemplate],
+        entities: ExtractedEntities,
+        question_lower: str,
+        context: Optional[RequestContext] = None,
+    ) -> List[QueryTemplate]:
+        if not templates:
+            return []
+
+        filtered: List[QueryTemplate] = []
+        rejected: List[str] = []
+
+        for template in templates:
+            if self._is_template_compatible(template, entities, question_lower):
+                filtered.append(template)
+            else:
+                rejected.append(template.template_id)
+
+        if rejected and context:
+            context.metadata.setdefault("template_candidates_rejected", []).extend(
+                rejected
+            )
+
+        return filtered
+
+    def _is_template_compatible(
+        self,
+        template: QueryTemplate,
+        entities: ExtractedEntities,
+        question_lower: str,
+    ) -> bool:
+        metadata = None
+        if self.template_metadata_store:
+            metadata = self.template_metadata_store.get_metadata(template.template_id)
+
+        template_sectors = self._infer_template_sectors(template, metadata)
+        question_sectors = self._infer_question_sectors(entities, question_lower)
+
+        if template_sectors:
+            if question_sectors and not (template_sectors & question_sectors):
+                return False
+            if not question_sectors and (
+                "all sector" in question_lower or "across all sector" in question_lower
+            ):
+                return False
+
+        if (
+            metadata
+            and metadata.requires_sector
+            and template_sectors
+            and not question_sectors
+        ):
+            return False
+
+        return True
+
+    def _infer_template_sectors(
+        self, template: QueryTemplate, metadata: Optional[Any]
+    ) -> set[str]:
+        sectors: set[str] = set()
+        sources: List[str] = [template.template_id]
+
+        if metadata:
+            sources.extend(metadata.keywords or [])
+            if getattr(metadata, "name", None):
+                sources.append(metadata.name)
+            if getattr(metadata, "description", None):
+                sources.append(metadata.description)
+            if getattr(metadata, "when_to_use", None):
+                sources.append(metadata.when_to_use)
+
+        for source in sources:
+            if not source:
+                continue
+            lower_source = source.lower()
+            for canonical, synonyms in SECTOR_SYNONYMS.items():
+                if any(syn in lower_source for syn in synonyms):
+                    sectors.add(canonical)
+                    break
+        return sectors
+
+    def _infer_question_sectors(
+        self, entities: ExtractedEntities, question_lower: str
+    ) -> set[str]:
+        sectors: set[str] = set()
+
+        if entities and entities.sectors:
+            for sector in entities.sectors:
+                normalized = self._normalize_sector_token(sector)
+                if normalized:
+                    sectors.add(normalized)
+
+        for canonical, synonyms in SECTOR_SYNONYMS.items():
+            if any(syn in question_lower for syn in synonyms):
+                sectors.add(canonical)
+
+        return sectors
+
+    @staticmethod
+    def _normalize_sector_token(value: str) -> Optional[str]:
+        if not value:
+            return None
+        lower_value = value.lower()
+        for canonical, synonyms in SECTOR_SYNONYMS.items():
+            if any(syn in lower_value for syn in synonyms):
+                return canonical
+        return None
+
+    def _repair_known_sql_issues(self, sql: str) -> str:
+        """Fix common schema and casing issues produced by guided SQL generation."""
+        if not sql:
+            return sql
+
+        repaired = sql
+
+        # Normalize form values (10-K, 10-Q, etc.)
+        form_patterns = {
+            r"10\s*-\s*k/a": "10-K/A",
+            r"10\s*-\s*k": "10-K",
+            r"10\s*-\s*q": "10-Q",
+        }
+        for pattern, replacement in form_patterns.items():
+            repaired = re.sub(pattern, replacement, repaired, flags=re.IGNORECASE)
+
+        # Normalize common tag names
+        tag_replacements = {
+            "netincomeloss": "NetIncomeLoss",
+            "stockholdersequity": "StockholdersEquity",
+            "longtermdebt": "LongTermDebt",
+            "operatingincomeloss": "OperatingIncomeLoss",
+            "cashandcashequivalentsatcarryingvalue": "CashAndCashEquivalentsAtCarryingValue",
+            "interestexpense": "InterestExpense",
+        }
+        for pattern, replacement in tag_replacements.items():
+            repaired = re.sub(
+                rf"\b{pattern}\b",
+                replacement,
+                repaired,
+                flags=re.IGNORECASE,
+            )
+
+        # Replace invalid NUM.SEGMENTS references with safe NULL projections
+        repaired = re.sub(
+            r"num\.segments\s+AS\s+(\w+)",
+            r"NULL AS \1",
+            repaired,
+            flags=re.IGNORECASE,
+        )
+        repaired = re.sub(r"num\.segments", "NULL", repaired, flags=re.IGNORECASE)
+
+        # Annual facts should use qtrs = 0
+        repaired = re.sub(
+            r"qtrs\s+IN\s*\(\s*0\s*,\s*4\s*\)",
+            "qtrs = 0",
+            repaired,
+            flags=re.IGNORECASE,
+        )
+        repaired = re.sub(r"qtrs\s*=\s*4", "qtrs = 0", repaired, flags=re.IGNORECASE)
+
+        # Clean up common lowercase schema references (e.g., sub.form)
+        repaired = re.sub(
+            r"form\s+IN\s*\(\s*'10-k'\s*\)",
+            "form IN ('10-K')",
+            repaired,
+            flags=re.IGNORECASE,
+        )
+        repaired = re.sub(
+            r"form\s+IN\s*\(\s*'10-k',\s*'10-k/a'\s*\)",
+            "form IN ('10-K','10-K/A')",
+            repaired,
+            flags=re.IGNORECASE,
+        )
+
+        return repaired
 
     def validate_sql(self, sql: str) -> Tuple[bool, Optional[str]]:
         """
@@ -1765,22 +2071,22 @@ Return only the SQL query, no explanation.
             or "united states" in question_lower
             or "u.s." in question_lower
         ):
-            hints[
-                "jurisdiction_filter"
-            ] = "Focus on U.S. companies (companies.countryinc = 'USA' or HQ state)."
+            hints["jurisdiction_filter"] = (
+                "Focus on U.S. companies (companies.countryinc = 'USA' or HQ state)."
+            )
 
         if any(kw in question_lower for kw in VOLATILITY_KEYWORDS):
-            hints[
-                "volatility_metric"
-            ] = "Compute volatility using STDDEV(value)/AVG(value) for the requested metric (coefficient of variation)."
+            hints["volatility_metric"] = (
+                "Compute volatility using STDDEV(value)/AVG(value) for the requested metric (coefficient of variation)."
+            )
 
         streak_match = re.search(
             r"(\d+)\s+(?:consecutive|straight)\s+(?:year|yr)s?", question_lower
         )
         if streak_match:
-            hints[
-                "streak_requirement"
-            ] = f"Require at least {streak_match.group(1)} consecutive fiscal years meeting the condition."
+            hints["streak_requirement"] = (
+                f"Require at least {streak_match.group(1)} consecutive fiscal years meeting the condition."
+            )
 
         years_in_question = re.findall(r"(20\d{2})", question_lower)
         if len(years_in_question) >= 2:
@@ -1815,19 +2121,19 @@ Return only the SQL query, no explanation.
             r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", question_lower
         )
         if currency_match:
-            hints[
-                "currency_filter"
-            ] = f"Filter num.uom for '{currency_match.group(1).upper()}'"
+            hints["currency_filter"] = (
+                f"Filter num.uom for '{currency_match.group(1).upper()}'"
+            )
 
         if "per share" in question_lower or "per-share" in question_lower:
-            hints[
-                "unit_context"
-            ] = "Question references per-share metrics; consider num.uom = 'shares'."
+            hints["unit_context"] = (
+                "Question references per-share metrics; consider num.uom = 'shares'."
+            )
 
         if "segment" in question_lower or "by segment" in question_lower:
-            hints[
-                "segment_context"
-            ] = "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
+            hints["segment_context"] = (
+                "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
+            )
 
         if analysis_notes:
             hints["analysis_notes"] = analysis_notes

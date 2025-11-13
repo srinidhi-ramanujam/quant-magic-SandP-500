@@ -79,6 +79,49 @@ COMPANY_SUFFIXES = [
     ", inc",
 ]
 
+# Tokens that frequently appear as question phrasing and should not be treated as company names.
+_QUESTION_PREFIXES = {
+    "which",
+    "what",
+    "show",
+    "track",
+    "compare",
+    "across",
+    "identify",
+    "highlight",
+    "summarize",
+    "analyze",
+    "examine",
+    "list",
+    "name",
+    "how",
+    "who",
+}
+
+_GENERIC_COMPANY_TOKENS = {
+    "companies",
+    "company",
+    "sector",
+    "sectors",
+    "leaders",
+    "leader",
+    "giants",
+    "cohort",
+    "retail",
+    "retailers",
+    "technology",
+    "energy",
+    "industrials",
+    "healthcare",
+    "health",
+    "information",
+    "top",
+    "largest",
+    "major",
+    "trend",
+    "trends",
+}
+
 # Company name aliases (loaded once)
 _COMPANY_ALIASES: Dict[str, str] = {}
 _ALIASES_LOADED = False
@@ -326,11 +369,9 @@ class EntityExtractor:
                         "LLM entity extraction failed (%s); falling back to deterministic path",
                         exc,
                     )
-                    self.use_llm = False
-                    self.azure_client = None
                     context.add_metadata("entity_llm_fallback_reason", str(exc))
                     entities = self._extract_entities(question)
-                    extraction_method = "deterministic"
+                    extraction_method = "deterministic_fallback"
             else:
                 entities = self._extract_entities(question)
                 extraction_method = "deterministic"
@@ -423,6 +464,10 @@ class EntityExtractor:
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
+                if getattr(response, "incomplete_details", None):
+                    reason = getattr(response.incomplete_details, "reason", "unknown")
+                    raise ValueError(f"LLM response incomplete (reason={reason})")
+
                 # Extract content from response
                 content = self.azure_client._parse_api_response(response)
                 if not content.strip():
@@ -495,10 +540,11 @@ class EntityExtractor:
                     time.sleep(1 * (attempt + 1))  # Exponential backoff
                     continue
                 else:
-                    self.use_llm = False
-                    self.azure_client = None
+                    context.add_metadata(
+                        "entity_llm_fallback_reason", f"json_parse_error:{e}"
+                    )
                     self.logger.warning(
-                        "Disabling LLM entity extraction after repeated parsing failures"
+                        "Falling back to deterministic extraction after repeated LLM JSON parsing failures"
                     )
                     raise ValueError(
                         f"Failed to parse LLM response after {max_retries + 1} attempts: {last_error}"
@@ -511,11 +557,11 @@ class EntityExtractor:
                     time.sleep(1 * (attempt + 1))
                     continue
                 else:
-                    self.use_llm = False
-                    self.azure_client = None
+                    context.add_metadata(
+                        "entity_llm_fallback_reason", f"llm_error:{last_error}"
+                    )
                     self.logger.warning(
-                        "Disabling LLM entity extraction after repeated failures; "
-                        "falling back to deterministic extraction"
+                        "Falling back to deterministic extraction after repeated LLM failures"
                     )
                     raise Exception(
                         f"LLM extraction failed after {max_retries + 1} attempts: {last_error}"
@@ -662,14 +708,37 @@ class EntityExtractor:
                 # Capitalize first letter for standardization
                 companies.append(company.capitalize())
 
-        aliases = _load_company_aliases()
         normalized: List[str] = []
         for company_name in companies:
+            if self._is_noise_company_candidate(company_name):
+                continue
+
             canonical = normalize_company_name(company_name)
             if canonical and canonical not in normalized:
                 normalized.append(canonical)
 
         return normalized
+
+    @staticmethod
+    def _is_noise_company_candidate(value: str) -> bool:
+        """Heuristic filter to drop question phrasing mis-identified as company names."""
+        if not value:
+            return True
+
+        tokens = re.sub(r"[^a-z0-9 ]", " ", value.lower()).split()
+        if not tokens:
+            return True
+
+        if tokens[0] in _QUESTION_PREFIXES:
+            return True
+
+        if all(token in _GENERIC_COMPANY_TOKENS for token in tokens):
+            return True
+
+        if len(tokens) <= 2 and any(token in _QUESTION_PREFIXES for token in tokens):
+            return True
+
+        return False
 
     def _extract_metrics(self, question_lower: str) -> List[str]:
         """Extract financial metrics from question."""

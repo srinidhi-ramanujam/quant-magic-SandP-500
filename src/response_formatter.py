@@ -8,7 +8,7 @@ For Phase 0, handles:
 """
 
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 import math
 import re
 
@@ -889,7 +889,7 @@ class ResponseFormatter:
         self,
         query_result: QueryResult,
         entities: ExtractedEntities,
-        context: RequestContext | None = None,
+        context: Optional[RequestContext] = None,
     ) -> str:
         """Format a generic response when specific formatting not available."""
         if query_result.row_count == 0:
