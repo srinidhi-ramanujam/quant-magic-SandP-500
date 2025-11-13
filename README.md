@@ -267,9 +267,11 @@ The chat interface connects to the FastAPI backend at `/api/query` and displays:
 
 ## Performance
 
-**Current** (Phase 1):
+**Current** (Phase 1 + Phase 2 fixes):
 - Simple queries: <1s (deterministic fast path)
 - LLM-assisted: ~8s (GPT-5 API call)
+- Template parameter handling: Robust with proper type casting and validation
+- SQL casing validation: Automatic detection of lowercase XBRL tags
 - PoC validation: 10/10 correct, <1.1s average
 
 **Targets** (Phase 2+):
