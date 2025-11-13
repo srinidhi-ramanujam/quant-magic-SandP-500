@@ -489,7 +489,7 @@ class ResponseFormatter:
             cleaned = self._clean_numeric(value)
             return "NM" if cleaned is None else self._format_ratio(cleaned)
 
-        bullets: list[str] = []
+        bullets: list = []
         df = data.sort_values(["company", "fiscal_year"])
         for idx, (company, group) in enumerate(df.groupby("company", dropna=False), 1):
             if group.empty:
@@ -565,7 +565,7 @@ class ResponseFormatter:
         end_year = re.findall(r"(\d{4})", turnover_cols[-1])[0]
 
         rows = data.head(6)
-        bullets: list[str] = []
+        bullets: list = []
         for idx, (_, row) in enumerate(rows.iterrows(), start=1):
             name = row.get("name", "Company")
             change_raw = self._clean_numeric(row.get("change_since_start"))
@@ -607,7 +607,7 @@ class ResponseFormatter:
             normalized.get("fiscal_year"), errors="coerce"
         ).astype("Int64")
 
-        bullets: list[str] = []
+        bullets: list = []
         grouped = normalized.groupby("company")
         for idx, (company, group) in enumerate(grouped, start=1):
             group = group.sort_values("fiscal_year").dropna(subset=["fiscal_year"])
@@ -622,9 +622,7 @@ class ResponseFormatter:
             start_ratio_raw = self._clean_numeric(
                 start_row.get("cash_to_assets_ratio_pct")
             )
-            end_ratio_raw = self._clean_numeric(
-                end_row.get("cash_to_assets_ratio_pct")
-            )
+            end_ratio_raw = self._clean_numeric(end_row.get("cash_to_assets_ratio_pct"))
             change = (
                 end_ratio_raw - start_ratio_raw
                 if start_ratio_raw is not None and end_ratio_raw is not None
@@ -680,7 +678,7 @@ class ResponseFormatter:
         start_year = ratio_cols[0].split("_")[-1]
         end_year = ratio_cols[-1].split("_")[-1]
 
-        bullets: list[str] = []
+        bullets: list = []
         for idx, (_, row) in enumerate(data.head(6).iterrows(), start=1):
             name = row.get("name", "Company")
             start_ratio = self._format_ratio(

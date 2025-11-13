@@ -37,7 +37,7 @@ class QueryResponseModel(BaseModel):
         default_factory=dict,
         description="Telemetry, timing, and contextual metadata about the request.",
     )
-    sources: Optional[list[str]] = Field(
+    sources: Optional[list] = Field(
         default=None, description="Underlying data sources referenced."
     )
     debug: Optional[Dict[str, Any]] = Field(
@@ -102,7 +102,7 @@ def _build_sql_hint(result: QueryServiceResult) -> Optional[str]:
     if not generated:
         return None
 
-    parts: list[str] = []
+    parts: list = []
     if generated.template_id:
         parts.append(f"template `{generated.template_id}`")
     elif generated.generation_method:

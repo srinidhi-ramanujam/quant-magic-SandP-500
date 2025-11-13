@@ -99,7 +99,7 @@ INDUSTRY_KEYWORDS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-SECTOR_SYNONYMS: Dict[str, set[str]] = {
+SECTOR_SYNONYMS: Dict[str, set] = {
     "information technology": {"information technology", "technology", "tech"},
     "health care": {"health care", "healthcare", "health"},
     "financials": {"financials", "financial", "bank", "banks", "banking"},
@@ -559,9 +559,9 @@ class SQLGenerator:
 
         if "company_values" in template.parameters and entities.companies:
             question_upper = getattr(self, "_current_question", "").upper()
-            resolved: list[str] = []
-            seen_keys: set[str] = set()
-            deferred: list[str] = []
+            resolved: list = []
+            seen_keys: set = set()
+            deferred: list = []
             for raw_company in entities.companies:
                 if not raw_company:
                     continue
@@ -1220,7 +1220,9 @@ Return only the SQL query, no explanation.
             base_request_context = dict(request_context)
             similar_queries = context.metadata.get("similar_queries", [])
 
-            def run_guided_llm(prompt_text: str, retry_tag: Optional[str] = None) -> LLMResponse:
+            def run_guided_llm(
+                prompt_text: str, retry_tag: Optional[str] = None
+            ) -> LLMResponse:
                 payload = dict(base_request_context)
                 if retry_tag:
                     payload["retry_reason"] = retry_tag
@@ -1243,7 +1245,9 @@ Return only the SQL query, no explanation.
             retry_attempted = False
 
             sql_text = (response.generated_sql or "").strip()
-            if not sql_text or not re.match(r"^(WITH|SELECT)\b", sql_text, re.IGNORECASE):
+            if not sql_text or not re.match(
+                r"^(WITH|SELECT)\b", sql_text, re.IGNORECASE
+            ):
                 strict_prompt = (
                     guided_prompt
                     + "\n\nIMPORTANT: Return only a single SQL statement starting with SELECT or WITH. Do not include explanations, comments, or code fences."
@@ -1891,8 +1895,8 @@ Return only the SQL query, no explanation.
 
     def _infer_template_sectors(
         self, template: QueryTemplate, metadata: Optional[Any]
-    ) -> set[str]:
-        sectors: set[str] = set()
+    ) -> set:
+        sectors: set = set()
         sources: List[str] = [template.template_id]
 
         if metadata:
@@ -1916,8 +1920,8 @@ Return only the SQL query, no explanation.
 
     def _infer_question_sectors(
         self, entities: ExtractedEntities, question_lower: str
-    ) -> set[str]:
-        sectors: set[str] = set()
+    ) -> set:
+        sectors: set = set()
 
         if entities and entities.sectors:
             for sector in entities.sectors:
@@ -2071,22 +2075,22 @@ Return only the SQL query, no explanation.
             or "united states" in question_lower
             or "u.s." in question_lower
         ):
-            hints["jurisdiction_filter"] = (
-                "Focus on U.S. companies (companies.countryinc = 'USA' or HQ state)."
-            )
+            hints[
+                "jurisdiction_filter"
+            ] = "Focus on U.S. companies (companies.countryinc = 'USA' or HQ state)."
 
         if any(kw in question_lower for kw in VOLATILITY_KEYWORDS):
-            hints["volatility_metric"] = (
-                "Compute volatility using STDDEV(value)/AVG(value) for the requested metric (coefficient of variation)."
-            )
+            hints[
+                "volatility_metric"
+            ] = "Compute volatility using STDDEV(value)/AVG(value) for the requested metric (coefficient of variation)."
 
         streak_match = re.search(
             r"(\d+)\s+(?:consecutive|straight)\s+(?:year|yr)s?", question_lower
         )
         if streak_match:
-            hints["streak_requirement"] = (
-                f"Require at least {streak_match.group(1)} consecutive fiscal years meeting the condition."
-            )
+            hints[
+                "streak_requirement"
+            ] = f"Require at least {streak_match.group(1)} consecutive fiscal years meeting the condition."
 
         years_in_question = re.findall(r"(20\d{2})", question_lower)
         if len(years_in_question) >= 2:
@@ -2121,19 +2125,19 @@ Return only the SQL query, no explanation.
             r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", question_lower
         )
         if currency_match:
-            hints["currency_filter"] = (
-                f"Filter num.uom for '{currency_match.group(1).upper()}'"
-            )
+            hints[
+                "currency_filter"
+            ] = f"Filter num.uom for '{currency_match.group(1).upper()}'"
 
         if "per share" in question_lower or "per-share" in question_lower:
-            hints["unit_context"] = (
-                "Question references per-share metrics; consider num.uom = 'shares'."
-            )
+            hints[
+                "unit_context"
+            ] = "Question references per-share metrics; consider num.uom = 'shares'."
 
         if "segment" in question_lower or "by segment" in question_lower:
-            hints["segment_context"] = (
-                "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
-            )
+            hints[
+                "segment_context"
+            ] = "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
 
         if analysis_notes:
             hints["analysis_notes"] = analysis_notes

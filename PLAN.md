@@ -172,6 +172,47 @@ Current status: schema docs + wiring landed, prompt/test scaffolding pending.
 | Leverage & debt motion | `debt_reduction_progression`, `net_debt_to_ebitda_trend`, `energy_roe_threshold_detector` | Tracks leverage changes, approximated EBITDA, and high-ROE streaks for capital-intensive sectors. |
 | Efficiency metrics | `operating_margin_trend`, `inventory_turnover_trend`, `asset_turnover_trend` | Ratio trends based on inventory, revenue, and asset balances; reusable across cohorts. |
 
+
+### Recent Diagnostics (RUN_181 – Nov 13, 2025)
+
+Observed during time-series eval sweeps and targeted semantic-layer probes with extended timeouts.
+
+What worked
+- Sector-level routes: Healthcare profitability improvement (2020–2024) and Industrials operating-margin delta (2021→2022) executed end-to-end with correct template hits and formatted results.
+- Azure OpenAI connectivity: Health endpoint and direct Responses API probes succeed; parsing of Responses API output via `_parse_api_response` works as expected.
+
+What failed (root causes)
+- Intermittent Responses API errors (HTTP 400/500) and timeouts: Resolved operationally by increasing `QUERY_TIMEOUT_SECONDS` to 300 and allowing retries; reliability still variable under load.
+- Custom SQL generation validation failures for some metric/sector mixes:
+  - Case sensitivity violations on tags and filters (e.g., `assetscurrent`, `liabilitiescurrent`, `form='10-k'`, `fp='fy'` used in lowercase).
+  - Reference to non-existent columns (e.g., `num.segments`) and static scan failures (“SQL must start with SELECT or WITH”).
+  - Financials current-ratio question recommended custom SQL but failed semantic validation due to schema/casing issues.
+- Template-guided generation bug: `cash_to_assets_ratio_trend` path threw `replace() argument 2 must be str, not bool` during parameter substitution for named cohorts (e.g., Pfizer/J&J/Amgen).
+- Template coverage gaps: Some sector swaps (e.g., Energy gross-margin trend) fell back to custom SQL where a sectorized variant/template should exist.
+
+Action items (near-term)
+1) Stabilize template parameterization
+   - Fix the `replace()` non-str argument bug in template parameter substitution for `cash_to_assets_ratio_trend`.
+   - Enforce canonical casing for tags (`Assets`, `AssetsCurrent`, `LiabilitiesCurrent`), forms (`'10-K','10-K/A'`), fiscal period (`'FY'`) within SQL generation.
+   - Remove/guard any references to unsupported columns (`num.segments`), prefer `segments`/`coreg` filters aligned to schema.
+2) Expand deterministic coverage
+   - Add/parameterize sectorized variants for:
+     - Financials `current_ratio_trend` (FY2019–FY2023) with schema-aligned tags and revenue gates.
+     - Energy gross-margin trend (FY2020–FY2024) mirroring the Consumer Staples pattern.
+   - Prefer template inference for templates with >6 parameters (per Template System Fixes) instead of LLM-guided construction.
+3) Improve reliability and pacing
+   - Increase `entity_extraction_timeout` and `template_selection_timeout` where appropriate; retain 300s eval timeout for suite runs.
+   - Add exponential backoff + jitter between LLM calls in `run_eval_suite` to reduce burst-induced 429/5xx.
+4) Telemetry and tests
+   - Capture a dedicated RUN id for the 5 modified semantic-layer probes; log success/failure taxonomy (template miss vs. SQL validation vs. API error).
+   - Add unit tests for the `cash_to_assets_ratio_trend` parameter-substitution path and a schema-casing guard test for current-ratio SQL generation.
+
+Success criteria for next pass
+- Named-cohort liquidity template executes for both Tech (MSFT/ADBE/CRM) and Healthcare (PFE/JNJ/AMGN).
+- Financials current-ratio question resolves via deterministic template with semantic validation ≥0.8.
+- Energy sector gross-margin trend executes with correct tags and year span.
+- No custom-SQL path uses lowercase tag/form filters; static scan passes 100%.
+
 **Next Actions**
 1. Implement slot extractors + SQL builders for the profitability and cash-flow families (highest coverage impact).
 2. Register each template in `data/template_intents.json` with clear natural-language exemplars for FAISS retrieval.
