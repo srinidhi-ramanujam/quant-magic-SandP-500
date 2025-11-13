@@ -448,7 +448,7 @@ class SQLGenerator:
             for param_name, param_value in params.items():
                 placeholder = f"{{{param_name}}}"
                 if placeholder in sql:
-                    sql = sql.replace(placeholder, param_value)
+                    sql = sql.replace(placeholder, str(param_value))
 
             self.logger.info(f"Generated SQL: {sql[:100]}...")
 
@@ -735,6 +735,16 @@ class SQLGenerator:
                 defaults["end_year"] = "2024"
             if "min_years" in missing_params:
                 defaults["min_years"] = "4"
+
+        if template.template_id == "current_ratio_trend":
+            if "sector" in missing_params:
+                defaults["sector"] = "ALL"
+            if "start_year" in missing_params:
+                defaults["start_year"] = "2019"
+            if "end_year" in missing_params:
+                defaults["end_year"] = "2023"
+            if "limit" in missing_params:
+                defaults["limit"] = "10"
 
         if template.template_id == "energy_roe_threshold_detector":
             if "start_year" in missing_params:
@@ -1127,7 +1137,7 @@ class SQLGenerator:
             for param_name, param_value in params.items():
                 placeholder = f"{{{param_name}}}"
                 if placeholder in sql:
-                    sql = sql.replace(placeholder, param_value)
+                    sql = sql.replace(placeholder, str(param_value))
 
             self.logger.info(
                 f"Generated SQL from LLM-selected template: {sql[:100]}..."
@@ -1875,7 +1885,10 @@ Return only the SQL query, no explanation.
         template_sectors = self._infer_template_sectors(template, metadata)
         question_sectors = self._infer_question_sectors(entities, question_lower)
 
-        if template_sectors:
+        # If template has sector parameter, it's compatible with any sector
+        has_sector_param = "sector" in getattr(template, "parameters", [])
+
+        if template_sectors and not has_sector_param:
             if question_sectors and not (template_sectors & question_sectors):
                 return False
             if not question_sectors and (
@@ -1887,6 +1900,7 @@ Return only the SQL query, no explanation.
             metadata
             and metadata.requires_sector
             and template_sectors
+            and not has_sector_param
             and not question_sectors
         ):
             return False

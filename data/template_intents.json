@@ -846,15 +846,19 @@
   },
   {
     "template_id": "current_ratio_trend",
-    "intent_text": "Rank healthcare companies by improving current ratio",
-    "pattern": "(?i)(current ratio|liquidity).*(trend|improv|strength).*(healthcare|pharma|medical)",
+    "intent_text": "Rank companies by improving current ratio trends",
+    "pattern": "(?i)(current ratio|liquidity).*(trend|improv|strength|change)",
     "example_questions": [
       "Which Healthcare companies improved their current ratios the most between 2019 and 2023?",
-      "Show liquidity trends for Health Care suppliers across the last five years."
+      "Show liquidity trends for Health Care suppliers across the last five years.",
+      "How have current ratios changed for Financial companies from 2019 to 2023?"
     ],
     "metadata": {
       "parameters": [
-        "sector"
+        "sector",
+        "start_year",
+        "end_year",
+        "limit"
       ],
       "intent_category": "liquidity"
     }
@@ -1130,7 +1134,7 @@
   {
     "template_id": "gross_margin_trend_sector",
     "intent_text": "Compare gross margin resilience across a sector between two fiscal years",
-    "pattern": "(?i)(gross margin|pricing power).*(trend|change|evolution).*(20\\d{2}).*(20\\d{2})",
+    "pattern": "(?i)(gross margin|pricing power).*(trend|change|evolution|companies).*(20\\d{2}).*(20\\d{2})",
     "example_questions": [
       "How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023?",
       "Which Consumer Staples companies expanded gross margin the most over the last five years?"

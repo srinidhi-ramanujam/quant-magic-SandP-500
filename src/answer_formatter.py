@@ -208,7 +208,9 @@ class AnswerFormatter:
             payload.append({"role": turn.role, "content": turn.content})
         return payload
 
-    def _prepare_rows(self, query_result: QueryResult) -> tuple[List[Dict[str, Any]], bool]:
+    def _prepare_rows(
+        self, query_result: QueryResult
+    ) -> tuple[List[Dict[str, Any]], bool]:
         """Normalize query results into JSON-friendly rows."""
         if query_result.row_count == 0:
             return [], False
@@ -231,7 +233,9 @@ class AnswerFormatter:
 
         return rows, truncated
 
-    def _sanitize_records(self, records: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _sanitize_records(
+        self, records: Sequence[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Convert numpy/pandas/numeric values to JSON-friendly scalars."""
         return [self._sanitize_record(record) for record in records]
 

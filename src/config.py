@@ -101,7 +101,7 @@ class Config(BaseModel):
     )
     template_selection_max_tokens: int = Field(
         default=3000,
-        description="Max output tokens budget for template selection Responses API call (increased for GPT-5 reasoning tokens)"
+        description="Max output tokens budget for template selection Responses API call (increased for GPT-5 reasoning tokens)",
     )
 
     # Answer formatter settings

@@ -16,7 +16,7 @@ filings AS (
     FROM sub s
     JOIN sector_companies sc USING (cik)
     WHERE s.form IN ('10-K','10-K/A')
-      AND s.fy BETWEEN 2019 AND 2023
+      AND s.fy BETWEEN {start_year} AND {end_year}
 ),
 latest AS (
     SELECT * FROM filings WHERE rn = 1
@@ -35,26 +35,20 @@ pivoted AS (
     SELECT
         sc.canonical_name,
         ANY_VALUE(sc.name) AS display_name,
-        ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN current_ratio END), 2) AS ratio_2019,
-        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN current_ratio END), 2) AS ratio_2020,
-        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN current_ratio END), 2) AS ratio_2021,
-        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN current_ratio END), 2) AS ratio_2022,
-        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN current_ratio END), 2) AS ratio_2023
+        ROUND(MAX(CASE WHEN fiscal_year = {start_year} THEN current_ratio END), 2) AS ratio_start,
+        ROUND(MAX(CASE WHEN fiscal_year = {end_year} THEN current_ratio END), 2) AS ratio_end
     FROM ratios r
     JOIN sector_companies sc USING (cik)
     GROUP BY sc.canonical_name
-    HAVING COUNT(DISTINCT fiscal_year) = 5
+    HAVING COUNT(DISTINCT fiscal_year) >= 2
 )
 SELECT
     display_name AS name,
-    ratio_2019,
-    ratio_2020,
-    ratio_2021,
-    ratio_2022,
-    ratio_2023,
-    ROUND(ratio_2023 - ratio_2019, 2) AS improvement
+    ratio_start AS ratio_{start_year},
+    ratio_end AS ratio_{end_year},
+    ROUND(ratio_end - ratio_start, 2) AS improvement
 FROM pivoted
-WHERE ratio_2019 IS NOT NULL
-  AND ratio_2023 IS NOT NULL
+WHERE ratio_start IS NOT NULL
+  AND ratio_end IS NOT NULL
 ORDER BY improvement DESC, name
-LIMIT 10;
+LIMIT {limit};

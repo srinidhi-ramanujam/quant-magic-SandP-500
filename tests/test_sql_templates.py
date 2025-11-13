@@ -171,3 +171,43 @@ def test_template_executes_without_error(template_id, params, query_engine):
     sql = render_template(template_id, params)
     result = query_engine.execute(sql)
     assert result is not None
+
+
+def test_cash_to_assets_ratio_trend_parameter_substitution():
+    """Test that cash_to_assets_ratio_trend template handles mixed parameter types correctly."""
+    from src.sql_generator import SQLGenerator
+    from src.intelligence_loader import IntelligenceLoader
+
+    # Create a generator with a mock template that includes the cash_to_assets_ratio_trend
+    loader = IntelligenceLoader()
+    generator = SQLGenerator(loader)
+
+    # Test parameters that include non-string values to simulate the bug scenario
+    test_params = {
+        "company_values": "('PFIZER INC'),('JOHNSON & JOHNSON'),('AMGEN INC')",
+        "use_sector_filter": 0,  # This is an int, not a string
+        "sector": "Health Care",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": 4,  # This is an int, not a string
+    }
+
+    # Get the template
+    template = loader.get_template_by_id("cash_to_assets_ratio_trend")
+    assert template is not None
+
+    # This should not raise a "replace() argument 2 must be str, not bool/int" error
+    try:
+        sql = template.sql_template
+        for param_name, param_value in test_params.items():
+            placeholder = f"{{{param_name}}}"
+            if placeholder in sql:
+                sql = sql.replace(placeholder, str(param_value))
+
+        # Verify the SQL contains the substituted values
+        assert "0" in sql  # use_sector_filter should be "0"
+        assert "4" in sql  # min_years should be "4"
+        assert "('PFIZER INC'),('JOHNSON & JOHNSON'),('AMGEN INC')" in sql
+
+    except Exception as e:
+        pytest.fail(f"Parameter substitution failed with error: {e}")

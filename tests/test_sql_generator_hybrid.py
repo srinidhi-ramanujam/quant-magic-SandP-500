@@ -730,7 +730,6 @@ def test_llm_candidates_filtered_by_sector(sql_generator_with_llm, request_conte
     ) as mock_select, patch.object(
         sql_generator_with_llm, "_generate_custom_sql", return_value=None
     ):
-
         mock_match.return_value = IntelligenceMatch(
             template=None,
             match_confidence=0.0,

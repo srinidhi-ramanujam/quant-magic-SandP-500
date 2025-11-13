@@ -64,7 +64,11 @@ def test_answer_formatter_returns_presentation_payload():
     payload = {
         "narrative": "Sample narrative",
         "highlights": ["Point A"],
-        "table": {"columns": ["name"], "rows": [{"name": "Sample Co"}], "truncated": False},
+        "table": {
+            "columns": ["name"],
+            "rows": [{"name": "Sample Co"}],
+            "truncated": False,
+        },
         "warnings": [],
     }
     mock_client = _mock_azure_client(payload)

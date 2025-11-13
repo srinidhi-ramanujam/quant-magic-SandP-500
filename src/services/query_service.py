@@ -129,6 +129,7 @@ class QueryService:
             context.add_metadata("template_id", generated_sql.template_id)
             context.add_metadata("generation_method", generated_sql.generation_method)
             context.add_metadata("generated_sql", generated_sql.sql)
+            context.add_metadata("sql_parameters", generated_sql.parameters)
 
             with log_component_timing(context, "query_execution"):
                 result_df = self.query_engine.execute(generated_sql.sql)

@@ -25,7 +25,7 @@ class ResponseFormatter:
         """Initialize response formatter."""
         self.logger = get_logger()
         self.logger.info("ResponseFormatter initialized")
-        self.template_formatters: Dict[str, Callable[[QueryResult], Optional[str]]] = {
+        self.template_formatters: Dict[str, Callable[[QueryResult, Optional[RequestContext]], Optional[str]]] = {
             "debt_reduction_progression": self._format_debt_reduction_progression,
             "profit_margin_consistency_trend": (
                 self._format_profit_margin_consistency_trend
@@ -81,7 +81,7 @@ class ResponseFormatter:
             else None
         )
 
-        specialized_answer = self._format_template_specific(template_id, query_result)
+        specialized_answer = self._format_template_specific(template_id, query_result, context)
 
         if specialized_answer:
             answer = specialized_answer
@@ -239,18 +239,18 @@ class ResponseFormatter:
         return "Result found but unable to format."
 
     def _format_template_specific(
-        self, template_id: Optional[str], query_result: QueryResult
+        self, template_id: Optional[str], query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         """Format known template responses."""
         if not template_id:
             return None
         formatter = self.template_formatters.get(template_id)
         if formatter:
-            return formatter(query_result)
+            return formatter(query_result, context)
         return None
 
     def _format_debt_reduction_progression(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No debt reductions found for the requested period."
@@ -285,7 +285,7 @@ class ResponseFormatter:
         return "Top FY2021-FY2023 deleveragers:\n" + "\n".join(bullets)
 
     def _format_profit_margin_consistency_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No profitability improvements were found for the requested period."
@@ -315,32 +315,41 @@ class ResponseFormatter:
             bullets
         )
 
-    def _format_current_ratio_trend(self, query_result: QueryResult) -> Optional[str]:
+    def _format_current_ratio_trend(self, query_result: QueryResult, context: Optional[RequestContext] = None) -> Optional[str]:
         if query_result.row_count == 0:
-            return "No companies met the five-year current-ratio coverage requirement."
+            return "No companies met the current-ratio coverage requirement."
         data = query_result.data
         if not isinstance(data, pd.DataFrame):
             return None
+
+        # Get parameters from context if available
+        params = {}
+        if context and context.metadata:
+            params = context.metadata.get("sql_parameters", {})
+
+        sector = params.get("sector", "Unknown").title()
+        start_year = params.get("start_year", "2019")
+        end_year = params.get("end_year", "2023")
 
         rows = data.head(5)
         bullets = []
         for idx, row in rows.iterrows():
             name = row.get("name", "Unknown company")
-            ratio_2019 = self._format_ratio(self._get_first_value(row, ["ratio_2019"]))
-            ratio_2023 = self._format_ratio(self._get_first_value(row, ["ratio_2023"]))
+            ratio_start = self._format_ratio(self._get_first_value(row, [f"ratio_{start_year}"]))
+            ratio_end = self._format_ratio(self._get_first_value(row, [f"ratio_{end_year}"]))
             improvement = self._format_ratio(
                 self._get_first_value(row, ["improvement"]), signed=True
             )
             bullets.append(
-                f"{len(bullets)+1}) {name}: {ratio_2019} (2019) → {ratio_2023} (2023) {improvement}"
+                f"{len(bullets)+1}) {name}: {ratio_start} ({start_year}) → {ratio_end} ({end_year}) {improvement}"
             )
 
-        return "Top Healthcare liquidity improvers (FY2019-FY2023):\n" + "\n".join(
+        return f"Top {sector} liquidity improvers (FY{start_year}-FY{end_year}):\n" + "\n".join(
             bullets
         )
 
     def _format_operating_margin_delta(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No operating margin improvements found for the requested period."
@@ -382,7 +391,7 @@ class ResponseFormatter:
         return "Largest FY operating margin rebounds:\n" + "\n".join(bullets)
 
     def _format_gross_margin_trend_sector(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No gross margin movements were detected for the requested cohort."
@@ -431,7 +440,7 @@ class ResponseFormatter:
         return "Sector gross margin shifts:\n" + "\n".join(bullets)
 
     def _format_inventory_turnover_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return (
@@ -472,7 +481,7 @@ class ResponseFormatter:
         return "Inventory turnover trend (last 6 quarters):\n" + "\n".join(bullets)
 
     def _format_net_debt_to_ebitda_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No leverage data was available for the requested airlines."
@@ -540,7 +549,7 @@ class ResponseFormatter:
             bullets
         )
 
-    def _format_asset_turnover_trend(self, query_result: QueryResult) -> Optional[str]:
+    def _format_asset_turnover_trend(self, query_result: QueryResult, context: Optional[RequestContext] = None) -> Optional[str]:
         if query_result.row_count == 0:
             return "No asset-turnover coverage was found for the requested companies."
 
@@ -586,7 +595,7 @@ class ResponseFormatter:
         return heading + "\n" + "\n".join(bullets)
 
     def _format_cash_to_assets_ratio_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No cash-to-assets coverage was found for the requested companies."
@@ -653,7 +662,7 @@ class ResponseFormatter:
         return heading + "\n" + "\n".join(bullets[:6])
 
     def _format_cfo_to_net_income_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No CFO-to-net income coverage was found for the requested cohort."
@@ -701,7 +710,7 @@ class ResponseFormatter:
         return heading + "\n" + "\n".join(bullets)
 
     def _format_roe_revenue_divergence(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No ROE declines were detected with revenue growth over the requested window."
@@ -740,7 +749,7 @@ class ResponseFormatter:
         return "ROE compression despite revenue growth:\n" + "\n".join(bullets)
 
     def _format_working_capital_cash_cycle_trend(
-        self, query_result: QueryResult
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
     ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No working-capital improvements found for the requested period."
