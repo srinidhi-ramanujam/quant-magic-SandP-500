@@ -8,13 +8,14 @@ For Phase 0, we focus on 3 simple templates:
 """
 
 import re
+from pathlib import Path
 from typing import List, Optional, Dict
 import pandas as pd
 
 from src.config import get_parquet_path
 from src.models import QueryTemplate, IntelligenceMatch
 from src.telemetry import get_logger
-from src.entity_extractor import get_company_alias_map, normalize_company_name
+from src.entity_extractor import normalize_company_name
 
 
 # Common currency synonyms to support template parameter extraction.
@@ -133,6 +134,74 @@ PHASE_0_TEMPLATES = [
     ),
 ]
 
+_BLUEPRINT_DIR = Path(__file__).resolve().parent.parent / "sql_templates"
+
+
+def _load_blueprint_sql(filename: str) -> str:
+    try:
+        return (_BLUEPRINT_DIR / filename).read_text()
+    except FileNotFoundError:  # pragma: no cover - defensive guard
+        return f"-- Blueprint SQL missing: {filename}"
+
+
+BLUEPRINT_TEMPLATES = [
+    QueryTemplate(
+        template_id="roe_consecutive_streak_blueprint",
+        name="ROE consecutive streak blueprint",
+        pattern=r"(roe|return on equity).*(consecutive|streak)",
+        sql_template=_load_blueprint_sql("roe_consecutive_streak_blueprint.sql"),
+        parameters=[
+            "start_year",
+            "end_year",
+            "roe_threshold",
+            "min_consecutive_years",
+            "sector_filter",
+            "jurisdiction_filter",
+        ],
+        description="Guidance for detecting companies sustaining ROE above a threshold across consecutive fiscal years.",
+    ),
+    QueryTemplate(
+        template_id="equity_to_assets_trend_blueprint",
+        name="Equity-to-assets trend blueprint",
+        pattern=r"equity[- ]to[- ](total[- ]?)?assets",
+        sql_template=_load_blueprint_sql("equity_to_assets_trend_blueprint.sql"),
+        parameters=[
+            "start_year",
+            "end_year",
+            "company_list",
+            "sector_filter",
+            "jurisdiction_filter",
+        ],
+        description="Guidance for computing equity-to-total-assets ratios for cohorts across multi-year windows.",
+    ),
+    QueryTemplate(
+        template_id="operating_cfo_volatility_blueprint",
+        name="Operating cash flow volatility blueprint",
+        pattern=r"(operating cash flow|cfo).*(volatility|coefficient of variation)",
+        sql_template=_load_blueprint_sql(
+            "operating_cash_flow_volatility_blueprint.sql"
+        ),
+        parameters=[
+            "start_date",
+            "end_date",
+            "sector_filter",
+        ],
+        description="Guidance for computing coefficient of variation on quarterly operating cash flow series.",
+    ),
+    QueryTemplate(
+        template_id="loan_loss_provision_trend_blueprint",
+        name="Loan-loss provision trend blueprint",
+        pattern=r"loan[- ]loss",
+        sql_template=_load_blueprint_sql("loan_loss_provision_trend_blueprint.sql"),
+        parameters=[
+            "start_date",
+            "end_date",
+            "company_list",
+        ],
+        description="Guidance for extracting loan-loss provision expense trends across quarters.",
+    ),
+]
+
 
 class IntelligenceLoader:
     """Load and manage query intelligence templates."""
@@ -200,6 +269,12 @@ class IntelligenceLoader:
                     f"Error loading templates from parquet: {e}, falling back to Phase 0 templates"
                 )
                 self.templates.extend(PHASE_0_TEMPLATES)
+
+        # Append blueprint templates if not already present
+        existing_ids = {template.template_id for template in self.templates}
+        for blueprint in BLUEPRINT_TEMPLATES:
+            if blueprint.template_id not in existing_ids:
+                self.templates.append(blueprint)
 
     def _extract_parameters(self, sql_template: str) -> List[str]:
         """Extract parameter names from SQL template."""

@@ -32,6 +32,106 @@ from src.hybrid_retrieval import TemplateIntentRetriever
 from src.llm_guard import LLMAvailabilityError
 
 
+RATIO_KEYWORD_HINTS: Dict[Tuple[str, ...], Dict[str, Any]] = {
+    (
+        "equity-to-assets",
+        "equity to assets",
+        "equity-to-total-assets",
+        "equity to total assets",
+        "equity/assets",
+    ): {
+        "alias": "equity_to_assets_ratio",
+        "tags": ["StockholdersEquity", "Assets"],
+        "hint": "Equity-to-assets ratio = StockholdersEquity / Assets",
+    },
+    (
+        "return on equity",
+        "roe",
+        "roe above",
+        "roe greater than",
+    ): {
+        "alias": "return_on_equity",
+        "tags": ["NetIncomeLoss", "StockholdersEquity"],
+        "hint": "Return on equity = NetIncomeLoss / StockholdersEquity",
+    },
+    (
+        "interest coverage",
+        "interest coverage ratio",
+        "operating income vs interest",
+    ): {
+        "alias": "interest_coverage",
+        "tags": ["OperatingIncomeLoss", "InterestExpense"],
+        "hint": "Interest coverage = OperatingIncomeLoss / InterestExpense",
+    },
+    (
+        "cash-to-assets",
+        "cash to assets",
+        "cash-to-total-assets",
+    ): {
+        "alias": "cash_to_assets_ratio",
+        "tags": ["CashAndCashEquivalentsAtCarryingValue", "Assets"],
+        "hint": "Cash-to-assets ratio = CashAndCashEquivalentsAtCarryingValue / Assets",
+    },
+}
+
+INDUSTRY_KEYWORDS: Dict[str, Dict[str, Any]] = {
+    "bank": {
+        "sector": "Financials",
+        "description": "Focus on banks within the Financials sector; consider SIC ranges 6020-6199.",
+    },
+    "banks": {
+        "sector": "Financials",
+        "description": "Focus on banks within the Financials sector; consider SIC ranges 6020-6199.",
+    },
+    "financial institution": {
+        "sector": "Financials",
+        "description": "Focus on banks within the Financials sector; consider SIC ranges 6020-6199.",
+    },
+    "semiconductor": {
+        "sector": "Information Technology",
+        "description": "Semiconductor companies reside within Information Technology; tags often include InventoryNet and GrossProfit.",
+    },
+    "energy": {
+        "sector": "Energy",
+        "description": "Energy sector focus; consider oil & gas metrics.",
+    },
+}
+
+VOLATILITY_KEYWORDS = [
+    "coefficient of variation",
+    "volatility",
+    "volatility of",
+    "stddev",
+    "standard deviation",
+    "variance",
+]
+
+CUSTOM_METRIC_KEYWORD_HINTS: Dict[Tuple[str, ...], Dict[str, Any]] = {
+    (
+        "loan loss provision",
+        "loan-loss provision",
+        "loan loss provisions",
+        "loan-loss provisions",
+    ): {
+        "alias": "loan_loss_provision",
+        "tags": [
+            "ProvisionForLoanAndLeaseLosses",
+            "ProvisionForLoanLossesExpensed",
+            "ProvisionForLoanAndLeaseLossesNonAcquisition",
+        ],
+    },
+    (
+        "operating cash flow volatility",
+        "operating cash flow",
+        "cfo volatility",
+        "cash from operations",
+    ): {
+        "alias": "operating_cash_flow",
+        "tags": ["NetCashProvidedByUsedInOperatingActivities"],
+    },
+}
+
+
 class SQLGenerator:
     """Generate SQL queries using templates and extracted entities."""
 
@@ -122,7 +222,9 @@ class SQLGenerator:
                             "template_selection_method", "deterministic_only"
                         ),
                     )
-                    return self._generate_from_template(intelligence_match, entities, context)
+                    return self._generate_from_template(
+                        intelligence_match, entities, context
+                    )
 
                 self.logger.warning("No template matched and LLM unavailable")
                 return None
@@ -140,7 +242,9 @@ class SQLGenerator:
                     intelligence_match.template.template_id,
                 )
                 context.add_metadata("template_selection_method", "fast_path")
-                return self._generate_from_template(intelligence_match, entities, context)
+                return self._generate_from_template(
+                    intelligence_match, entities, context
+                )
 
             if confidence >= llm_threshold and intelligence_match.template is not None:
                 # MEDIUM CONFIDENCE: Ask LLM to confirm chosen template
@@ -170,11 +274,14 @@ class SQLGenerator:
 
             # Step 5: Generate SQL from LLM-selected template
             return self._generate_from_template_with_params(
-                template, parameter_mapping, entities
+                template, parameter_mapping, entities, context
             )
 
     def _generate_from_template(
-        self, intelligence_match: IntelligenceMatch, entities: ExtractedEntities, context: Optional[RequestContext] = None
+        self,
+        intelligence_match: IntelligenceMatch,
+        entities: ExtractedEntities,
+        context: Optional[RequestContext] = None,
     ) -> Optional[GeneratedSQL]:
         """
         Generate SQL by populating a template.
@@ -192,8 +299,23 @@ class SQLGenerator:
         self.logger.debug(f"Generating SQL from template: {template.template_id}")
         self.logger.debug(f"Template parameters: {params}")
 
+        question_lower = getattr(self, "_current_question", "").lower()
+
         # Check for missing parameters - use template as GUIDE, not rigid contract
         missing_params = set(template.parameters) - set(params.keys())
+        if self._template_requires_guidance(
+            template,
+            params,
+            missing_params,
+            question_lower,
+            entities,
+        ):
+            guided = self._generate_guided_sql(
+                template, entities, self._current_question, context
+            )
+            if guided:
+                return guided
+
         if missing_params:
             self.logger.debug(
                 "Missing parameters for template %s: %s - using template-guided LLM generation",
@@ -202,7 +324,9 @@ class SQLGenerator:
             )
 
             # Try to infer missing parameters from question and entities
-            inferred_params = self._infer_missing_parameters(params, missing_params, entities, self._current_question, template)
+            inferred_params = self._infer_missing_parameters(
+                params, missing_params, entities, self._current_question, template
+            )
             params.update(inferred_params)
 
             # Check again after inference
@@ -214,15 +338,38 @@ class SQLGenerator:
                     self.logger.debug(
                         f"Using template-guided LLM generation for complex template {template.template_id} with missing params {still_missing}"
                     )
-                    return self._generate_guided_sql(template, entities, self._current_question, context)
+                    return self._generate_guided_sql(
+                        template, entities, self._current_question, context
+                    )
                 else:
                     # Apply defaults for remaining simple parameters and proceed with template
-                    defaulted_params = self._apply_default_parameters(params, still_missing, template)
+                    defaulted_params = self._apply_default_parameters(
+                        params, still_missing, template, entities
+                    )
                     params.update(defaulted_params)
                     still_missing = set(template.parameters) - set(params.keys())
                     if still_missing:
-                        self.logger.error(f"Still missing parameters after all attempts: {still_missing}")
+                        self.logger.error(
+                            f"Still missing parameters after all attempts: {still_missing}"
+                        )
                         return None
+        else:
+            params = self._apply_default_parameters(
+                params, missing_params, template, entities
+            )
+
+        if self._template_requires_guidance(
+            template,
+            params,
+            set(template.parameters) - set(params.keys()),
+            question_lower,
+            entities,
+        ):
+            guided = self._generate_guided_sql(
+                template, entities, self._current_question, context
+            )
+            if guided:
+                return guided
 
         params = self._apply_entity_overrides(params, entities, template)
 
@@ -420,10 +567,19 @@ class SQLGenerator:
         return updated
 
     def _apply_default_parameters(
-        self, params: Dict[str, str], missing_params: set, template: QueryTemplate
+        self,
+        params: Dict[str, str],
+        missing_params: set,
+        template: QueryTemplate,
+        entities: Optional[ExtractedEntities] = None,
     ) -> Dict[str, str]:
         """Provide fallback values for optional template parameters."""
+
+        if not missing_params:
+            return params
+
         defaults: Dict[str, str] = {}
+        question_upper = getattr(self, "_current_question", "").upper()
 
         if "sector" in missing_params:
             defaults["sector"] = "ALL"
@@ -439,20 +595,6 @@ class SQLGenerator:
 
         if "min_revenue" in missing_params:
             defaults["min_revenue"] = "5000000000"
-
-        if "company_values" in missing_params:
-            if template.template_id == "inventory_turnover_trend":
-                defaults["company_values"] = (
-                    "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
-                )
-            elif template.template_id == "net_debt_to_ebitda_trend":
-                defaults["company_values"] = (
-                    "('DELTA AIR LINES, INC.'),('SOUTHWEST AIRLINES CO'),('UNITED AIRLINES HOLDINGS, INC.')"
-                )
-            elif template.template_id == "asset_turnover_trend":
-                defaults["company_values"] = (
-                    "('APPLE INC'),('INTEL CORP'),('NVIDIA CORP'),('CISCO SYSTEMS, INC.'),('QUALCOMM INC/DE'),('BROADCOM INC.')"
-                )
 
         if "quarter_count" in missing_params:
             defaults["quarter_count"] = "6"
@@ -482,8 +624,6 @@ class SQLGenerator:
                 defaults["year_3"] = "2022"
             if "min_years" in missing_params:
                 defaults["min_years"] = "4"
-            if "sector" in missing_params:
-                defaults["sector"] = "Information Technology"
             if "limit" in missing_params:
                 defaults["limit"] = "8"
             if "min_revenue" in missing_params:
@@ -516,10 +656,6 @@ class SQLGenerator:
                 defaults["max_ratio"] = "3"
 
         if template.template_id == "cash_to_assets_ratio_trend":
-            if "company_values" in missing_params:
-                defaults["company_values"] = (
-                    "('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')"
-                )
             if "use_sector_filter" in missing_params:
                 defaults["use_sector_filter"] = "0"
             if "sector" in missing_params:
@@ -548,6 +684,17 @@ class SQLGenerator:
                 defaults["max_roe_pct"] = "150"
             if "limit" in missing_params and "limit" not in defaults:
                 defaults["limit"] = "5"
+
+        if (
+            "company_values" in missing_params
+            and template.template_id == "inventory_turnover_trend"
+            and not (entities and entities.companies)
+            and "RETAIL" in question_upper
+        ):
+            defaults["company_values"] = (
+                "('WALMART INC.'),('TARGET CORP'),('HOME DEPOT, INC.'),"
+                "('AMAZON COM INC'),('COSTCO WHOLESALE CORP /NEW'),('BEST BUY CO INC')"
+            )
 
         if "limit" in missing_params and "limit" not in defaults:
             defaults["limit"] = "10"
@@ -709,7 +856,7 @@ class SQLGenerator:
                         "Respond with JSON following the provided schema."
                     ),
                     input=prompt,
-                    max_output_tokens=500,
+                    max_output_tokens=self.config.template_selection_max_tokens,
                 )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
@@ -843,6 +990,7 @@ class SQLGenerator:
         template: QueryTemplate,
         parameter_mapping: Dict[str, str],
         entities: ExtractedEntities,
+        context: Optional[RequestContext] = None,
     ) -> Optional[GeneratedSQL]:
         """
         Generate SQL using LLM-provided parameter mapping.
@@ -879,6 +1027,28 @@ class SQLGenerator:
                     f"Still missing parameters after fallback: {missing_params}"
                 )
                 return None
+
+        params = self._apply_default_parameters(
+            params, missing_params, template, entities
+        )
+
+        question_lower = getattr(self, "_current_question", "").lower()
+        remaining_missing = set(template.parameters) - set(params.keys())
+        if self._template_requires_guidance(
+            template,
+            params,
+            remaining_missing,
+            question_lower,
+            entities,
+        ):
+            guided = self._generate_guided_sql(
+                template,
+                entities,
+                self._current_question,
+                context or RequestContext("template_guidance"),
+            )
+            if guided:
+                return guided
 
         params = self._apply_entity_overrides(params, entities, template)
 
@@ -929,7 +1099,9 @@ class SQLGenerator:
             GeneratedSQL using template-guided LLM generation
         """
         if not self.azure_client or not self.use_llm:
-            self.logger.debug("Template-guided SQL generation skipped (LLM unavailable)")
+            self.logger.debug(
+                "Template-guided SQL generation skipped (LLM unavailable)"
+            )
             return None
 
         try:
@@ -980,7 +1152,9 @@ Return only the SQL query, no explanation.
                 query=guided_prompt,
                 context=request_context,
                 similar_queries=context.metadata.get("similar_queries", []),
-                template_attempts=[{"template_id": template.template_id, "guidance": True}],
+                template_attempts=[
+                    {"template_id": template.template_id, "guidance": True}
+                ],
             )
 
             response = self.azure_client.generate_sql(llm_request)
@@ -1007,13 +1181,15 @@ Return only the SQL query, no explanation.
                 return None
 
             # Validate the generated SQL
-            validation_ok, validation_reason, validation_confidence = (
-                self.validator.validate(
-                    response.generated_sql,
-                    question,
-                    entities.model_dump(),
-                    context,
-                )
+            (
+                validation_ok,
+                validation_reason,
+                validation_confidence,
+            ) = self.validator.validate(
+                response.generated_sql,
+                question,
+                entities.model_dump(),
+                context,
             )
 
             attempt_record["success"] = response.success and validation_ok
@@ -1027,7 +1203,8 @@ Return only the SQL query, no explanation.
 
             if not validation_ok:
                 self.logger.warning(
-                    "Generated guided SQL failed validation checks: %s", validation_reason
+                    "Generated guided SQL failed validation checks: %s",
+                    validation_reason,
                 )
                 return None
 
@@ -1051,7 +1228,9 @@ Return only the SQL query, no explanation.
             )
 
         except Exception as exc:  # noqa: BLE001
-            self.logger.error(f"Unexpected error in template-guided SQL generation: {exc}")
+            self.logger.error(
+                f"Unexpected error in template-guided SQL generation: {exc}"
+            )
             return None
 
     def _generate_custom_sql(
@@ -1105,13 +1284,15 @@ Return only the SQL query, no explanation.
                 )
                 return None
 
-            validation_ok, validation_reason, validation_confidence = (
-                self.validator.validate(
-                    response.generated_sql,
-                    question,
-                    entities.model_dump(),
-                    context,
-                )
+            (
+                validation_ok,
+                validation_reason,
+                validation_confidence,
+            ) = self.validator.validate(
+                response.generated_sql,
+                question,
+                entities.model_dump(),
+                context,
             )
 
             attempt_record["success"] = response.success and validation_ok
@@ -1172,7 +1353,9 @@ Return only the SQL query, no explanation.
             "asset_turnover_trend": "asset utilization efficiency",
             "cfo_to_net_income_ratio_trend": "quality of earnings through cash flow vs net income",
         }
-        return descriptions.get(template_id, f"financial metrics for {template_id.replace('_', ' ')}")
+        return descriptions.get(
+            template_id, f"financial metrics for {template_id.replace('_', ' ')}"
+        )
 
     def _get_template_analysis_type(self, template_id: str) -> str:
         """Get the type of financial analysis the template performs."""
@@ -1213,72 +1396,116 @@ Return only the SQL query, no explanation.
         """
         inferred = {}
         question_lower = question.lower()
+        year_tokens_in_question = re.findall(r"(20\d{2})", question_lower)
 
         for param in missing_params:
             if param in existing_params:
                 continue
 
             # Sector parameter
-            if param == "sector" and entities.sectors:
-                inferred[param] = entities.sectors[0]  # Use first sector found
+            if param == "sector":
+                if entities.sectors:
+                    inferred[param] = entities.sectors[0]
+                else:
+                    for keyword, meta in INDUSTRY_KEYWORDS.items():
+                        if keyword in question_lower:
+                            inferred[param] = meta["sector"]
+                            break
 
             # Year parameters - look for fiscal year patterns
             elif param in ["start_year", "end_year"] or param.startswith("year_"):
                 years = entities.time_periods
+                numeric_years = []
                 if years:
                     # Extract numeric years
-                    numeric_years = []
                     for year in years:
-                        year_clean = ''.join(c for c in year if c.isdigit())
+                        year_clean = "".join(c for c in year if c.isdigit())
                         if len(year_clean) == 4:
                             try:
                                 numeric_years.append(int(year_clean))
                             except ValueError:
                                 pass
+                elif year_tokens_in_question:
+                    numeric_years = [int(y) for y in year_tokens_in_question]
 
-                    if numeric_years:
-                        if param == "start_year":
-                            inferred[param] = str(min(numeric_years))
-                        elif param == "end_year":
-                            inferred[param] = str(max(numeric_years))
-                        elif param.startswith("year_"):
-                            # For year_2, year_3, etc., create a sequence
-                            try:
-                                year_num = int(param.split("_")[1])
-                                base_years = sorted(numeric_years)
-                                if len(base_years) >= 2:
-                                    # Interpolate between start and end years
-                                    start_year = base_years[0]
-                                    end_year = base_years[-1]
-                                    if year_num <= len(base_years):
-                                        inferred[param] = str(base_years[year_num - 1])
-                                    else:
-                                        # Extrapolate
-                                        year_span = end_year - start_year
-                                        steps = len(base_years) - 1
-                                        if steps > 0:
-                                            step_size = year_span // steps
-                                            inferred[param] = str(start_year + (year_num - 1) * step_size)
-                            except (ValueError, IndexError):
-                                pass
+                if numeric_years:
+                    if param == "start_year":
+                        inferred[param] = str(min(numeric_years))
+                    elif param == "end_year":
+                        inferred[param] = str(max(numeric_years))
+                    elif param.startswith("year_"):
+                        # For year_2, year_3, etc., create a sequence
+                        try:
+                            year_num = int(param.split("_")[1])
+                            base_years = sorted(numeric_years)
+                            if len(base_years) >= 2:
+                                # Interpolate between start and end years
+                                start_year = base_years[0]
+                                end_year = base_years[-1]
+                                if year_num <= len(base_years):
+                                    inferred[param] = str(base_years[year_num - 1])
+                                else:
+                                    # Extrapolate
+                                    year_span = end_year - start_year
+                                    steps = len(base_years) - 1
+                                    if steps > 0:
+                                        step_size = year_span // steps
+                                        inferred[param] = str(
+                                            start_year + (year_num - 1) * step_size
+                                        )
+                        except (ValueError, IndexError):
+                            pass
 
             # Company parameters
             elif param == "company_values" and entities.companies:
                 # Format as SQL array/list
-                inferred[param] = ", ".join(f"'{company}'" for company in entities.companies)
+                inferred[param] = ", ".join(
+                    f"'{company}'" for company in entities.companies
+                )
+
+            elif param == "jurisdiction":
+                if "us" in question_lower or "united states" in question_lower:
+                    inferred[param] = "US"
+
+            elif param == "min_consecutive_years":
+                streak_match = re.search(
+                    r"(\d+)\s+(?:consecutive|straight)\s+(?:year|yr)s?", question_lower
+                )
+                if streak_match:
+                    inferred[param] = streak_match.group(1)
+
+            elif param.endswith("threshold"):
+                threshold_match = re.search(
+                    r"(?:above|over|greater than|at least)\s+(\d+(?:\.\d+)?)\s*(%|percent|percentage)?",
+                    question_lower,
+                )
+                if threshold_match:
+                    inferred[param] = threshold_match.group(1)
+                elif "roe" in param and "roe" in question_lower:
+                    roe_match = re.search(
+                        r"roe[^0-9]{0,10}(\d+(?:\.\d+)?)", question_lower
+                    )
+                    if roe_match:
+                        inferred[param] = roe_match.group(1)
 
             # Limit parameters
             elif param == "limit":
-                if "top" in question_lower and any(word in question_lower for word in ["10", "five", "5"]):
+                if "top" in question_lower and any(
+                    word in question_lower for word in ["10", "five", "5"]
+                ):
                     inferred[param] = "5"
-                elif "top" in question_lower and any(word in question_lower for word in ["20", "twenty"]):
+                elif "top" in question_lower and any(
+                    word in question_lower for word in ["20", "twenty"]
+                ):
                     inferred[param] = "20"
                 else:
                     inferred[param] = "10"  # Default top 10
 
             # Minimum thresholds - use reasonable defaults based on template type
             elif param.startswith("min_") or param.startswith("max_"):
-                inferred[param] = self._get_reasonable_default(param, template.template_id)
+                inferred[param] = self._get_reasonable_default(
+                    param, template.template_id
+                )
 
             # Result limit
             elif param == "result_limit":
@@ -1287,7 +1514,9 @@ Return only the SQL query, no explanation.
             # Ranking year
             elif param == "ranking_year" and entities.time_periods:
                 # Use most recent year mentioned
-                years = [y for y in entities.time_periods if y.isdigit() and len(y) == 4]
+                years = [
+                    y for y in entities.time_periods if y.isdigit() and len(y) == 4
+                ]
                 if years:
                     inferred[param] = max(years)
 
@@ -1308,23 +1537,20 @@ Return only the SQL query, no explanation.
         defaults = {
             # Financial thresholds
             "min_revenue": "1000000000",  # $1B
-            "min_assets": "1000000000",   # $1B
-            "min_cfo": "100000000",       # $100M
+            "min_assets": "1000000000",  # $1B
+            "min_cfo": "100000000",  # $100M
             "min_capex_abs": "50000000",  # $50M
-            "min_net_income": "100000000", # $100M
+            "min_net_income": "100000000",  # $100M
             "min_years": "3",
-
             # Ratio thresholds
             "min_fcf_retention": "0.0",
             "max_fcf_retention": "2.0",
             "max_capex_intensity": "0.5",
-
             # Percentage thresholds
             "min_improvement_pp": "200",  # 2 percentage points
-
             # Scale/value thresholds
             "max_abs_cfo": "10000000000",  # $10B
-            "value_scale": "1000000",      # Millions
+            "value_scale": "1000000",  # Millions
         }
 
         # Template-specific overrides
@@ -1348,7 +1574,58 @@ Return only the SQL query, no explanation.
         # Fall back to general defaults
         return defaults.get(param, "0")
 
-    def _should_use_guided_generation(self, template: QueryTemplate, missing_params: List[str]) -> bool:
+    def _template_requires_guidance(
+        self,
+        template: QueryTemplate,
+        params: Dict[str, str],
+        missing_params: set,
+        question_lower: str,
+        entities: ExtractedEntities,
+    ) -> bool:
+        """
+        Decide if we should skip direct template substitution and let the LLM
+        generate SQL with the template as semantic guidance.
+        """
+        template_id_lower = template.template_id.lower()
+
+        # Hard mismatches between template theme and question intent
+        if "energy" in template_id_lower and any(
+            keyword in question_lower for keyword in ("bank", "financial", "lender")
+        ):
+            return True
+
+        if "cash_to_assets" in template_id_lower and (
+            "equity-to" in question_lower
+            or "equity to" in question_lower
+            or ("equity" in question_lower and "asset" in question_lower)
+        ):
+            return True
+
+        if "roe" in template_id_lower and "consecutive" in question_lower:
+            if "min_consecutive_years" in missing_params:
+                return True
+
+        # If template expects explicit cohorts but we only have natural language groups, prefer guidance
+        if "company_values" in missing_params:
+            if len(entities.companies) >= 2:
+                return True
+            if "bank" in question_lower or "cohort" in question_lower:
+                return True
+
+        # Avoid relying on generic sector defaults when the question is specific
+        sector_param = params.get("sector")
+        if (
+            "sector" in template.parameters
+            and (not sector_param or sector_param.upper() == "ALL")
+            and any(keyword in question_lower for keyword in INDUSTRY_KEYWORDS.keys())
+        ):
+            return True
+
+        return False
+
+    def _should_use_guided_generation(
+        self, template: QueryTemplate, missing_params: List[str]
+    ) -> bool:
         """
         Decide whether to use template-guided LLM generation or stick with parameter inference.
 
@@ -1383,7 +1660,10 @@ Return only the SQL query, no explanation.
         # Parameters that are hard to infer and likely need LLM understanding
         complex_params = {
             "company_values",  # Specific company lists are hard to infer
-            "year_2", "year_3", "year_4", "year_5",  # Multi-year sequences
+            "year_2",
+            "year_3",
+            "year_4",
+            "year_5",  # Multi-year sequences
         }
 
         if any(param in complex_params for param in missing_params):
@@ -1441,6 +1721,7 @@ Return only the SQL query, no explanation.
 
         hints: Dict[str, Any] = {}
         question_lower = question.lower()
+        analysis_notes: List[str] = []
 
         if entities.metrics:
             hints["metrics"] = entities.metrics
@@ -1451,6 +1732,8 @@ Return only the SQL query, no explanation.
                     tag_map[metric] = tags
             if tag_map:
                 hints["metric_tags"] = tag_map
+
+        metric_tag_map = hints.setdefault("metric_tags", {})
 
         if entities.companies:
             hints["companies"] = entities.companies
@@ -1464,6 +1747,62 @@ Return only the SQL query, no explanation.
         if entities.question_type:
             hints["question_type"] = entities.question_type
 
+        for keywords, meta in RATIO_KEYWORD_HINTS.items():
+            if any(keyword in question_lower for keyword in keywords):
+                metric_tag_map.setdefault(meta["alias"], meta["tags"])
+                analysis_notes.append(meta["hint"])
+
+        for keywords, meta in CUSTOM_METRIC_KEYWORD_HINTS.items():
+            if any(keyword in question_lower for keyword in keywords):
+                metric_tag_map.setdefault(meta["alias"], meta["tags"])
+
+        for keyword, meta in INDUSTRY_KEYWORDS.items():
+            if keyword in question_lower:
+                hints.setdefault("industry_focus", []).append(meta["description"])
+
+        if (
+            "us" in question_lower
+            or "united states" in question_lower
+            or "u.s." in question_lower
+        ):
+            hints[
+                "jurisdiction_filter"
+            ] = "Focus on U.S. companies (companies.countryinc = 'USA' or HQ state)."
+
+        if any(kw in question_lower for kw in VOLATILITY_KEYWORDS):
+            hints[
+                "volatility_metric"
+            ] = "Compute volatility using STDDEV(value)/AVG(value) for the requested metric (coefficient of variation)."
+
+        streak_match = re.search(
+            r"(\d+)\s+(?:consecutive|straight)\s+(?:year|yr)s?", question_lower
+        )
+        if streak_match:
+            hints[
+                "streak_requirement"
+            ] = f"Require at least {streak_match.group(1)} consecutive fiscal years meeting the condition."
+
+        years_in_question = re.findall(r"(20\d{2})", question_lower)
+        if len(years_in_question) >= 2:
+            start_year = min(years_in_question)
+            end_year = max(years_in_question)
+            hints["timeframe"] = f"{start_year}-{end_year}"
+
+        if (
+            "quarter" in question_lower
+            or "q1" in question_lower
+            or "q2" in question_lower
+            or "q3" in question_lower
+            or "q4" in question_lower
+        ):
+            hints["time_granularity"] = "Quarterly values required (num.qtrs = 1)."
+        elif (
+            "annual" in question_lower
+            or "fiscal year" in question_lower
+            or "fy" in question_lower
+        ):
+            hints["time_granularity"] = "Annual values required (num.qtrs = 0)."
+
         threshold = self._extract_threshold_hint(question_lower)
         if threshold:
             hints["threshold"] = threshold
@@ -1476,19 +1815,31 @@ Return only the SQL query, no explanation.
             r"\b(usd|cad|eur|gbp|jpy|cny|aud|mxn|chf)\b", question_lower
         )
         if currency_match:
-            hints["currency_filter"] = (
-                f"Filter num.uom for '{currency_match.group(1).upper()}'"
-            )
+            hints[
+                "currency_filter"
+            ] = f"Filter num.uom for '{currency_match.group(1).upper()}'"
 
         if "per share" in question_lower or "per-share" in question_lower:
-            hints["unit_context"] = (
-                "Question references per-share metrics; consider num.uom = 'shares'."
-            )
+            hints[
+                "unit_context"
+            ] = "Question references per-share metrics; consider num.uom = 'shares'."
 
         if "segment" in question_lower or "by segment" in question_lower:
-            hints["segment_context"] = (
-                "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
-            )
+            hints[
+                "segment_context"
+            ] = "Segment-level data may be required; avoid filtering num.segments to NULL if segments requested."
+
+        if analysis_notes:
+            hints["analysis_notes"] = analysis_notes
+
+        hints.setdefault(
+            "schema_case",
+            "Use uppercase table/view names (COMPANIES, SUB, NUM, TAG, PRE) and canonical tag casing (e.g., StockholdersEquity).",
+        )
+        hints.setdefault(
+            "form_case",
+            "SEC forms are uppercase (10-K, 10-Q, 10-K/A).",
+        )
 
         return hints
 

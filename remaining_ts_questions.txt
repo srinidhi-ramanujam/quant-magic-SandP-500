@@ -1,0 +1,28 @@
+1. Which Industrials compressed working capital days the most between FY2020 and FY2023, and what does that imply for their cash conversion cycles?
+2. How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023, and what does that signal about inflation resilience?
+3. Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?
+4. Track the equity-to-total-assets ratio for JPMorgan, Bank of America, Citigroup, and Wells Fargo from 2019 to 2024.
+5. Show quarterly operating cash flow volatility (coefficient of variation) for Financial sector companies from 2021 to 2023.
+6. Compare quarterly gross margin divergence between Consumer Staples and Consumer Discretionary leaders from 2019 to 2024.
+7. Analyze cash flow from operations to capital expenditure ratios for Healthcare companies from 2019 to 2024.
+8. Which large-cap cloud software companies (Microsoft, Adobe, Salesforce) accelerated operating margin expansion in the two years after COVID (2021-2022) versus the two years before (2018-2019)?
+9. How did quarterly gross margins for Apple, Dell, and HP differ between the pre-COVID period (2018-2019) and the peak supply-chain disruption window (2020-2021)?
+10. For Exxon, Chevron, and ConocoPhillips, how did free cash flow (operating cash minus capex) swing from the 2018-2019 baseline to the post-reopening surge (2021-2022)?
+11. Which U.S. airlines reduced net-debt-to-EBITDA ratios back toward pre-COVID levels by 2023 after the spike seen in 2020?
+12. How did inventory turnover and cash conversion cycles for Walmart, Target, and Costco shift between the pre-COVID window (2018-2019), lockdown years (2020-2021), and normalization phase (2022-2023)?
+13. Did large U.S. banks (JPMorgan, Bank of America, Citigroup, Wells Fargo) keep equity-to-assets ratios within pre-pandemic bands during 2020-2021, and how quickly did they revert by 2023?
+14. Compare cash-to-total-assets ratios for Pfizer, Johnson & Johnson, and Merck before COVID (2018-2019) versus the vaccine scale-up years (2020-2021).
+15. Which semiconductor leaders (NVIDIA, AMD, Intel, Texas Instruments) delivered higher ROE growth in the 2021-2023 demand boom than in the 2018-2019 baseline?
+16. How much did consumer staples giants (Procter & Gamble, Coca-Cola, PepsiCo) compress or expand gross margins from the pre-COVID average to the inflationary 2022 period?
+17. Across Technology, Energy, and Industrials leaders, which companies increased the cash-from-operations to capex ratio after COVID (2021-2023) compared with 2018-2019?
+18. How did Walmart, Target, and Costco's quarterly revenue growth and inventory turnover differ between the lockdown span (2020-2021) and the restocking phase (2022-2023)?
+19. Which specialty retailers (Home Depot, Lowe's, Best Buy) preserved or improved operating margins post-COVID (2021-2023) versus pre-COVID (2018-2019) despite cost inflation?
+20. How quickly did UPS, FedEx, and XPO restore operating cash flow levels to pre-COVID benchmarks, and which year showed the steepest recovery?
+21. How did interest coverage ratios (operating income vs interest expense) evolve for Delta, United, American, and Southwest Airlines from 2018 through 2023?
+22. Compare gross margin trajectories for trucking and logistics leaders (J.B. Hunt, Old Dominion, Knight-Swift) between the demand spike of 2021 and the normalization of 2023.
+23. Which healthcare providers or device makers (UnitedHealth, HCA, Medtronic, Abbott) expanded operating cash flow faster than net income post-COVID, signaling improved earnings quality?
+24. Examine capital expenditure intensity (capex divided by operating cash flow) for Pfizer, Moderna, and Johnson & Johnson during 2020-2022 versus the pre-COVID baseline.
+25. Show how cash-to-total-assets ratios evolved for biotech majors (Amgen, Gilead, Biogen) from 2018-2019 through the 2020-2021 liquidity build-up.
+26. Identify which top U.S. banks maintained ROE within ±200 bps of pre-COVID averages during 2020-2021 and how quickly they reverted by 2023.
+27. Track quarterly loan-loss provision expense for JPMorgan, Bank of America, Citigroup, and Wells Fargo across 2018-2023 to highlight spikes and normalization.
+28. Compare net interest income and interest expense trajectories for large regional banks (PNC, Truist, U.S. Bancorp) across the zero-rate period (2020-2021) and the rate-hike era (2022-2023).

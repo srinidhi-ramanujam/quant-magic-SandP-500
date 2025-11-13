@@ -620,11 +620,12 @@ def get_sql_custom_generation_prompt(
         2. Join numeric facts through SUB (num.adsh = sub.adsh) before linking to COMPANIES.
         3. Prefer latest 10-K/10-Q filings (form in ('10-K','10-K/A','10-Q','10-Q/A')) unless a specific period is specified.
         4. Use canonical tag names from the schema (e.g., Revenues, NetIncomeLoss, Assets).
-        5. Filter out segmented data unless dimensions are explicitly requested (`num.segments IS NULL OR TRIM(num.segments) = ''`).
-        6. CIKs are zero-padded 10-character strings; use companies.cik or sub.cik rather than num.cik (which does not exist).
-        7. Alias columns with business-friendly names and keep result sets compact (LIMIT when appropriate).
-        8. Never invent tables or columns not present in the schema description.
-        9. Return the SQL inside a ```sql code block followed by a brief explanation paragraph.
+        5. When computing ratios (ROE, equity-to-assets, interest coverage, etc.), use the numerator/denominator tags indicated in the hints and guard against division by zero.
+        6. Filter out segmented data unless dimensions are explicitly requested (`num.segments IS NULL OR TRIM(num.segments) = ''`).
+        7. CIKs are zero-padded 10-character strings; use companies.cik or sub.cik rather than num.cik (which does not exist).
+        8. Alias columns with business-friendly names and keep result sets compact (LIMIT when appropriate).
+        9. Never invent tables or columns not present in the schema description.
+        10. Return the SQL inside a ```sql code block followed by a brief explanation paragraph.
         """
     ).strip()
 

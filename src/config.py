@@ -99,6 +99,10 @@ class Config(BaseModel):
     template_selection_timeout: int = Field(
         default=10, ge=1, description="Timeout for LLM template selection (seconds)"
     )
+    template_selection_max_tokens: int = Field(
+        default=3000,
+        description="Max output tokens budget for template selection Responses API call (increased for GPT-5 reasoning tokens)"
+    )
 
     # Answer formatter settings
     formatter_enabled: bool = Field(
