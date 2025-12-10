@@ -1,49 +1,34 @@
-import { useState, useRef, useEffect } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { fetchHealth, QueryClientError, runQuery } from "./api/client";
+import type {
+  ConversationTurnPayload,
+  NormalizedAnswer,
+  PresentationPayload,
+  ReasoningTrace,
+} from "./types";
 
-type PresentationTable = {
-  columns: string[];
-  rows: Record<string, unknown>[];
-  truncated?: boolean;
-};
-
-type PresentationPayload = {
-  narrative: string;
-  highlights?: string[];
-  table?: PresentationTable | null;
+type MessageMetadata = {
+  requestId?: string;
+  sql?: string | null;
+  totalTimeSeconds?: number;
+  rowCount?: number;
+  presentation?: PresentationPayload | null;
+  reasoningTrace?: ReasoningTrace | null;
+  sqlHint?: string | null;
   warnings?: string[];
-};
-
-type ReasoningTrace = {
-  template_id?: string | null;
-  generation_method?: string | null;
-  row_count?: number | null;
-  summary?: string | null;
-  warnings?: string[];
-};
-
-type ConversationTurnPayload = {
-  role: "user" | "assistant";
-  content: string;
-  timestamp?: string;
+  rawMetadata?: Record<string, unknown>;
+  success?: boolean;
+  error?: string | null;
 };
 
 type Message = {
   id: string;
-  type: "user" | "assistant";
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
-  metadata?: {
-    request_id?: string;
-    sql?: string | null;
-    total_time_seconds?: number;
-    row_count?: number;
-    presentation?: PresentationPayload | null;
-    reasoning_trace?: ReasoningTrace | null;
-    sql_hint?: string | null;
-    progress?: string[];
-    streaming?: boolean;
-  };
+  status?: "loading" | "done" | "error";
+  metadata?: MessageMetadata;
 };
 
 type ChatSession = {
@@ -52,41 +37,10 @@ type ChatSession = {
   timestamp: string;
 };
 
-type QueryResponse = {
-  answer: string;
-  success: boolean;
-  sql?: string | null;
-  metadata: Record<string, unknown>;
-  sources?: string[] | null;
-  error?: string | null;
-  presentation?: PresentationPayload | null;
-  reasoning_trace?: ReasoningTrace | null;
-  sql_collapsible_hint?: string | null;
-};
-
-type StreamEventPayload = {
-  request_id?: string;
-  answer?: string;
-  success?: boolean;
-  sql?: string | null;
-  metadata?: Record<string, unknown>;
-  presentation?: PresentationPayload | null;
-  reasoning_trace?: ReasoningTrace | null;
-  error?: string | null;
-  row_count?: number | null;
-  template_id?: string | null;
-  generation_method?: string | null;
-  execution_time_seconds?: number | null;
-  companies?: string[];
-  sectors?: string[];
-  metrics?: string[];
-  parameters?: Record<string, unknown>;
-  sql_collapsible_hint?: string | null;
-  summary?: string | null;
-  warnings?: string[];
-  stage?: string | null;
-  columns?: string[];
-  details?: Record<string, unknown>;
+type HealthState = {
+  status: "checking" | "ok" | "degraded" | "offline";
+  message?: string;
+  llmAvailable?: boolean;
 };
 
 const logInfo = (label: string, payload: unknown) => {
@@ -100,37 +54,65 @@ const buildHistoryPayload = (
   if (!thread.length) return [];
   const recent = thread.slice(-limit);
   return recent.map((message) => ({
-    role: message.type,
+    role: message.role,
     content: message.content,
     timestamp: message.timestamp,
   }));
 };
 
+const toPresentation = (answer: NormalizedAnswer): PresentationPayload => ({
+  narrative: answer.narrative || answer.answer,
+  highlights: answer.highlights,
+  table: answer.table,
+  warnings: answer.warnings,
+});
+
+const toMessageMetadata = (answer: NormalizedAnswer): MessageMetadata => ({
+  requestId: answer.requestId,
+  sql: answer.sql,
+  totalTimeSeconds: answer.totalTimeSeconds,
+  rowCount: answer.rowCount,
+  presentation: toPresentation(answer),
+  reasoningTrace: answer.reasoning,
+  sqlHint: answer.sqlHint,
+  warnings: answer.warnings,
+  rawMetadata: answer.rawMetadata,
+  success: answer.success,
+  error: answer.error,
+});
+
 function App() {
   const [question, setQuestion] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [apiConnected, setApiConnected] = useState(false);
+  const [health, setHealth] = useState<HealthState>({ status: "checking" });
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [sqlPanelOpen, setSqlPanelOpen] = useState<Record<string, boolean>>({});
-  const [progressQueue, setProgressQueue] = useState<string[]>([]);
-  const lastProgressRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check API connection on mount
   useEffect(() => {
+    let active = true;
     const checkConnection = async () => {
-      try {
-        const response = await fetch("/api/health");
-        setApiConnected(response.ok);
-      } catch {
-        setApiConnected(false);
+      const result = await fetchHealth();
+      if (!active) return;
+      if (!result) {
+        setHealth({ status: "offline", message: "API unreachable" });
+      } else {
+        setHealth({
+          status: result.status === "ok" ? "ok" : "degraded",
+          llmAvailable: result.llm_available,
+          message: result.message,
+        });
       }
     };
+
     checkConnection();
     const interval = setInterval(checkConnection, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   // Auto-scroll to bottom when messages change
@@ -155,10 +137,9 @@ function App() {
     const trimmedQuestion = question.trim();
     const historyPayload = buildHistoryPayload(messages);
     const isFirstMessage = messages.length === 0;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: "user",
+      role: "user",
       content: trimmedQuestion,
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
@@ -168,123 +149,40 @@ function App() {
     const assistantId = (Date.now() + 1).toString();
     const assistantMessage: Message = {
       id: assistantId,
-      type: "assistant",
+      role: "assistant",
       content: "Thinking...",
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      metadata: {
-        progress: [],
-        streaming: true,
-      },
+      status: "loading",
     };
 
-    setProgressQueue([]); // reset queue for this run
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setQuestion("");
     setLoading(true);
-    lastProgressRef.current = null;
     logInfo("question", {
       id: userMessage.id,
       question: trimmedQuestion,
     });
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
 
-    const appendProgress = (text: string) => {
+    const applyAnswer = (answer: NormalizedAnswer) => {
+      const metadata = toMessageMetadata(answer);
       setMessages((prev) =>
-        prev.map((message) => {
-          if (message.id !== assistantId) return message;
-          const progress = [...(message.metadata?.progress ?? []), text];
-          return {
-            ...message,
-            content: progress.join("\n"),
-            metadata: {
-              ...message.metadata,
-              progress,
-              streaming: true,
-            },
-          };
-        })
-      );
-    };
-
-    const enqueueProgress = (text: string) => {
-      if (!text.trim()) return;
-      setProgressQueue((prev) => {
-        const lastQueued = prev[prev.length - 1];
-        if (text === lastQueued || text === lastProgressRef.current) {
-          return prev;
-        }
-        return [...prev, text];
-      });
-    };
-
-    const nextDelay = () => 500 + Math.floor(Math.random() * 701); // 500–1200ms
-
-    const stopPump = () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-    };
-
-    const startPump = () => {
-      stopPump();
-      const pump = () => {
-        setProgressQueue((queue) => {
-          if (!queue.length) {
-            timeoutId = setTimeout(pump, nextDelay());
-            return queue;
-          }
-          const [next, ...rest] = queue;
-          appendProgress(next);
-          lastProgressRef.current = next;
-          timeoutId = setTimeout(pump, nextDelay());
-          return rest;
-        });
-      };
-      timeoutId = setTimeout(pump, nextDelay());
-    };
-
-    startPump();
-
-    const applyFinal = (payload: StreamEventPayload) => {
-      const metadata = payload.metadata || {};
-      const requestId =
-        (metadata.request_id as string | undefined) || payload.request_id;
-      const totalTime =
-        (metadata.total_time_seconds as number | undefined) ?? undefined;
-      const rowCount =
-        (metadata.row_count as number | undefined) ?? payload.row_count ?? null;
-
-      setMessages((prev) =>
-        prev.map((message) => {
-          if (message.id !== assistantId) return message;
-          return {
-            ...message,
-            content: payload.answer ?? message.content,
-            metadata: {
-              ...message.metadata,
-              request_id: requestId,
-              sql: payload.sql ?? null,
-              total_time_seconds: totalTime,
-              row_count: rowCount ?? undefined,
-              presentation: payload.presentation ?? null,
-              reasoning_trace: payload.reasoning_trace ?? null,
-              sql_hint:
-                payload.sql_collapsible_hint ||
-                (metadata.sql_collapsible_hint as string | undefined) ||
-                null,
-              progress: message.metadata?.progress ?? [],
-              streaming: false,
-            },
-          };
-        })
+        prev.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                content: answer.narrative || answer.answer || "No answer returned.",
+                status: answer.success ? "done" : "error",
+                metadata,
+              }
+            : message,
+        ),
       );
 
       if (isFirstMessage) {
@@ -301,189 +199,53 @@ function App() {
 
       logInfo("response", {
         id: assistantId,
-        requestId,
-        success: payload.success,
-        sql: payload.sql,
+        requestId: metadata.requestId,
+        success: metadata.success,
+        sql: metadata.sql,
       });
     };
 
-    const applyError = (messageText: string) => {
+    const applyError = (messageText: string, requestId?: string) => {
       setMessages((prev) =>
         prev.map((message) =>
           message.id === assistantId
             ? {
                 ...message,
                 content: messageText,
+                status: "error",
                 metadata: {
                   ...message.metadata,
-                  streaming: false,
+                  error: messageText,
+                  requestId,
+                  success: false,
                 },
               }
-            : message
-        )
+            : message,
+        ),
       );
     };
 
-    const toFriendly = (eventType: string, payload: StreamEventPayload) => {
-      // Map backend events to user-friendly, non-technical phrasing
-      switch (eventType) {
-        case "start":
-          return "Thinking…";
-        case "entities":
-          return "Reviewing which companies and metrics to focus on.";
-        case "sql_preview":
-          return "Choosing the best way to calculate this over your timeframe.";
-        case "execution":
-          return "Running the data query and crunching the numbers.";
-        case "reasoning": {
-          const stage = payload.stage;
-          const summary =
-            payload.summary || payload.reasoning_trace?.summary || "";
-          const stageMap: Record<string, string> = {
-            interpretation: "Clarifying your question and scope.",
-            template_selection: "Picking the right calculation pattern.",
-            execution: "Processing results.",
-            formatting: "Drafting the explanation.",
-            reasoning_trace: "Checking the calculation steps.",
-            answer_formatter: "Polishing the narrative.",
-          };
-          const prefix = stage ? stageMap[stage] || "" : "";
-          if (prefix && summary) return `${prefix} ${summary}`;
-          if (prefix) return prefix;
-          if (summary) return summary;
-          return "Working through the answer.";
-        }
-        default:
-          return null;
-      }
-    };
-
-    const handleStreamEvent = (eventType: string, payload: StreamEventPayload) => {
-      switch (eventType) {
-        case "start":
-          enqueueProgress("Thinking…");
-          break;
-        case "entities": {
-          const friendly =
-            toFriendly(eventType, payload) ||
-            "Reviewing which companies and metrics to focus on.";
-          enqueueProgress(friendly);
-          break;
-        }
-        case "sql_preview":
-          enqueueProgress(
-            toFriendly(eventType, payload) ||
-              "Choosing the best way to calculate this over your timeframe."
-          );
-          break;
-        case "execution":
-          enqueueProgress(
-            toFriendly(eventType, payload) ||
-              "Running the data query and crunching the numbers."
-          );
-          break;
-        case "reasoning":
-          {
-            const friendly =
-              toFriendly(eventType, payload) || "Working through the answer.";
-            enqueueProgress(friendly);
-          }
-          break;
-        case "final":
-          setProgressQueue([]);
-          applyFinal(payload);
-          setLoading(false);
-          stopPump();
-          break;
-        case "error":
-          setProgressQueue([]);
-          applyError(payload.error || "Streaming error");
-          setLoading(false);
-          stopPump();
-          break;
-        default:
-          break;
-      }
-    };
-
     try {
-      const response = await fetch("/api/query/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          question: trimmedQuestion,
-          history: historyPayload,
-          include_formatted_answer: true,
-        }),
+      const answer = await runQuery({
+        question: trimmedQuestion,
+        history: historyPayload,
+        include_formatted_answer: true,
       });
-
-      if (!response.ok) {
-        const errorPayload = (await response.json().catch(() => null)) as
-          | { detail?: string }
-          | null;
-        throw new Error(
-          errorPayload?.detail ||
-            `API error (${response.status} ${response.statusText})`,
-        );
+      applyAnswer(answer);
+    } catch (error) {
+      if (error instanceof QueryClientError) {
+        applyError(error.message, error.requestId);
+      } else if (error instanceof Error) {
+        applyError(error.message);
+      } else {
+        applyError("Unexpected error while calling the API.");
       }
-
-      if (!response.body) {
-        throw new Error("No response body received from stream.");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop() ?? "";
-
-        for (const part of parts) {
-          const lines = part.split("\n");
-          let eventType = "message";
-          const dataLines: string[] = [];
-
-          for (const line of lines) {
-            if (line.startsWith("event:")) {
-              eventType = line.replace("event:", "").trim();
-            } else if (line.startsWith("data:")) {
-              dataLines.push(line.replace("data:", "").trim());
-            }
-          }
-
-          const dataStr = dataLines.join("\n");
-          if (!dataStr) continue;
-
-          try {
-            const payload = JSON.parse(dataStr) as StreamEventPayload;
-            handleStreamEvent(eventType, payload);
-          } catch (parseError) {
-            console.error("[ui] stream parse error", parseError);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("[ui] error", err);
-      const errorText =
-        err instanceof Error
-          ? err.message
-          : "Unable to reach the API. Please confirm the backend is running.";
-      applyError(errorText);
     } finally {
-      stopPump();
       setLoading(false);
     }
   };
 
-  const handleTextareaChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
+  const handleTextareaChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setQuestion(event.target.value);
     // Auto-resize textarea
     event.target.style.height = "auto";
@@ -494,6 +256,31 @@ function App() {
     setMessages([]);
     setQuestion("");
   };
+
+  const healthLabel =
+    health.status === "ok"
+      ? "API & LLM available"
+      : health.status === "degraded"
+        ? "LLM degraded"
+        : health.status === "offline"
+          ? "API unreachable"
+          : "Checking API";
+  const healthBadgeClass =
+    health.status === "ok"
+      ? "bg-emerald-500/20 text-emerald-300"
+      : health.status === "degraded"
+        ? "bg-amber-500/20 text-amber-200"
+        : health.status === "offline"
+          ? "bg-red-500/20 text-red-300"
+          : "bg-slate-700/40 text-slate-300";
+  const healthDotClass =
+    health.status === "ok"
+      ? "bg-emerald-400"
+      : health.status === "degraded"
+        ? "bg-amber-400"
+        : health.status === "offline"
+          ? "bg-red-400"
+          : "bg-slate-400";
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-slate-100">
@@ -698,18 +485,19 @@ function App() {
             </div>
             <div className="flex items-center gap-2">
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-                  apiConnected
-                    ? "bg-emerald-500/20 text-emerald-300"
-                    : "bg-red-500/20 text-red-300"
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${healthBadgeClass}`}
               >
                 <div
-                  className={`w-2 h-2 rounded-full ${
-                    apiConnected ? "bg-emerald-400" : "bg-red-400"
-                  }`}
+                  className={`w-2 h-2 rounded-full ${healthDotClass}`}
                 />
-                {apiConnected ? "API Connected" : "API Disconnected"}
+                <div className="flex flex-col">
+                  <span>{healthLabel}</span>
+                  {health.message && (
+                    <span className="text-[10px] text-slate-300">
+                      {health.message}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -748,7 +536,7 @@ function App() {
             <div className="space-y-6 max-w-4xl mx-auto">
               {messages.map((message) => {
                 const presentation = message.metadata?.presentation;
-                const reasoningTrace = message.metadata?.reasoning_trace;
+                const reasoningTrace = message.metadata?.reasoningTrace;
                 const narrative = presentation?.narrative ?? message.content;
                 const highlights = presentation?.highlights ?? [];
                 const table = presentation?.table ?? null;
@@ -758,24 +546,30 @@ function App() {
                       ? table.columns
                       : Object.keys(table.rows[0] as Record<string, unknown>)
                     : [];
-                const formatterWarnings = presentation?.warnings ?? [];
+                const formatterWarnings =
+                  message.metadata?.warnings ?? presentation?.warnings ?? [];
                 const durationSeconds =
-                  typeof message.metadata?.total_time_seconds === "number"
-                    ? (message.metadata.total_time_seconds as number)
+                  typeof message.metadata?.totalTimeSeconds === "number"
+                    ? (message.metadata.totalTimeSeconds as number)
                     : null;
                 const rowCount =
-                  typeof message.metadata?.row_count === "number"
-                    ? (message.metadata.row_count as number)
+                  typeof message.metadata?.rowCount === "number"
+                    ? (message.metadata.rowCount as number)
                     : null;
+                const requestId = message.metadata?.requestId;
+                const isLoading = message.status === "loading";
+                const isError =
+                  message.status === "error" || Boolean(message.metadata?.error);
                 const sqlExpanded = Boolean(sqlPanelOpen[message.id]);
                 const sqlHint =
-                  message.metadata?.sql_hint ||
+                  message.metadata?.sqlHint ||
                   reasoningTrace?.summary ||
                   "View generated SQL";
+                const sqlValue = message.metadata?.sql;
 
                 return (
                   <div key={message.id}>
-                    {message.type === "user" ? (
+                    {message.role === "user" ? (
                       <div className="flex justify-end">
                         <div className="max-w-3xl">
                           <div className="bg-gradient-to-r from-chat-user-from to-chat-user-to rounded-2xl px-6 py-4 shadow-lg">
@@ -797,7 +591,7 @@ function App() {
                         </div>
                         <div className="flex-1 max-w-3xl">
                           <div className="bg-[#1e293b] rounded-2xl px-6 py-4 shadow-lg border border-slate-700/50">
-                            {message.metadata?.streaming ? (
+                            {isLoading ? (
                               <div className="space-y-2">
                                 <h3 className="text-slate-300 font-semibold">
                                   Thinking…
@@ -817,6 +611,20 @@ function App() {
                                     {narrative}
                                   </p>
                                 </div>
+                              </div>
+                            )}
+
+                            {isError && (
+                              <div className="mb-4 rounded-lg border border-rose-700 bg-rose-900/30 px-4 py-3 text-sm text-rose-100">
+                                <p className="font-semibold">We couldn’t finish this answer.</p>
+                                <p className="text-rose-50">
+                                  {message.metadata?.error || message.content}
+                                </p>
+                                {requestId && (
+                                  <p className="text-xs text-rose-100/80 mt-1">
+                                    Request ID: {requestId}
+                                  </p>
+                                )}
                               </div>
                             )}
 
@@ -903,7 +711,7 @@ function App() {
                               </div>
                             )}
 
-                            {message.metadata?.sql && (
+                            {(sqlValue || reasoningTrace) && (
                               <div className="mt-4 border border-slate-700 rounded-xl overflow-hidden">
                                 <button
                                   type="button"
@@ -978,9 +786,15 @@ function App() {
                                           )}
                                       </div>
                                     )}
-                                    <pre className="bg-[#0a0a0a] rounded-lg p-4 text-xs text-slate-300 overflow-x-auto border border-slate-800">
-                                      <code>{message.metadata.sql}</code>
-                                    </pre>
+                                    {sqlValue ? (
+                                      <pre className="bg-[#0a0a0a] rounded-lg p-4 text-xs text-slate-300 overflow-x-auto border border-slate-800">
+                                        <code>{sqlValue}</code>
+                                      </pre>
+                                    ) : (
+                                      <p className="text-xs text-slate-400">
+                                        SQL not returned for this answer.
+                                      </p>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1007,8 +821,11 @@ function App() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs text-slate-500 mt-2">
-                            {message.timestamp}
+                          <div className="text-xs text-slate-500 mt-2 space-y-1">
+                            <p>{message.timestamp}</p>
+                            {requestId && (
+                              <p className="text-slate-500">Request ID: {requestId}</p>
+                            )}
                           </div>
                         </div>
                       </div>
