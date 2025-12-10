@@ -1,12 +1,21 @@
 WITH provided_companies AS (
-    SELECT *
-    FROM (VALUES {company_values}) AS t(company_name)
+    SELECT * FROM (VALUES {company_values}) AS t(company_name)
 ),
 company_dim AS (
     SELECT DISTINCT c.cik, pc.company_name AS display_name
     FROM companies c
-    JOIN provided_companies pc
-      ON UPPER(c.name) = UPPER(pc.company_name)
+    JOIN provided_companies pc ON UPPER(c.name) = UPPER(pc.company_name)
+),
+sector_companies AS (
+    SELECT cik, name AS display_name
+    FROM companies
+    WHERE {use_sector_filter} = 1
+      AND ('{sector}' = 'ALL' OR UPPER(gics_sector) = UPPER('{sector}'))
+),
+cohort AS (
+    SELECT cik, display_name FROM company_dim
+    UNION
+    SELECT cik, display_name FROM sector_companies
 ),
 ranked_filings AS (
     SELECT
@@ -17,7 +26,7 @@ ranked_filings AS (
         s.filed,
         ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
     FROM sub s
-    JOIN company_dim cd USING (cik)
+    JOIN cohort cd USING (cik)
     WHERE s.form IN ('10-K','10-K/A')
       AND s.fy BETWEEN {start_year} AND {end_year}
 ),
@@ -78,12 +87,12 @@ metrics AS (
         CASE
             WHEN operating_income IS NULL OR depreciation IS NULL THEN NULL
             WHEN (operating_income + COALESCE(depreciation, 0)) <= 0 THEN NULL
-            WHEN ABS(operating_income + COALESCE(depreciation, 0)) < 100000000 THEN NULL
+            WHEN (operating_income + COALESCE(depreciation, 0)) < {min_ebitda} THEN NULL
             ELSE (COALESCE(long_term_debt, 0) + COALESCE(short_term_debt, 0) - COALESCE(cash, 0)) /
                  (operating_income + COALESCE(depreciation, 0))
         END AS net_debt_to_ebitda
     FROM annual_values av
-    JOIN company_dim cd USING (cik)
+    JOIN cohort cd USING (cik)
 )
 SELECT
     company,
@@ -92,4 +101,6 @@ SELECT
     ROUND(ebitda / 1000000000.0, 2) AS ebitda_billions,
     ROUND(net_debt_to_ebitda, 2) AS net_debt_to_ebitda
 FROM metrics
-ORDER BY company, fiscal_year;
+WHERE net_debt_to_ebitda IS NOT NULL
+ORDER BY net_debt_to_ebitda ASC, company, fiscal_year
+LIMIT {limit};

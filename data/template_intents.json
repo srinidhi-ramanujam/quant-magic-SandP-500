@@ -733,7 +733,11 @@
     ],
     "metadata": {
       "parameters": [
-        "sector"
+        "sector",
+        "start_year",
+        "end_year",
+        "min_reduction",
+        "limit"
       ],
       "intent_category": "leverage"
     }
@@ -1345,7 +1349,11 @@
       "parameters": [
         "company_values",
         "start_year",
-        "end_year"
+        "end_year",
+        "use_sector_filter",
+        "sector",
+        "min_ebitda",
+        "limit"
       ],
       "intent_category": "time_series_leverage"
     }
@@ -1407,7 +1415,10 @@
     ],
     "metadata": {
       "parameters": [
-        "sector"
+        "sector",
+        "start_year",
+        "end_year",
+        "limit"
       ],
       "intent_category": "time_series_profitability"
     }

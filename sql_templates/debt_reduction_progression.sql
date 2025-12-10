@@ -5,7 +5,7 @@ WITH company_dim AS (
         gics_sector,
         REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name
     FROM companies
-    WHERE (UPPER('{sector}') = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%{sector}%'))
+    WHERE ('{sector}' = 'ALL' OR LOWER(gics_sector) LIKE LOWER('%{sector}%'))
 ),
 annual_filings AS (
     SELECT
@@ -17,7 +17,7 @@ annual_filings AS (
     FROM sub s
     JOIN company_dim cd USING (cik)
     WHERE s.form IN ('10-K','10-K/A')
-      AND s.fy BETWEEN 2021 AND 2023
+      AND s.fy BETWEEN {start_year} AND {end_year}
 ),
 latest AS (
     SELECT * FROM annual_filings WHERE rn = 1
@@ -83,34 +83,29 @@ total_debt AS (
 ranked AS (
     SELECT
         cik,
-        MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021,
-        MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022,
-        MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023
+        MAX(CASE WHEN fiscal_year = {start_year} THEN total_debt END) AS debt_start,
+        MAX(CASE WHEN fiscal_year = {end_year} THEN total_debt END) AS debt_end
     FROM total_debt
     GROUP BY cik
-    HAVING COUNT(DISTINCT fiscal_year) = 3
+    HAVING COUNT(DISTINCT CASE WHEN fiscal_year IN ({start_year}, {end_year}) THEN fiscal_year END) = 2
 ),
 joined AS (
     SELECT
-        cd.canonical_name,
         ANY_VALUE(cd.name) AS display_name,
         ANY_VALUE(cd.gics_sector) AS gics_sector,
-        MIN(r.debt_2021) AS debt_2021,
-        MIN(r.debt_2022) AS debt_2022,
-        MIN(r.debt_2023) AS debt_2023,
-        MIN(r.debt_2021 - r.debt_2023) AS debt_reduction
+        MIN(r.debt_start) AS debt_start,
+        MIN(r.debt_end) AS debt_end,
+        MIN(r.debt_start - r.debt_end) AS debt_reduction
     FROM ranked r
     JOIN company_dim cd USING (cik)
-    GROUP BY cd.canonical_name
 )
 SELECT
     display_name AS name,
     gics_sector,
-    ROUND(debt_2021 / 1000000000, 2) AS debt_2021_billions,
-    ROUND(debt_2022 / 1000000000, 2) AS debt_2022_billions,
-    ROUND(debt_2023 / 1000000000, 2) AS debt_2023_billions,
+    ROUND(debt_start / 1000000000, 2) AS debt_{start_year}_billions,
+    ROUND(debt_end / 1000000000, 2) AS debt_{end_year}_billions,
     ROUND(debt_reduction / 1000000000, 2) AS debt_reduction_billions
 FROM joined
-WHERE debt_reduction > 0
-ORDER BY debt_reduction DESC
-LIMIT 5;
+WHERE debt_reduction >= {min_reduction}
+ORDER BY debt_reduction DESC, name
+LIMIT {limit};

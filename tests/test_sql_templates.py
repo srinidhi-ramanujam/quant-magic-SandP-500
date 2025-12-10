@@ -132,6 +132,28 @@ TEMPLATE_CASES = {
         "max_abs_roe": "200",
         "result_limit": "200",
     },
+    "net_debt_to_ebitda_trend": {
+        "company_values": "('APPLE INC'),('MICROSOFT CORP')",
+        "start_year": "2020",
+        "end_year": "2023",
+        "use_sector_filter": "0",
+        "sector": "ALL",
+        "min_ebitda": "100000000",
+        "limit": "5",
+    },
+    "debt_reduction_progression": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2023",
+        "min_reduction": "0",
+        "limit": "5",
+    },
+    "profit_margin_consistency_trend": {
+        "sector": "Information Technology",
+        "start_year": "2019",
+        "end_year": "2023",
+        "limit": "5",
+    },
     "energy_roe_threshold_detector": {
         "sector": "Energy",
         "start_year": "2020",
