@@ -232,7 +232,18 @@ def normalize_company_name(company_name: str) -> str:
 QUESTION_TYPES = {
     "count": ["how many", "count", "number of"],
     "lookup": ["what is", "what are", "get", "find", "show me"],
-    "comparison": ["compare", "versus", "vs", "difference between"],
+    "comparison": [
+        "compare",
+        "compared to",
+        "versus",
+        "vs",
+        "vs.",
+        "difference between",
+        "relative to",
+        "against",
+        "spread",
+        "gap",
+    ],
     "trend": ["trend", "over time", "growth", "change"],
 }
 
@@ -798,6 +809,7 @@ class EntityExtractor:
     def _extract_time_periods(self, question: str) -> List[str]:
         """Extract time periods from question."""
         periods = []
+        question_lower = question.lower()
 
         # Pattern 1: Year (YYYY)
         year_pattern = r"\b(20\d{2}|19\d{2})\b"
@@ -813,6 +825,25 @@ class EntityExtractor:
         fy_pattern = r"\b(FY\s*20\d{2})\b"
         fiscal_years = re.findall(fy_pattern, question, re.IGNORECASE)
         periods.extend([fy.replace(" ", "") for fy in fiscal_years])
+
+        # Pattern 4: Relative quarters/years (last/past N quarters/years)
+        trailing_quarters = re.findall(
+            r"(?:last|past|previous)\s+(\d+)\s+quarters?", question_lower
+        )
+        periods.extend([f"last_{n}_quarters" for n in trailing_quarters])
+
+        trailing_years = re.findall(
+            r"(?:last|past|previous)\s+(\d+)\s+years?", question_lower
+        )
+        periods.extend([f"last_{n}_years" for n in trailing_years])
+
+        if "trailing twelve months" in question_lower or "ttm" in question_lower:
+            periods.append("TTM")
+
+        if "post-covid" in question_lower or "post covid" in question_lower:
+            periods.append("post_covid")
+        if "pre-covid" in question_lower or "pre covid" in question_lower:
+            periods.append("pre_covid")
 
         return list(set(periods))
 

@@ -129,3 +129,17 @@ def test_filters_noise_company_tokens(deterministic_extractor):
     )
     entities_retail = extractor.extract(question_retail, context_retail)
     assert "WHICH RETAIL" not in entities_retail.companies
+
+
+def test_extract_relative_time_phrases(deterministic_extractor):
+    """Ensure relative fiscal phrasing is captured for routing."""
+    extractor = deterministic_extractor
+    context = create_request_context("relative-periods")
+
+    question = (
+        "Which Technology names rebounded post-COVID with better margins over the last 4 quarters?"
+    )
+    entities = extractor.extract(question, context)
+
+    assert any(tp.lower().startswith("last_4_quarters") for tp in entities.time_periods)
+    assert any(tp.lower() == "post_covid" for tp in entities.time_periods)

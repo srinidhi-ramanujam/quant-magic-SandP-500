@@ -1863,5 +1863,180 @@
       ],
       "intent_category": "liquidity"
     }
+  },
+  {
+    "template_id": "operating_margin_rebound_sector",
+    "intent_text": "Identify post-COVID operating margin rebound by sector with revenue floors.",
+    "pattern": "(?i)(operating margin).*(rebound|recovery|post[- ]covid|pre[- ]covid)",
+    "example_questions": [
+      "Which companies show an operating margin rebound post-COVID versus pre-COVID within Technology?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_revenue",
+        "min_improvement_pp",
+        "limit"
+      ],
+      "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "capital_allocation_spike_screen",
+    "intent_text": "Screen for outsized acquisition spend or capex-to-revenue spikes.",
+    "pattern": "(?i)(acquisition|m&a|capex).*(spike|threshold|screen|over)",
+    "example_questions": [
+      "Flag companies with acquisition spending above $5B or capex/revenue spikes in Industrials since 2021."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "acquisition_threshold",
+        "capex_to_revenue_threshold",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "leverage_coverage_comparison",
+    "intent_text": "Compare debt-to-equity and interest coverage across two sectors.",
+    "pattern": "(?i)(debt[- ]to[- ]equity|leverage).*(interest coverage|coverage).*(compare|across)",
+    "example_questions": [
+      "Compare interest coverage and debt-to-equity for Utilities vs Energy in FY2023."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector_a",
+        "sector_b",
+        "fiscal_year",
+        "min_revenue",
+        "min_interest_coverage",
+        "max_debt_to_equity",
+        "limit"
+      ],
+      "intent_category": "leverage"
+    }
+  },
+  {
+    "template_id": "fcf_quality_screen",
+    "intent_text": "Screen CFO vs net income to assess free cash flow quality.",
+    "pattern": "(?i)(cfo|cash flow from operations|free cash flow).*(quality|vs net income|earnings quality)",
+    "example_questions": [
+      "Which Health Care companies have consistent CFO to net income ratios between 2020 and 2024?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_years",
+        "min_net_income",
+        "min_cfo",
+        "max_ratio",
+        "limit"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "payout_ratio_leaderboard",
+    "intent_text": "Rank dividends plus buybacks relative to operating cash flow.",
+    "pattern": "(?i)(dividend|buyback).*(payout ratio|shareholder return|return of capital)",
+    "example_questions": [
+      "Top payout ratios (dividends + buybacks vs CFO) in Consumer Staples since 2021?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_cfo",
+        "max_payout_ratio",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "gross_margin_sector_spread",
+    "intent_text": "Show gross-margin spreads between two sectors over multiple years.",
+    "pattern": "(?i)(gross margin).*(spread|gap|difference).*(sector|industry)",
+    "example_questions": [
+      "Gross margin gap between Technology and Consumer Discretionary from 2019-2024."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector_a",
+        "sector_b",
+        "start_year",
+        "end_year"
+      ],
+      "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "working_capital_efficiency_compare",
+    "intent_text": "Compare DSO, DIO, DPO, and working-capital days across two sectors.",
+    "pattern": "(?i)(dso|dio|dpo|working capital).*(compare|across).*(sector|industry)",
+    "example_questions": [
+      "Compare DSO/DIO/DPO between Technology and Industrials for 2021-2024."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector_a",
+        "sector_b",
+        "start_year",
+        "end_year"
+      ],
+      "intent_category": "working_capital"
+    }
+  },
+  {
+    "template_id": "capex_intensity_rank",
+    "intent_text": "Rank companies by capex-to-revenue intensity with SIC filters.",
+    "pattern": "(?i)(capex intensity|capital intensity).*(rank|within sector)",
+    "example_questions": [
+      "Rank Industrials capex intensity with revenue floors and SIC filters."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_revenue",
+        "sic_filter_enabled",
+        "sic_min",
+        "sic_max",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "growth_profitability_quadrant",
+    "intent_text": "Surface high-growth, high-margin names using quadrant cutoffs.",
+    "pattern": "(?i)(high growth|growth).*(high margin|profitability).*(quadrant|screen|top)",
+    "example_questions": [
+      "Top growth vs profitability quadrant names in Technology with 15%+ CAGR and 20%+ margins."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_revenue",
+        "growth_threshold_pct",
+        "margin_threshold_pct",
+        "limit"
+      ],
+      "intent_category": "profitability"
+    }
   }
 ]

@@ -159,7 +159,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 25000
+      "max_response_time_ms": 25000,
+      "template_id": "roe_revenue_divergence"
     },
     {
       "id": "MA_002",
@@ -398,7 +399,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "growth_profitability_quadrant"
     },
     {
       "id": "MA_009",
@@ -655,7 +657,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 35000
+      "max_response_time_ms": 35000,
+      "template_id": "leverage_coverage_comparison"
     },
     {
       "id": "MA_016",
@@ -738,7 +741,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 30000
+      "max_response_time_ms": 30000,
+      "template_id": "working_capital_efficiency_compare"
     },
     {
       "id": "MA_018",
@@ -887,7 +891,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 35000
+      "max_response_time_ms": 35000,
+      "template_id": "operating_margin_rebound_sector"
     },
     {
       "id": "MA_022",
@@ -916,7 +921,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "capex_intensity_rank"
     },
     {
       "id": "MA_023",
@@ -945,7 +951,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "fcf_quality_screen"
     },
     {
       "id": "MA_024",
@@ -1183,7 +1190,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "working_capital_efficiency_compare"
     },
     {
       "id": "MA_031",
@@ -1523,7 +1531,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "payout_ratio_leaderboard"
     },
     {
       "id": "MA_040",
@@ -1604,7 +1613,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "capex_intensity_rank"
     },
     {
       "id": "MA_042",
@@ -2513,7 +2523,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "capital_allocation_spike_screen"
     },
     {
       "id": "MA_049_NEW",

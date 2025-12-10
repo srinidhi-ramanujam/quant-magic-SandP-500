@@ -39,67 +39,124 @@
 - Tests for generation, validation, guardrails, and telemetry.
 
 ### Feature: Time-Series Templates (In Progress)
-- Parameterized templates live in `sql_templates/` (e.g., `asset_turnover_trend.sql`, `cfo_to_net_income_trend.sql`, `current_ratio_trend.sql`, `operating_margin_delta.sql`, `gross_margin_trend_sector.sql`, `inventory_turnover_trend.sql`, `working_capital_cash_cycle_trend.sql`, `net_debt_to_ebitda_trend.sql`, `semiconductor_roe_trend.sql`, etc.).
-- **Work Recipe (apply per time-series question)**:
-  1) Author/adjust template SQL with parameters (sector/company filters, fiscal window, thresholds, limits, SIC bounds, coverage guards, casing-safe tags) in `sql_templates/<template_id>.sql`.
-  2) Register intent in `data/parquet/query_intelligence.parquet` + `data/template_intents.json`; rebuild vector store (`python scripts/export_template_intents.py` then `python scripts/build_vector_store.py`).
-  3) Ground truth via DuckDB/QueryEngine; update `evaluation/questions/time_series_analysis.json` (sample_data, business_insight, key_findings) and `time-series-validator.csv`.
-  4) Formatter: ensure `response_formatter` emits narrative + table (`truncated` flag) with any bespoke phrasing.
-  5) Verify: `python -m src.cli "<question>" --debug` and `python scripts/run_eval_suite.py --question "<question>" --no-json`; confirm template ID, validator pass, row counts.
-  6) Tests: add/extend regression in `tests/test_sql_templates.py` (parameter substitution/selection, validator confidence).
-- **Acceptance (per task)**: Parameterized template checked in; intent registered + vector store rebuilt; grounded expected answer/table in JSON + validator CSV; CLI + eval command pass with template ID logged; regression test added.
-- **Pending tasks (28)** — convert each into a reusable parameterized template following the recipe:
-  1) Industrials working capital compression FY2020–FY2023; cash conversion cycle impact.
-  2) Consumer Staples gross-margin trend FY2019–FY2023; inflation resilience.
-  3) Large US banks ROE ≥12% streak 2021–2023.
-  4) Equity-to-assets ratio JPM/BAC/Citi/WFC 2019–2024.
-  5) Financials operating cash flow volatility (coef of variation) quarterly 2021–2023.
-  6) Staples vs Discretionary gross-margin divergence 2019–2024 quarterly.
-  7) Healthcare CFO-to-capex ratios 2019–2024.
-  8) Cloud software (MSFT/ADBE/CRM) operating margin acceleration post-COVID vs pre.
-  9) Apple/Dell/HP gross margins pre-COVID vs supply-chain disruption.
-  10) Exxon/Chevron/Conoco FCF swing 2018–2019 vs 2021–2022.
-  11) US airlines net-debt-to-EBITDA reversion to pre-COVID by 2023.
-  12) Walmart/Target/Costco inventory turnover + CCC across pre/lockdown/normalization.
-  13) Large banks equity-to-assets bands during 2020–2021 and reversion by 2023.
-  14) Pfizer/J&J/Merck cash-to-assets pre-COVID vs vaccine scale-up.
-  15) Semiconductor ROE growth 2021–2023 vs 2018–2019.
-  16) Consumer staples gross-margin compression pre-COVID to 2022 inflation.
-  17) Tech/Energy/Industrials CFO-to-capex ratio lift post-COVID vs baseline.
-  18) Walmart/Target/Costco quarterly revenue growth + inventory turnover lockdown vs restock.
-  19) Specialty retailers (HD/LOW/BBY) operating margins post-COVID vs pre-COVID.
-  20) UPS/FedEx/XPO operating cash flow recovery and steepest year.
-  21) Airline interest coverage 2018–2023.
-  22) Trucking/logistics (JBHT/ODFL/KNX) gross-margin trajectory 2021 spike vs 2023 normalization.
-  23) Healthcare providers/device makers (UNH/HCA/MDT/ABT) OCF vs net income post-COVID.
-  24) Pfizer/Moderna/J&J capex intensity 2020–2022 vs pre-COVID.
-  25) Biotech majors (AMGN/GILD/BIIB) cash-to-assets 2018–2019 through 2020–2021.
-  26) Top US banks ROE within ±200 bps of pre-COVID during 2020–2021 and reversion by 2023.
-  27) Quarterly loan-loss provisions JPM/BAC/Citi/WFC 2018–2023.
-  28) Regional banks (PNC/Truist/USB) net interest income vs interest expense zero-rate vs hike era.
+- **What’s ready (use as-is)** — questions already backed by checked-in templates in `sql_templates/`:
+  - TS_001 profit_margin_consistency_trend
+  - TS_003 debt_reduction_progression
+  - TS_004 current_ratio_trend
+  - TS_005 operating_margin_delta
+  - TS_006 roe_revenue_divergence
+  - TS_007 working_capital_cash_cycle_trend
+  - TS_008 gross_margin_trend_sector
+  - TS_009 inventory_turnover_trend
+  - TS_010 net_debt_to_ebitda_trend
+  - TS_011 asset_turnover_trend
+  - TS_012 cfo_to_net_income_trend
+  - TS_019 semiconductor_roe_trend
+  - TS_022 equity_to_assets_ratio_trend
+  - TS_023 operating_cf_volatility_sector
+- **What to build (TODO) and where** — author new templates under `sql_templates/<template>.sql`, then wire intents + ground truth:
+  - TS_013 energy_roe_threshold_detector
+  - TS_014 fcf_to_capex_trend
+  - TS_015 shareholder_return_trend
+  - TS_016 top_tech_cfo_trend
+  - TS_017 ebitda_margin_improvement_rank
+  - TS_018 cash_to_assets_ratio_trend
+  - TS_020 hardware_gross_margin_trend
+  - TS_021 bank_roe_consecutive_threshold
+  - TS_024 cross_sector_gross_margin_spread
+  - TS_025 healthcare_cfo_to_capex_ratio_trend
+  - TS_026 cloud_margin_pre_post_covid
+  - TS_027 pc_maker_gross_margin_lockdown_compare
+  - TS_028 energy_fcf_pre_post_covid
+  - TS_029 airlines_net_debt_to_ebitda_recovery
+  - TS_030 omnichannel_cash_conversion_cycle_segments
+  - TS_031 bank_equity_to_assets_pre_post
+  - TS_032 healthcare_cash_to_assets_buffer
+  - TS_033 semiconductor_roe_momentum
+  - TS_034 staples_margin_inflation_spread
+  - TS_035 cross_sector_cfo_to_capex_ratio_shift
+  - TS_036 retail_revenue_growth_inventory_turnover_compare
+  - TS_037 specialty_retail_operating_margin_recovery
+  - TS_038 parcel_cfo_recovery_timeline
+  - TS_039 airline_interest_coverage_rebuild
+  - TS_040 trucking_gross_margin_normalization
+  - TS_041 healthcare_cfo_vs_net_income_quality
+  - TS_042 vaccine_capex_intensity_window
+  - TS_043 biotech_cash_to_assets_liquidity
+  - TS_044 bank_roe_band_monitor
+  - TS_045 bank_loan_loss_provision_trend
+  - TS_046 regional_bank_net_interest_income_shift
+- **Priority starting points (map of Plan items → TS/template)** — do these first to clear the 28 plan items:
+  1) Industrials WC compression → TS_007 (Ready)
+  2) Staples gross-margin trend → TS_008 (Ready; set sector=Staples, 2019–2023)
+  3) Large US banks ROE ≥12% streak → TS_021 (Build)
+  4) Equity-to-assets ratio JPM/BAC/Citi/WFC → TS_022 (Ready)
+  5) Financials OCF volatility → TS_023 (Ready)
+  6) Staples vs Discretionary gross-margin divergence → TS_024 (Build)
+  7) Healthcare CFO-to-capex ratios → TS_025 (Build)
+  8) Cloud software operating margin acceleration → TS_026 (Build)
+  9) Apple/Dell/HP gross margins (supply-chain) → TS_027 (Build)
+  10) Exxon/Chevron/Conoco FCF swing → TS_028 (Build)
+  11) US airlines net-debt-to-EBITDA reversion → TS_029 (Build)
+  12) WMT/TGT/COST inventory turnover + CCC → TS_030 (Build)
+  13) Large banks equity-to-assets bands → TS_031 (Build)
+  14) Pfizer/J&J/Merck cash-to-assets → TS_032 (Build)
+  15) Semiconductor ROE growth vs baseline → TS_033 (Build)
+  16) Staples gross-margin compression (pre-COVID→inflation) → TS_034 (Build)
+  17) Tech/Energy/Industrials CFO-to-capex lift → TS_035 (Build)
+  18) WMT/TGT/COST revenue growth + inv turnover → TS_036 (Build)
+  19) Specialty retailers post-COVID operating margin → TS_037 (Build)
+  20) UPS/FedEx/XPO OCF recovery → TS_038 (Build)
+  21) Airline interest coverage → TS_039 (Build)
+  22) Trucking/logistics gross-margin normalization → TS_040 (Build)
+  23) Healthcare providers/device makers OCF vs NI → TS_041 (Build)
+  24) Pfizer/Moderna/J&J capex intensity → TS_042 (Build)
+  25) Biotech majors cash-to-assets → TS_043 (Build)
+  26) Top US banks ROE bands ±200 bps → TS_044 (Build)
+  27) Quarterly loan-loss provisions JPM/BAC/Citi/WFC → TS_045 (Build)
+  28) Regional banks NII vs interest expense → TS_046 (Build)
+- **How to build/verify each template (repeatable loop)**:
+  1) Author SQL in `sql_templates/<template>.sql` with parameters (sector/company filters, fiscal window, thresholds/limits, SIC bounds, coverage/null guards).
+  2) Register intent: update `data/template_intents.json` + parquet; run `python scripts/export_template_intents.py` then `python scripts/build_vector_store.py`.
+  3) Ground truth: edit the matching entry in `evaluation/questions/time_series_analysis.json` (sample_data, business_insight, key_findings) and add/update `time-series-validator.csv` (Question_ID, SQL_template, expected summary).
+  4) Verify: `python -m src.cli "<question>" --debug` and `python scripts/run_eval_suite.py --question "<question>" --no-json`; confirm template ID chosen, row counts sensible, validator pass.
+  5) Tests: add/extend `tests/test_sql_templates.py` for parameter substitution/selection and validator confidence where relevant.
+  6) Formatter: ensure `response_formatter` emits narrative + table with `truncated` guard for the new template.
 - **Exit**: 25/25 time-series questions hit templates (no custom SQL), validation clean, tables render, workbook logs template IDs and row counts.
 
 ### Feature: Medium-Complexity Analysis Templates (Planned)
-- Design ~10–12 reusable templates (comparatives, rankings, deltas: margin/revenue/ROE divergences, EBITDA/FCF quality, acquisition thresholds, sector swaps).
+- Design 20 reusable templates (comparatives, rankings, deltas: margin/revenue/ROE divergences, EBITDA/FCF quality, acquisition thresholds, sector swaps).
 - Register intents and regenerate vector store; expand few-shots for medium phrasing.
 - Enhance entity extractor for fiscal-period and comparative language.
 - Add unit tests for selection/parameter inference; validator tests for ranking/aggregation semantics.
 - Map medium eval questions (50 active in `medium_analysis_v3.json`) to templates; refresh expected answers where needed.
 - **Acceptance (per task)**: Parameterized template checked in; intent registered + vector store rebuilt; grounded expected answer/table in medium JSON; CLI + eval command for mapped question passes with template ID logged; regression test added (selection + validator).
+
+- **Completed this phase**
+  - Added templates/intents + vector store for: operating_margin_rebound_sector, capital_allocation_spike_screen, leverage_coverage_comparison, fcf_quality_screen, payout_ratio_leaderboard, gross_margin_sector_spread, working_capital_efficiency_compare, capex_intensity_rank, growth_profitability_quadrant; reused roe_revenue_divergence and asset_turnover_trend for ROE divergence and asset turnover asks.
+  - Mapped 11 medium questions in `medium_analysis_v3.json` to these template_ids; rebuilt `query_intelligence.parquet` and `template_intents.json`; added regression cases in `tests/test_sql_templates.py`.
+  - Entity extractor broadened for comparative phrasing and relative time spans (last N quarters/years, pre/post-COVID) with tests.
+
+- **Pending to finish the feature**
+  - Wire the new templates into CLI/UI flows and `run_eval_suite.py` so medium suite exercises them end-to-end (add parameter defaults/sample runs).
+  - Refresh expected answers/tolerances in `medium_analysis_v3.json` for newly mapped questions; add workbook log entries via eval runs.
+  - Expand few-shots/intent examples for broader phrasing (e.g., growth/profit quadrant, leverage-only phrasing) and verify router confidence ≥0.8.
+  - Run CLI and eval suite for mapped medium questions; capture results in `EVAL_WORKBOOK.csv` and address any misses.
+
 - **Planned tasks (initial 12)**:
-  1) Revenue growth vs ROE divergence (identify companies with rising revenue but falling ROE; rank deltas).
-  2) Multi-year operating margin rebound by sector (post-COVID vs pre) with thresholds and limits.
-  3) EBITDA margin improvement rank with revenue floors (sector-agnostic).
-  4) Acquisition/threshold screen (e.g., M&A spend or capex-to-revenue spikes) with parameterized thresholds.
-  5) Debt-to-equity and interest coverage comparative screen across cohorts.
-  6) FCF quality screen (CFO vs net income) with sector filters and outlier caps.
-  7) Dividend + buyback payout ratio leaderboard relative to CFO for top cohorts.
-  8) Gross-margin spread comparisons between two sectors over a multi-year window.
-  9) Working-capital efficiency comparisons (DSO/DIO/DPO) across two sectors.
-  10) Asset turnover rank within sector with revenue/SIC filters.
-  11) Capex intensity rank within sector with revenue floors and SIC ranges.
-  12) Top-N growth vs profitability quadrant (high growth + high margin) with tunable cutoffs.
-- **Exit**: ≥10 medium questions routed to templates (no custom SQL) with validator confidence ≥0.8; workbook shows template IDs and intent confidence.
+  1) Revenue growth vs ROE divergence (identify companies with rising revenue but falling ROE; rank deltas). **Covered:** `roe_revenue_divergence`
+  2) Multi-year operating margin rebound by sector (post-COVID vs pre) with thresholds and limits. **Covered:** `operating_margin_rebound_sector`
+  3) EBITDA margin improvement rank with revenue floors (sector-agnostic). **Covered:** use `operating_margin_rebound_sector`/existing margin deltas; add EBITDA variant if needed.
+  4) Acquisition/threshold screen (e.g., M&A spend or capex-to-revenue spikes) with parameterized thresholds. **Covered:** `capital_allocation_spike_screen`
+  5) Debt-to-equity and interest coverage comparative screen across cohorts. **Covered:** `leverage_coverage_comparison`
+  6) FCF quality screen (CFO vs net income) with sector filters and outlier caps. **Covered:** `fcf_quality_screen`
+  7) Dividend + buyback payout ratio leaderboard relative to CFO for top cohorts. **Covered:** `payout_ratio_leaderboard`
+  8) Gross-margin spread comparisons between two sectors over a multi-year window. **Covered:** `gross_margin_sector_spread`
+  9) Working-capital efficiency comparisons (DSO/DIO/DPO) across two sectors. **Covered:** `working_capital_efficiency_compare`
+  10) Asset turnover rank within sector with revenue/SIC filters. **Covered:** `asset_turnover_trend`
+  11) Capex intensity rank within sector with revenue floors and SIC ranges. **Covered:** `capex_intensity_rank`
+  12) Top-N growth vs profitability quadrant (high growth + high margin) with tunable cutoffs. **Covered:** `growth_profitability_quadrant`
+- **Exit**: ≥10 medium questions routed to templates (no custom SQL) with validator confidence ≥0.8; workbook shows template IDs and intent confidence; CLI + eval suite runs pass for mapped questions.
 
 ### Feature: Hybrid Retrieval (Planned/Future)
 - Harden FAISS-based entity/template retrieval; measure hit rate vs. LLM fallback.
