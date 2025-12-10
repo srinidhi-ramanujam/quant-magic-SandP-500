@@ -654,13 +654,21 @@ class SQLGenerator:
             defaults["sector"] = "ALL"
 
         if "start_year" in missing_params or "end_year" in missing_params:
-            current_year = datetime.utcnow().year
-            default_end = max(2015, current_year - 2)
-            default_start = default_end - 2
+            default_end = self._latest_fiscal_year()
+            default_start = max(2015, default_end - 2)
             if "start_year" in missing_params:
                 defaults["start_year"] = str(default_start)
             if "end_year" in missing_params:
                 defaults["end_year"] = str(default_end)
+
+        if "end_year" in missing_params:
+            question_lower = getattr(self, "_current_question", "").lower()
+            if (
+                "since" in question_lower
+                or "after" in question_lower
+                or "from" in question_lower
+            ):
+                defaults["end_year"] = str(self._latest_fiscal_year())
 
         if "min_revenue" in missing_params:
             defaults["min_revenue"] = "5000000000"
@@ -757,6 +765,20 @@ class SQLGenerator:
                 defaults["min_years_reported"] = "3"
             if "roe_threshold" in missing_params:
                 defaults["roe_threshold"] = "15"
+
+        if template.template_id == "growth_profitability_quadrant":
+            if "start_year" in missing_params:
+                defaults["start_year"] = str(self._latest_fiscal_year() - 5)
+            if "end_year" in missing_params:
+                defaults["end_year"] = str(self._latest_fiscal_year())
+            if "growth_threshold_pct" in missing_params:
+                defaults["growth_threshold_pct"] = "10"
+            if "margin_threshold_pct" in missing_params:
+                defaults["margin_threshold_pct"] = "15"
+            if "min_revenue" in missing_params:
+                defaults["min_revenue"] = "1000000000"
+            if "limit" in missing_params:
+                defaults["limit"] = "10"
             if "min_equity" in missing_params:
                 defaults["min_equity"] = "100000000"
             if "max_roe_pct" in missing_params:
@@ -783,6 +805,12 @@ class SQLGenerator:
 
         if "min_growth_pct" in missing_params:
             defaults["min_growth_pct"] = "0"
+
+        # Coerce non-numeric year tokens (e.g., "latest") to a numeric fiscal year
+        for year_param in ("start_year", "end_year"):
+            val = params.get(year_param)
+            if val is not None and not str(val).isdigit():
+                params[year_param] = str(self._latest_fiscal_year())
 
         if not defaults:
             return params
@@ -1103,19 +1131,23 @@ class SQLGenerator:
             missing_params = set(template.parameters) - set(params.keys())
             if missing_params:
                 # For asset_turnover_trend, allow sic bounds to default wide when omitted.
-                if template.template_id == "asset_turnover_trend" and missing_params <= {
-                    "sic_min",
-                    "sic_max",
-                }:
+                if (
+                    template.template_id == "asset_turnover_trend"
+                    and missing_params
+                    <= {
+                        "sic_min",
+                        "sic_max",
+                    }
+                ):
                     params.setdefault("sic_min", "0")
                     params.setdefault("sic_max", "9999")
                     missing_params = set(template.parameters) - set(params.keys())
 
             if missing_params:
-                self.logger.error(
-                    f"Still missing parameters after fallback: {missing_params}"
+                self.logger.debug(
+                    "Still missing parameters after entity fill; letting defaults handle: %s",
+                    missing_params,
                 )
-                return None
 
         params = self._apply_default_parameters(
             params, missing_params, template, entities
@@ -1594,9 +1626,19 @@ Return only the SQL query, no explanation.
             elif param in ["start_year", "end_year"] or param.startswith("year_"):
                 years = entities.time_periods
                 numeric_years = []
+                since_anchor = None
+
                 if years:
-                    # Extract numeric years
+                    # Extract numeric years and detect since/after markers
                     for year in years:
+                        lower_year = year.lower()
+                        if lower_year.startswith("since_") and len(lower_year) >= 9:
+                            anchor = lower_year.split("_", 1)[1]
+                            if anchor.isdigit() and len(anchor) == 4:
+                                since_anchor = int(anchor)
+                                numeric_years.append(since_anchor)
+                                continue
+
                         year_clean = "".join(c for c in year if c.isdigit())
                         if len(year_clean) == 4:
                             try:
@@ -1606,28 +1648,41 @@ Return only the SQL query, no explanation.
                 elif year_tokens_in_question:
                     numeric_years = [int(y) for y in year_tokens_in_question]
 
+                # If question says "since <year>" without explicit end, pin end to latest fiscal year
+                since_in_question = (
+                    "since" in question_lower or "after" in question_lower
+                )
+
                 if numeric_years:
+                    start_year_val = min(numeric_years)
+                    end_year_val = max(numeric_years)
+
+                    if since_in_question and len(numeric_years) == 1:
+                        end_year_val = self._latest_fiscal_year()
+
                     if param == "start_year":
-                        inferred[param] = str(min(numeric_years))
+                        inferred[param] = str(start_year_val)
                     elif param == "end_year":
-                        inferred[param] = str(max(numeric_years))
+                        inferred[param] = str(end_year_val)
                     elif param.startswith("year_"):
                         # For year_2, year_3, etc., create a sequence
                         try:
                             year_num = int(param.split("_")[1])
-                            base_years = sorted(numeric_years)
+                            base_years = sorted(
+                                [start_year_val, end_year_val]
+                                if len(numeric_years) == 1
+                                else numeric_years
+                            )
                             if len(base_years) >= 2:
-                                # Interpolate between start and end years
                                 start_year = base_years[0]
                                 end_year = base_years[-1]
                                 if year_num <= len(base_years):
                                     inferred[param] = str(base_years[year_num - 1])
                                 else:
-                                    # Extrapolate
                                     year_span = end_year - start_year
                                     steps = len(base_years) - 1
                                     if steps > 0:
-                                        step_size = year_span // steps
+                                        step_size = max(1, year_span // steps)
                                         inferred[param] = str(
                                             start_year + (year_num - 1) * step_size
                                         )
@@ -1710,6 +1765,11 @@ Return only the SQL query, no explanation.
         self.logger.debug(f"Inferred parameters: {inferred}")
         return inferred
 
+    def _latest_fiscal_year(self) -> int:
+        """Best-effort latest fiscal year available in parquet (buffer one year)."""
+        current_year = datetime.utcnow().year
+        return max(2015, current_year - 1)
+
     def _get_reasonable_default(self, param: str, template_id: str) -> str:
         """Get reasonable default values for threshold parameters."""
         defaults = {
@@ -1726,6 +1786,8 @@ Return only the SQL query, no explanation.
             "max_capex_intensity": "0.5",
             # Percentage thresholds
             "min_improvement_pp": "200",  # 2 percentage points
+            "growth_threshold_pct": "10",
+            "margin_threshold_pct": "15",
             # Scale/value thresholds
             "max_abs_cfo": "10000000000",  # $10B
             "value_scale": "1000000",  # Millions
@@ -1742,6 +1804,47 @@ Return only the SQL query, no explanation.
                 "min_total_return": "1000000000",  # $1B
                 "max_payout_ratio": "2.0",
                 "min_years": "3",
+            },
+            "operating_margin_rebound_sector": {
+                "min_revenue": "1000000000",
+                "min_improvement_pp": "1",
+                "limit": "10",
+            },
+            "capital_allocation_spike_screen": {
+                "acquisition_threshold": "500000000",
+                "capex_to_revenue_threshold": "0.05",
+                "limit": "10",
+            },
+            "leverage_coverage_comparison": {
+                "min_revenue": "1000000000",
+                "min_interest_coverage": "1",
+                "max_debt_to_equity": "5",
+                "limit": "10",
+            },
+            "fcf_quality_screen": {
+                "min_years": "2",
+                "min_net_income": "100000000",
+                "min_cfo": "100000000",
+                "max_ratio": "5",
+                "limit": "10",
+            },
+            "payout_ratio_leaderboard": {
+                "min_cfo": "1000000000",
+                "max_payout_ratio": "3",
+                "limit": "10",
+            },
+            "capex_intensity_rank": {
+                "min_revenue": "1000000000",
+                "sic_filter_enabled": "0",
+                "sic_min": "0",
+                "sic_max": "9999",
+                "limit": "10",
+            },
+            "growth_profitability_quadrant": {
+                "min_revenue": "1000000000",
+                "growth_threshold_pct": "5",
+                "margin_threshold_pct": "5",
+                "limit": "10",
             },
         }
 

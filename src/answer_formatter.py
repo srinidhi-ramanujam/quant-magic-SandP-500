@@ -257,7 +257,9 @@ class AnswerFormatter:
             narrative=base_answer,
             highlights=[],
             table=table,
-            warnings=["Formatter fallback table generated from query results."] if truncated else [],
+            warnings=["Formatter fallback table generated from query results."]
+            if truncated
+            else [],
         )
 
     def _prepare_history(

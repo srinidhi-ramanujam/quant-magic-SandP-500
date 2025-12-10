@@ -38,7 +38,7 @@ from src.cli import FinancialCLI
 EVAL_WORKBOOK = Path("evaluation/EVAL_WORKBOOK.csv")
 EVALUATION_FILES: Dict[str, str] = {
     "simple": "evaluation/questions/simple_lineitem.json",
-    "medium": "evaluation/questions/medium_analysis.json",
+    "medium": "evaluation/questions/medium_analysis_v3.json",
     "time-series": "evaluation/questions/time_series_analysis.json",
 }
 FIELDNAMES = [

@@ -85,7 +85,7 @@ cohort AS (
             END
         ) AS latest_margin
     FROM annual_values av
-    JOIN sector_companies sc USING (cik)
+    JOIN combined_companies sc USING (cik)
     GROUP BY sc.canonical_name
 )
 SELECT

@@ -95,7 +95,7 @@ ratios AS (
             ELSE av.capex / av.revenue
         END AS capex_intensity
     FROM annual_values av
-    JOIN sector_companies sc USING (cik)
+    JOIN combined_companies sc USING (cik)
 ),
 aggregated AS (
     SELECT

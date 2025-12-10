@@ -1866,10 +1866,10 @@
   },
   {
     "template_id": "operating_margin_rebound_sector",
-    "intent_text": "Identify post-COVID operating margin rebound by sector with revenue floors.",
+    "intent_text": "Ranks companies by multi-year operating margin rebound comparing pre vs post periods with revenue floors.",
     "pattern": "(?i)(operating margin).*(rebound|recovery|post[- ]covid|pre[- ]covid)",
     "example_questions": [
-      "Which companies show an operating margin rebound post-COVID versus pre-COVID within Technology?"
+      "(?i)(operating margin).*(rebound|recovery|post[- ]covid|pre[- ]covid)"
     ],
     "metadata": {
       "parameters": [
@@ -1887,10 +1887,10 @@
   },
   {
     "template_id": "capital_allocation_spike_screen",
-    "intent_text": "Screen for outsized acquisition spend or capex-to-revenue spikes.",
+    "intent_text": "Surfaces companies with outsized acquisition spend or capex-to-revenue ratios over a window.",
     "pattern": "(?i)(acquisition|m&a|capex).*(spike|threshold|screen|over)",
     "example_questions": [
-      "Flag companies with acquisition spending above $5B or capex/revenue spikes in Industrials since 2021."
+      "(?i)(acquisition|m&a|capex).*(spike|threshold|screen|over)"
     ],
     "metadata": {
       "parameters": [
@@ -1906,10 +1906,10 @@
   },
   {
     "template_id": "leverage_coverage_comparison",
-    "intent_text": "Compare debt-to-equity and interest coverage across two sectors.",
+    "intent_text": "Compares debt-to-equity and interest coverage ratios across two sector cohorts for a fiscal year.",
     "pattern": "(?i)(debt[- ]to[- ]equity|leverage).*(interest coverage|coverage).*(compare|across)",
     "example_questions": [
-      "Compare interest coverage and debt-to-equity for Utilities vs Energy in FY2023."
+      "(?i)(debt[- ]to[- ]equity|leverage).*(interest coverage|coverage).*(compare|across)"
     ],
     "metadata": {
       "parameters": [
@@ -1926,10 +1926,10 @@
   },
   {
     "template_id": "fcf_quality_screen",
-    "intent_text": "Screen CFO vs net income to assess free cash flow quality.",
+    "intent_text": "Screens for consistency of operating cash flow relative to net income with outlier caps.",
     "pattern": "(?i)(cfo|cash flow from operations|free cash flow).*(quality|vs net income|earnings quality)",
     "example_questions": [
-      "Which Health Care companies have consistent CFO to net income ratios between 2020 and 2024?"
+      "(?i)(cfo|cash flow from operations|free cash flow).*(quality|vs net income|earnings quality)"
     ],
     "metadata": {
       "parameters": [
@@ -1947,10 +1947,10 @@
   },
   {
     "template_id": "payout_ratio_leaderboard",
-    "intent_text": "Rank dividends plus buybacks relative to operating cash flow.",
+    "intent_text": "Ranks cohorts by total dividends plus buybacks relative to operating cash flow.",
     "pattern": "(?i)(dividend|buyback).*(payout ratio|shareholder return|return of capital)",
     "example_questions": [
-      "Top payout ratios (dividends + buybacks vs CFO) in Consumer Staples since 2021?"
+      "(?i)(dividend|buyback).*(payout ratio|shareholder return|return of capital)"
     ],
     "metadata": {
       "parameters": [
@@ -1966,10 +1966,10 @@
   },
   {
     "template_id": "gross_margin_sector_spread",
-    "intent_text": "Show gross-margin spreads between two sectors over multiple years.",
+    "intent_text": "Compares gross margin trajectories between two sectors and reports spread per year.",
     "pattern": "(?i)(gross margin).*(spread|gap|difference).*(sector|industry)",
     "example_questions": [
-      "Gross margin gap between Technology and Consumer Discretionary from 2019-2024."
+      "(?i)(gross margin).*(spread|gap|difference).*(sector|industry)"
     ],
     "metadata": {
       "parameters": [
@@ -1983,10 +1983,10 @@
   },
   {
     "template_id": "working_capital_efficiency_compare",
-    "intent_text": "Compare DSO, DIO, DPO, and working-capital days across two sectors.",
+    "intent_text": "Aggregates DSO, DIO, DPO, and working-capital days across two sectors.",
     "pattern": "(?i)(dso|dio|dpo|working capital).*(compare|across).*(sector|industry)",
     "example_questions": [
-      "Compare DSO/DIO/DPO between Technology and Industrials for 2021-2024."
+      "(?i)(dso|dio|dpo|working capital).*(compare|across).*(sector|industry)"
     ],
     "metadata": {
       "parameters": [
@@ -2000,10 +2000,10 @@
   },
   {
     "template_id": "capex_intensity_rank",
-    "intent_text": "Rank companies by capex-to-revenue intensity with SIC filters.",
+    "intent_text": "Ranks companies by average capex-to-revenue ratio with optional SIC filters.",
     "pattern": "(?i)(capex intensity|capital intensity).*(rank|within sector)",
     "example_questions": [
-      "Rank Industrials capex intensity with revenue floors and SIC filters."
+      "(?i)(capex intensity|capital intensity).*(rank|within sector)"
     ],
     "metadata": {
       "parameters": [
@@ -2021,10 +2021,10 @@
   },
   {
     "template_id": "growth_profitability_quadrant",
-    "intent_text": "Surface high-growth, high-margin names using quadrant cutoffs.",
+    "intent_text": "Selects companies meeting revenue CAGR and operating margin cutoffs for a growth-profitability quadrant.",
     "pattern": "(?i)(high growth|growth).*(high margin|profitability).*(quadrant|screen|top)",
     "example_questions": [
-      "Top growth vs profitability quadrant names in Technology with 15%+ CAGR and 20%+ margins."
+      "(?i)(high growth|growth).*(high margin|profitability).*(quadrant|screen|top)"
     ],
     "metadata": {
       "parameters": [
@@ -2037,6 +2037,486 @@
         "limit"
       ],
       "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "bank_roe_consecutive_threshold",
+    "intent_text": "Identify banks with ROE above a threshold for a minimum consecutive streak.",
+    "pattern": "(?i)(bank|jpm|wells|citigroup|boa).*(roe).*(consecutive|streak|multi).*(year)",
+    "example_questions": [
+      "Which large US banks kept ROE above 12% for three straight years from 2021-2023?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "use_sector_filter",
+        "sector",
+        "start_year",
+        "end_year",
+        "min_consecutive_years",
+        "min_years_reported",
+        "roe_threshold",
+        "min_equity",
+        "max_roe_pct",
+        "limit"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "cross_sector_gross_margin_spread",
+    "intent_text": "Compare gross-margin averages between two sectors across fiscal years.",
+    "pattern": "(?i)(gross margin).*(spread|gap|difference).*(two sectors|between .* and .* sector)",
+    "example_questions": [
+      "Show gross margin spread between Consumer Staples and Consumer Discretionary from 2019-2024."
+    ],
+    "metadata": {
+      "parameters": [
+        "sector_a",
+        "sector_b",
+        "start_year",
+        "end_year",
+        "limit"
+      ],
+      "intent_category": "margin_analysis"
+    }
+  },
+  {
+    "template_id": "healthcare_cfo_to_capex_ratio_trend",
+    "intent_text": "Track sector companies by CFO-to-capex ratios over multiple years.",
+    "pattern": "(?i)(cfo|operating cash).*(capex).*(ratio|trend|trajectory)",
+    "example_questions": [
+      "How did CFO to capex ratios trend for Healthcare companies from 2019-2024?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_capex_abs",
+        "min_cfo",
+        "min_years",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "cloud_margin_pre_post_covid",
+    "intent_text": "Compare pre- vs post-COVID operating margins for named cloud/software companies.",
+    "pattern": "(?i)(operating margin).*(cloud|software).*(pre[- ]covid|post[- ]covid|2018|2019|2021|2022)",
+    "example_questions": [
+      "Did Microsoft, Adobe, and Salesforce expand operating margins post COVID compared to 2018-2019?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_revenue",
+        "limit"
+      ],
+      "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "pc_maker_gross_margin_lockdown_compare",
+    "intent_text": "Contrast gross margins for PC makers between pre-COVID and lockdown quarters.",
+    "pattern": "(?i)(gross margin).*(pc|hardware|apple|dell|hp).*(2020|2021|lockdown|pre-covid)",
+    "example_questions": [
+      "How did Apple, Dell, and HP gross margins differ between 2018-2019 and 2020-2021?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_period",
+        "pre_end_period",
+        "lockdown_start_period",
+        "lockdown_end_period",
+        "min_quarters",
+        "limit"
+      ],
+      "intent_category": "margin_analysis"
+    }
+  },
+  {
+    "template_id": "energy_fcf_pre_post_covid",
+    "intent_text": "Compare free cash flow pre-COVID vs post-reopening for named energy companies.",
+    "pattern": "(?i)(free cash flow|fcf).*(exxon|chevron|conocophillips|energy).*(2018|2019|2021|2022)",
+    "example_questions": [
+      "How did FCF swing for Exxon, Chevron, and Conoco from 2018-2019 baseline to 2021-2022?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_revenue",
+        "limit"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "airlines_net_debt_to_ebitda_recovery",
+    "intent_text": "Show airline net-debt-to-EBITDA reversion from pre-COVID baseline through recovery.",
+    "pattern": "(?i)(net debt to ebitda|leverage).*(airlines|delta|united|american|southwest).*(pre[- ]covid|recovery)",
+    "example_questions": [
+      "Which US airlines reduced net-debt-to-EBITDA toward pre-COVID levels by 2023?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "baseline_year",
+        "spike_year",
+        "recovery_year",
+        "min_ebitda",
+        "limit"
+      ],
+      "intent_category": "leverage"
+    }
+  },
+  {
+    "template_id": "omnichannel_cash_conversion_cycle_segments",
+    "intent_text": "Compare CCC and inventory turns across pre/lockdown/recovery windows for retailers.",
+    "pattern": "(?i)(cash conversion cycle|inventory turnover|ccc).*(walmart|target|costco|retail).*(2018|2019|2020|2021|2022|2023)",
+    "example_questions": [
+      "How did WMT/TGT/COST CCC shift across pre-COVID, lockdown, and recovery years?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "pre_start_year",
+        "pre_end_year",
+        "lockdown_start_year",
+        "lockdown_end_year",
+        "recovery_start_year",
+        "recovery_end_year",
+        "min_periods_per_bucket"
+      ],
+      "intent_category": "working_capital"
+    }
+  },
+  {
+    "template_id": "bank_equity_to_assets_pre_post",
+    "intent_text": "Compare equity-to-assets ratios for banks pre- vs post-pandemic windows.",
+    "pattern": "(?i)(equity to assets|capital ratio).*(bank|jpm|citi|wells|boa).*(2019|2020|2021|2023|2024)",
+    "example_questions": [
+      "Track equity-to-assets for JPM, BAC, Citi, and WFC from 2019 to 2024."
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_equity",
+        "limit"
+      ],
+      "intent_category": "capital_adequacy"
+    }
+  },
+  {
+    "template_id": "healthcare_cash_to_assets_buffer",
+    "intent_text": "Contrast cash-to-assets ratios for vaccine-scale-up healthcare names vs pre-COVID.",
+    "pattern": "(?i)(cash to assets|liquidity).*(pfizer|jj|johnson|moderna|merck).*(pre[- ]covid|scale[- ]up|2020|2021|2022)",
+    "example_questions": [
+      "How did cash-to-assets change for Pfizer, Moderna, and J&J from pre-COVID to 2020-2022?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "scaleup_start_year",
+        "scaleup_end_year",
+        "limit"
+      ],
+      "intent_category": "liquidity"
+    }
+  },
+  {
+    "template_id": "semiconductor_roe_momentum",
+    "intent_text": "Compare semiconductor ROE momentum between baseline and demand-boom periods.",
+    "pattern": "(?i)(semiconductor|nvidia|amd|intel|t.{0,2} instruments).*(roe).*(2018|2019|2021|2023|boom)",
+    "example_questions": [
+      "Which semiconductor leaders improved ROE more in 2021-2023 vs 2018-2019?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "baseline_start_year",
+        "baseline_end_year",
+        "boom_start_year",
+        "boom_end_year",
+        "max_abs_roe_pct",
+        "limit"
+      ],
+      "intent_category": "profitability_trend"
+    }
+  },
+  {
+    "template_id": "staples_margin_inflation_spread",
+    "intent_text": "Measure Consumer Staples gross margin shifts pre-COVID vs inflation period.",
+    "pattern": "(?i)(gross margin).*(staples|consumer staples).*(pre[- ]covid|inflation)",
+    "example_questions": [
+      "How did staples gross margins change from 2018-2019 to the 2022 inflation period?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "pre_start_year",
+        "pre_end_year",
+        "inflation_start_year",
+        "inflation_end_year",
+        "limit"
+      ],
+      "intent_category": "margin_analysis"
+    }
+  },
+  {
+    "template_id": "cross_sector_cfo_to_capex_ratio_shift",
+    "intent_text": "Compare CFO-to-capex shifts across three sectors between pre- and post-periods.",
+    "pattern": "(?i)(cfo to capex|cash flow to capex).*(technology|energy|industrial|sector).*(2018|2019|2021|2023)",
+    "example_questions": [
+      "How did Technology, Energy, and Industrials CFO-to-capex ratios change post COVID vs pre?"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector_a",
+        "sector_b",
+        "sector_c",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_capex_abs",
+        "min_cfo",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "retail_revenue_growth_inventory_turnover_compare",
+    "intent_text": "Compare revenue CAGR and inventory turnover for retailers over a fiscal window.",
+    "pattern": "(?i)(revenue growth|cagr).*(inventory turnover).*(walmart|target|costco|retail)",
+    "example_questions": [
+      "Compare revenue growth and inventory turnover for Walmart, Target, and Costco between 2018 and 2023."
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "min_years",
+        "limit"
+      ],
+      "intent_category": "working_capital"
+    }
+  },
+  {
+    "template_id": "specialty_retail_operating_margin_recovery",
+    "intent_text": "Measure operating margin recovery for specialty retailers post COVID vs pre.",
+    "pattern": "(?i)(operating margin).*(home depot|lowe|best buy|specialty retail).*(pre|post|covid)",
+    "example_questions": [
+      "Did Home Depot, Lowe's, and Best Buy improve operating margins in 2021-2023 vs 2018-2019?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "min_revenue",
+        "limit"
+      ],
+      "intent_category": "profitability"
+    }
+  },
+  {
+    "template_id": "parcel_cfo_recovery_timeline",
+    "intent_text": "Track parcel/logistics CFO recovery vs pre-COVID baseline across years.",
+    "pattern": "(?i)(operating cash flow|cfo).*(ups|fedex|xpo|parcel).*(recovery|pre[- ]covid)",
+    "example_questions": [
+      "How quickly did UPS, FedEx, and XPO restore CFO to pre-COVID levels?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "baseline_year",
+        "recovery_year_1",
+        "recovery_year_2",
+        "min_revenue",
+        "limit"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "airline_interest_coverage_rebuild",
+    "intent_text": "Show airline interest coverage trajectories baseline vs rebuild years.",
+    "pattern": "(?i)(interest coverage).*(airline|delta|united|american|southwest).*(2018|2020|2023)",
+    "example_questions": [
+      "How did airline interest coverage evolve from 2018 baseline through 2023 rebuild?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "baseline_start_year",
+        "baseline_end_year",
+        "rebuild_start_year",
+        "rebuild_end_year",
+        "limit"
+      ],
+      "intent_category": "coverage"
+    }
+  },
+  {
+    "template_id": "trucking_gross_margin_normalization",
+    "intent_text": "Compare trucking/logistics gross margins between demand spike and normalization periods.",
+    "pattern": "(?i)(gross margin).*(trucking|logistics|jb hunt|old dominion|knight).*(2021|2023|normalization)",
+    "example_questions": [
+      "How did gross margins normalize for JB Hunt, Old Dominion, and Knight-Swift from 2021 to 2023?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "spike_start_year",
+        "spike_end_year",
+        "normalization_start_year",
+        "normalization_end_year",
+        "limit"
+      ],
+      "intent_category": "margin_analysis"
+    }
+  },
+  {
+    "template_id": "healthcare_cfo_vs_net_income_quality",
+    "intent_text": "Compare CFO-to-net-income ratios pre- vs post-COVID for healthcare providers/device makers.",
+    "pattern": "(?i)(cfo to net income|cash flow quality).*(healthcare|provider|device).*(pre|post|covid)",
+    "example_questions": [
+      "Which healthcare providers or device makers improved CFO vs net income after COVID?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "post_start_year",
+        "post_end_year",
+        "limit"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
+    "template_id": "vaccine_capex_intensity_window",
+    "intent_text": "Measure capex intensity during vaccine scale-up vs pre-COVID baseline.",
+    "pattern": "(?i)(capex intensity|capex to cfo).*(pfizer|moderna|johnson).*(vaccine|2020|2021|2022)",
+    "example_questions": [
+      "What was capex intensity for Pfizer, Moderna, and J&J during 2020-2022 vs 2018-2019?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "vaccine_start_year",
+        "vaccine_end_year",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
+    "template_id": "biotech_cash_to_assets_liquidity",
+    "intent_text": "Track biotech cash-to-assets liquidity build vs pre-COVID baseline.",
+    "pattern": "(?i)(cash to assets|liquidity).*(biotech|amgen|gilead|biogen).*(2018|2019|2020|2021)",
+    "example_questions": [
+      "How did cash-to-assets shift for Amgen, Gilead, and Biogen from 2018-2019 to 2020-2021?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "build_start_year",
+        "build_end_year",
+        "limit"
+      ],
+      "intent_category": "liquidity"
+    }
+  },
+  {
+    "template_id": "bank_roe_band_monitor",
+    "intent_text": "Check bank ROE stays within a band vs baseline and reversion year.",
+    "pattern": "(?i)(roe band|roe within|roe range).*(bank|jpm|boa|citi|wells).*(2020|2021|2023)",
+    "example_questions": [
+      "Which top US banks maintained ROE within \u00b1200bps of pre-COVID averages and how did 2023 compare?"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "baseline_start_year",
+        "baseline_end_year",
+        "band_start_year",
+        "band_end_year",
+        "revert_year",
+        "band_bps",
+        "limit"
+      ],
+      "intent_category": "profitability_trend"
+    }
+  },
+  {
+    "template_id": "bank_loan_loss_provision_trend",
+    "intent_text": "Track quarterly loan-loss provisions over time for major banks.",
+    "pattern": "(?i)(loan loss provision).*(quarterly|trend).*(jpm|boa|citi|wfc)",
+    "example_questions": [
+      "Show quarterly loan-loss provisions for JPM, BAC, Citi, and WFC from 2018-2023."
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_period",
+        "end_period",
+        "limit"
+      ],
+      "intent_category": "credit_costs"
+    }
+  },
+  {
+    "template_id": "regional_bank_net_interest_income_shift",
+    "intent_text": "Compare net interest income minus expense between zero-rate and hike eras for regional banks.",
+    "pattern": "(?i)(net interest income|nii).*(pnc|truist|u.s. bancorp|regional bank).*(2020|2021|2022|2023)",
+    "example_questions": [
+      "Compare net interest income vs expense for PNC, Truist, and USB between 2020-2021 and 2022-2023."
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "pre_start_year",
+        "pre_end_year",
+        "hike_start_year",
+        "hike_end_year",
+        "limit"
+      ],
+      "intent_category": "interest_income"
     }
   }
 ]

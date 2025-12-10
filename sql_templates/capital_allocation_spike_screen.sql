@@ -110,7 +110,7 @@ scored AS (
             END
         ) AS max_capex_to_revenue
     FROM annual_values av
-    JOIN sector_companies sc USING (cik)
+    JOIN combined_companies sc USING (cik)
     GROUP BY sc.canonical_name
 )
 SELECT

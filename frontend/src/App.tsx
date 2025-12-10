@@ -113,6 +113,8 @@ function App() {
   const [apiConnected, setApiConnected] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [sqlPanelOpen, setSqlPanelOpen] = useState<Record<string, boolean>>({});
+  const [progressQueue, setProgressQueue] = useState<string[]>([]);
+  const lastProgressRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -153,6 +155,7 @@ function App() {
     const trimmedQuestion = question.trim();
     const historyPayload = buildHistoryPayload(messages);
     const isFirstMessage = messages.length === 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -177,9 +180,11 @@ function App() {
       },
     };
 
+    setProgressQueue([]); // reset queue for this run
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setQuestion("");
     setLoading(true);
+    lastProgressRef.current = null;
     logInfo("question", {
       id: userMessage.id,
       question: trimmedQuestion,
@@ -207,6 +212,46 @@ function App() {
         })
       );
     };
+
+    const enqueueProgress = (text: string) => {
+      if (!text.trim()) return;
+      setProgressQueue((prev) => {
+        const lastQueued = prev[prev.length - 1];
+        if (text === lastQueued || text === lastProgressRef.current) {
+          return prev;
+        }
+        return [...prev, text];
+      });
+    };
+
+    const nextDelay = () => 500 + Math.floor(Math.random() * 701); // 500–1200ms
+
+    const stopPump = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+
+    const startPump = () => {
+      stopPump();
+      const pump = () => {
+        setProgressQueue((queue) => {
+          if (!queue.length) {
+            timeoutId = setTimeout(pump, nextDelay());
+            return queue;
+          }
+          const [next, ...rest] = queue;
+          appendProgress(next);
+          lastProgressRef.current = next;
+          timeoutId = setTimeout(pump, nextDelay());
+          return rest;
+        });
+      };
+      timeoutId = setTimeout(pump, nextDelay());
+    };
+
+    startPump();
 
     const applyFinal = (payload: StreamEventPayload) => {
       const metadata = payload.metadata || {};
@@ -279,59 +324,82 @@ function App() {
       );
     };
 
+    const toFriendly = (eventType: string, payload: StreamEventPayload) => {
+      // Map backend events to user-friendly, non-technical phrasing
+      switch (eventType) {
+        case "start":
+          return "Thinking…";
+        case "entities":
+          return "Reviewing which companies and metrics to focus on.";
+        case "sql_preview":
+          return "Choosing the best way to calculate this over your timeframe.";
+        case "execution":
+          return "Running the data query and crunching the numbers.";
+        case "reasoning": {
+          const stage = payload.stage;
+          const summary =
+            payload.summary || payload.reasoning_trace?.summary || "";
+          const stageMap: Record<string, string> = {
+            interpretation: "Clarifying your question and scope.",
+            template_selection: "Picking the right calculation pattern.",
+            execution: "Processing results.",
+            formatting: "Drafting the explanation.",
+            reasoning_trace: "Checking the calculation steps.",
+            answer_formatter: "Polishing the narrative.",
+          };
+          const prefix = stage ? stageMap[stage] || "" : "";
+          if (prefix && summary) return `${prefix} ${summary}`;
+          if (prefix) return prefix;
+          if (summary) return summary;
+          return "Working through the answer.";
+        }
+        default:
+          return null;
+      }
+    };
+
     const handleStreamEvent = (eventType: string, payload: StreamEventPayload) => {
       switch (eventType) {
         case "start":
-          appendProgress("Starting…");
+          enqueueProgress("Thinking…");
           break;
         case "entities": {
-          const companies = payload.companies?.join(", ");
-          const sectors = payload.sectors?.join(", ");
-          appendProgress(
-            `Entities → companies: ${companies || "—"}, sectors: ${
-              sectors || "—"
-            }`
-          );
+          const friendly =
+            toFriendly(eventType, payload) ||
+            "Reviewing which companies and metrics to focus on.";
+          enqueueProgress(friendly);
           break;
         }
         case "sql_preview":
-          appendProgress(
-            `Template: ${payload.template_id || "n/a"} | Method: ${
-              payload.generation_method || "unknown"
-            }`
+          enqueueProgress(
+            toFriendly(eventType, payload) ||
+              "Choosing the best way to calculate this over your timeframe."
           );
           break;
         case "execution":
-          appendProgress(
-            `Query executing… rows (so far): ${
-              payload.row_count ?? "unknown"
-            }, time: ${
-              payload.execution_time_seconds !== null &&
-              payload.execution_time_seconds !== undefined
-                ? `${payload.execution_time_seconds.toFixed(2)}s`
-                : "—"
-            }`
+          enqueueProgress(
+            toFriendly(eventType, payload) ||
+              "Running the data query and crunching the numbers."
           );
           break;
         case "reasoning":
           {
-            const summary =
-              payload.reasoning_trace?.summary || payload.summary || null;
-            const stage = payload.stage ? `${payload.stage}: ` : "";
-            if (summary) {
-              appendProgress(`${stage}${summary}`);
-            } else {
-              appendProgress(`${stage}Reasoning underway…`);
-            }
+            const friendly =
+              toFriendly(eventType, payload) || "Working through the answer.";
+            enqueueProgress(friendly);
           }
           break;
         case "final":
+          setProgressQueue([]);
           applyFinal(payload);
           setLoading(false);
+          stopPump();
           break;
         case "error":
+          setProgressQueue([]);
           applyError(payload.error || "Streaming error");
           setLoading(false);
+          stopPump();
           break;
         default:
           break;
@@ -408,6 +476,7 @@ function App() {
           : "Unable to reach the API. Please confirm the backend is running.";
       applyError(errorText);
     } finally {
+      stopPump();
       setLoading(false);
     }
   };
@@ -728,17 +797,28 @@ function App() {
                         </div>
                         <div className="flex-1 max-w-3xl">
                           <div className="bg-[#1e293b] rounded-2xl px-6 py-4 shadow-lg border border-slate-700/50">
-                            <div className="flex items-start gap-3 mb-4">
-                              <div className="w-6 h-6 bg-brand rounded flex-shrink-0 mt-1" />
-                              <div className="flex-1">
-                                <h3 className="text-white font-semibold mb-2">
-                                  Business Summary & Key Findings
+                            {message.metadata?.streaming ? (
+                              <div className="space-y-2">
+                                <h3 className="text-slate-300 font-semibold">
+                                  Thinking…
                                 </h3>
-                                <p className="text-slate-200 text-base leading-relaxed">
-                                  {narrative}
-                                </p>
+                                <div className="text-sm text-slate-400 leading-relaxed whitespace-pre-line">
+                                  {message.content}
+                                </div>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="flex items-start gap-3 mb-4">
+                                <div className="w-6 h-6 bg-brand rounded flex-shrink-0 mt-1" />
+                                <div className="flex-1">
+                                  <h3 className="text-white font-semibold mb-2">
+                                    Business Summary & Key Findings
+                                  </h3>
+                                  <p className="text-slate-200 text-base leading-relaxed">
+                                    {narrative}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
                             {highlights.length > 0 && (
                               <div className="mt-4">

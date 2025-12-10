@@ -150,7 +150,7 @@ class SQLValidator:
             r"'netincomeloss'": "NetIncomeLoss",
             r"'assets'": "Assets",
             r"'liabilities'": "Liabilities",
-            r"'equity'": "Equity"
+            r"'equity'": "Equity",
         }
         for pattern, proper_casing in casing_fixes.items():
             if re.search(pattern, sql_stripped):

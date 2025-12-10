@@ -80,7 +80,7 @@ margins AS (
             ELSE av.operating_income / av.revenue
         END AS operating_margin
     FROM annual_values av
-    JOIN sector_companies sc USING (cik)
+    JOIN combined_companies sc USING (cik)
 ),
 windowed AS (
     SELECT

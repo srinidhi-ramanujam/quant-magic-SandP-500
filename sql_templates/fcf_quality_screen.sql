@@ -72,7 +72,7 @@ ratios AS (
             ELSE av.cfo / av.net_income
         END AS cfo_to_net_income
     FROM annual_values av
-    JOIN sector_companies sc USING (cik)
+    JOIN combined_companies sc USING (cik)
 ),
 aggregated AS (
     SELECT

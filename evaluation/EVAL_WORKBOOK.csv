@@ -40857,3 +40857,4 @@ SELECT COUNT(*) AS count
 FROM latest_business_address l
 JOIN companies c ON c.cik = l.cik
 WHERE l.rn = 1 AND UPPER(l.headquarters_state) = UPPER('FL')",Count: 26,"{""type"": ""numeric"", ""tolerance"": {""absolute"": 2}, ""value"": 26}",5,0.900,template,,,"[{'stage': 'entity_extraction', 'tokens': {'prompt_tokens': 1512.0, 'completion_tokens': 465.0, 'total_tokens': 1977.0, 'reasoning_tokens': 384.0, 'regular_output_tokens': 81.0, 'reasoning_percentage': 82.58064516129032}, 'latency_ms': 6912, 'success': True}]",7.0565,0.0000,0.0000,0.0000,0.0000
+RUN_188,"10 Dec 2025, 1900 hours",custom,Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?,,,There was an error querying the database. Please try again or rephrase your question.,,,0.000,,,,None,129.8081,0.0000,0.0000,0.0000,0.0000

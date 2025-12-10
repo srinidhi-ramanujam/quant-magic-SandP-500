@@ -837,6 +837,14 @@ class EntityExtractor:
         )
         periods.extend([f"last_{n}_years" for n in trailing_years])
 
+        # Pattern 5: Since/after/from YEAR → capture anchor year and flag
+        since_matches = re.findall(
+            r"(?:since|after|from)\s+(20\d{2}|19\d{2})", question_lower
+        )
+        for year in since_matches:
+            periods.append(year)
+            periods.append(f"since_{year}")
+
         if "trailing twelve months" in question_lower or "ttm" in question_lower:
             periods.append("TTM")
 

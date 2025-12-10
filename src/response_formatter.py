@@ -25,7 +25,9 @@ class ResponseFormatter:
         """Initialize response formatter."""
         self.logger = get_logger()
         self.logger.info("ResponseFormatter initialized")
-        self.template_formatters: Dict[str, Callable[[QueryResult, Optional[RequestContext]], Optional[str]]] = {
+        self.template_formatters: Dict[
+            str, Callable[[QueryResult, Optional[RequestContext]], Optional[str]]
+        ] = {
             "debt_reduction_progression": self._format_debt_reduction_progression,
             "profit_margin_consistency_trend": (
                 self._format_profit_margin_consistency_trend
@@ -81,7 +83,9 @@ class ResponseFormatter:
             else None
         )
 
-        specialized_answer = self._format_template_specific(template_id, query_result, context)
+        specialized_answer = self._format_template_specific(
+            template_id, query_result, context
+        )
 
         if specialized_answer:
             answer = specialized_answer
@@ -239,7 +243,10 @@ class ResponseFormatter:
         return "Result found but unable to format."
 
     def _format_template_specific(
-        self, template_id: Optional[str], query_result: QueryResult, context: Optional[RequestContext] = None
+        self,
+        template_id: Optional[str],
+        query_result: QueryResult,
+        context: Optional[RequestContext] = None,
     ) -> Optional[str]:
         """Format known template responses."""
         if not template_id:
@@ -315,7 +322,9 @@ class ResponseFormatter:
             bullets
         )
 
-    def _format_current_ratio_trend(self, query_result: QueryResult, context: Optional[RequestContext] = None) -> Optional[str]:
+    def _format_current_ratio_trend(
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
+    ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No companies met the current-ratio coverage requirement."
         data = query_result.data
@@ -335,8 +344,12 @@ class ResponseFormatter:
         bullets = []
         for idx, row in rows.iterrows():
             name = row.get("name", "Unknown company")
-            ratio_start = self._format_ratio(self._get_first_value(row, [f"ratio_{start_year}"]))
-            ratio_end = self._format_ratio(self._get_first_value(row, [f"ratio_{end_year}"]))
+            ratio_start = self._format_ratio(
+                self._get_first_value(row, [f"ratio_{start_year}"])
+            )
+            ratio_end = self._format_ratio(
+                self._get_first_value(row, [f"ratio_{end_year}"])
+            )
             improvement = self._format_ratio(
                 self._get_first_value(row, ["improvement"]), signed=True
             )
@@ -344,8 +357,9 @@ class ResponseFormatter:
                 f"{len(bullets)+1}) {name}: {ratio_start} ({start_year}) → {ratio_end} ({end_year}) {improvement}"
             )
 
-        return f"Top {sector} liquidity improvers (FY{start_year}-FY{end_year}):\n" + "\n".join(
-            bullets
+        return (
+            f"Top {sector} liquidity improvers (FY{start_year}-FY{end_year}):\n"
+            + "\n".join(bullets)
         )
 
     def _format_operating_margin_delta(
@@ -549,7 +563,9 @@ class ResponseFormatter:
             bullets
         )
 
-    def _format_asset_turnover_trend(self, query_result: QueryResult, context: Optional[RequestContext] = None) -> Optional[str]:
+    def _format_asset_turnover_trend(
+        self, query_result: QueryResult, context: Optional[RequestContext] = None
+    ) -> Optional[str]:
         if query_result.row_count == 0:
             return "No asset-turnover coverage was found for the requested companies."
 
