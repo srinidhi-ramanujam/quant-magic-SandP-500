@@ -94,7 +94,13 @@ class AnswerFormatter:
         """
         request_id = context.request_id if context else "n/a"
         if not self.is_available():
+            fallback = self._fallback_presentation(
+                base_answer=base_answer,
+                entities=entities,
+                query_result=query_result,
+            )
             return FormatterOutcome(
+                presentation=fallback,
                 error="formatter_unavailable",
                 warnings=["LLM formatter disabled - returning base answer"],
             )
@@ -107,7 +113,13 @@ class AnswerFormatter:
 
         rows_payload, truncated = self._prepare_rows(query_result)
         if not rows_payload:
+            fallback = self._fallback_presentation(
+                base_answer=base_answer,
+                entities=entities,
+                query_result=query_result,
+            )
             return FormatterOutcome(
+                presentation=fallback,
                 error="empty_rows",
                 warnings=["Formatter skipped due to empty dataset."],
             )
@@ -143,7 +155,15 @@ class AnswerFormatter:
             response = self.azure_client.client.responses.create(**request_kwargs)
         except Exception as exc:  # noqa: BLE001 - convert to availability error
             self.logger.warning("AnswerFormatter failed [%s]: %s", request_id, exc)
+            fallback = self._fallback_presentation(
+                base_answer=base_answer,
+                entities=entities,
+                query_result=query_result,
+                rows_payload=rows_payload,
+                truncated=truncated,
+            )
             return FormatterOutcome(
+                presentation=fallback,
                 error=str(exc),
                 warnings=["Formatter call failed; falling back to template answer."],
                 prompt_preview=prompt_preview,
@@ -163,7 +183,15 @@ class AnswerFormatter:
                 exc,
                 content,
             )
+            fallback = self._fallback_presentation(
+                base_answer=base_answer,
+                entities=entities,
+                query_result=query_result,
+                rows_payload=rows_payload,
+                truncated=truncated,
+            )
             return FormatterOutcome(
+                presentation=fallback,
                 error="invalid_payload",
                 warnings=["Formatter output invalid JSON; showing fallback answer."],
                 raw_response=content,
@@ -193,6 +221,43 @@ class AnswerFormatter:
             warnings=warnings,
             raw_response=content,
             prompt_preview=prompt_preview,
+        )
+
+    def _fallback_presentation(
+        self,
+        *,
+        base_answer: str,
+        entities: Optional[ExtractedEntities],
+        query_result: Optional[QueryResult],
+        rows_payload: Optional[List[Dict[str, Any]]] = None,
+        truncated: bool = False,
+    ) -> Optional[PresentationPayload]:
+        """
+        Build a minimal presentation payload when the LLM formatter is unavailable.
+        Skip tables for simple lookup/count questions to avoid noise.
+        """
+        if not query_result:
+            return None
+        if entities and entities.question_type in {"lookup", "count"}:
+            return None
+
+        rows = rows_payload
+        if rows is None:
+            rows, truncated = self._prepare_rows(query_result)
+        if not rows:
+            return None
+
+        table = PresentationTable(
+            columns=list(rows[0].keys()),
+            rows=rows,
+            truncated=truncated,
+        )
+
+        return PresentationPayload(
+            narrative=base_answer,
+            highlights=[],
+            table=table,
+            warnings=["Formatter fallback table generated from query results."] if truncated else [],
         )
 
     def _prepare_history(

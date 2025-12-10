@@ -13,11 +13,10 @@
   },
   {
     "template_id": "asset_turnover_trend",
-    "intent_text": "Compare multi-year asset turnover trends for a named cohort (e.g., Technology hardware leaders).",
+    "intent_text": "Ranks named companies by multi-year asset turnover change using revenues and total assets.",
     "pattern": "(?i)(asset turnover|asset efficiency).*(trend|compare|progression|over the past)",
     "example_questions": [
-      "Compare the asset turnover efficiency trends for major Technology hardware companies over the past 4 years (2020-2023).",
-      "Which hardware names improved asset turnover the most since 2020?"
+      "(?i)(asset turnover|asset efficiency).*(trend|compare|progression|over the past)"
     ],
     "metadata": {
       "parameters": [
@@ -38,10 +37,10 @@
   },
   {
     "template_id": "cash_to_assets_ratio_trend",
-    "intent_text": "Track cash-to-total-assets liquidity ratios for named companies",
+    "intent_text": "Generates annual cash-to-total-assets ratios for named cohorts or sector filters across a configurable fiscal window.",
     "pattern": "(?i)(cash\\s*-?to\\s*-?assets|liquidity ratio).*(track|trend|evolution)",
     "example_questions": [
-      "Track the cash-to-total-assets ratio for Microsoft, Adobe, and Salesforce from 2019 to 2024."
+      "(?i)(cash\\s*-?to\\s*-?assets|liquidity ratio).*(track|trend|evolution)"
     ],
     "metadata": {
       "parameters": [
@@ -56,144 +55,11 @@
     }
   },
   {
-    "template_id": "top_tech_cfo_trend",
-    "intent_text": "Compare quarterly operating cash flow trends for top Information Technology revenue leaders.",
-    "pattern": "(?i)(top|largest|biggest).*(information technology|tech).*(operating cash flow|cfo).*(2022|2023|2024|quarter)",
-    "example_questions": [
-      "How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?"
-    ],
-    "metadata": {
-      "parameters": [
-        "sector",
-        "ranking_year",
-        "min_revenue",
-        "top_n",
-        "start_year",
-        "end_year",
-        "start_period",
-        "end_period",
-        "min_quarters",
-        "max_abs_cfo",
-        "value_scale",
-        "result_limit"
-      ],
-      "intent_category": "time_series_cash_flow"
-    }
-  },
-  {
-    "template_id": "hardware_gross_margin_trend",
-    "intent_text": "Compare quarterly gross margin trends for a fixed hardware cohort.",
-    "pattern": "(?i)(gross margin).*(apple|dell|hp|hardware).*(quarter|trend|last 8)",
-    "example_questions": [
-      "Compare quarterly gross margin trends for Apple, Dell, and HP over the past 8 quarters."
-    ],
-    "metadata": {
-      "parameters": [
-        "company_values",
-        "quarter_count",
-        "min_period"
-      ],
-      "intent_category": "time_series_profitability"
-    }
-  },
-  {
-    "template_id": "ebitda_margin_improvement_rank",
-    "intent_text": "Rank Technology companies by EBITDA margin improvement between two fiscal years.",
-    "pattern": "(?i)(which|what).*(technology).*(ebitda margin).*(improv|delta|change)",
-    "example_questions": [
-      "Which Technology companies increased EBITDA margins the most between FY2021 and FY2024?"
-    ],
-    "metadata": {
-      "parameters": [
-        "sector",
-        "start_year",
-        "end_year",
-        "min_revenue",
-        "min_improvement_pp",
-        "limit"
-      ],
-      "intent_category": "time_series_profitability"
-    }
-  },
-  {
-    "template_id": "fcf_to_capex_trend",
-    "intent_text": "Identify companies sustaining strong free-cash-flow coverage of capex over multi-year horizons.",
-    "pattern": "(?i)(free cash flow|fcf).*(capex|capital expenditures).*(trend|coverage|retention)",
-    "example_questions": [
-      "Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?"
-    ],
-    "metadata": {
-      "parameters": [
-        "sector",
-        "start_year",
-        "year_2",
-        "year_3",
-        "year_4",
-        "year_5",
-        "end_year",
-        "min_years",
-        "min_cfo",
-        "min_capex_abs",
-        "max_fcf_retention",
-        "min_fcf_retention",
-        "max_capex_intensity",
-        "limit"
-      ],
-      "intent_category": "time_series_capital_allocation"
-    }
-  },
-  {
-    "template_id": "shareholder_return_trend",
-    "intent_text": "Measure dividend plus buyback trends and payout ratios across a sector.",
-    "pattern": "(?i)(dividends|buybacks|capital return).*(trend|change).*(which|which companies)",
-    "example_questions": [
-      "Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?"
-    ],
-    "metadata": {
-      "parameters": [
-        "sector",
-        "start_year",
-        "year_2",
-        "year_3",
-        "end_year",
-        "min_years",
-        "min_total_return",
-        "min_cfo",
-        "max_payout_ratio",
-        "limit"
-      ],
-      "intent_category": "time_series_capital_returns"
-    }
-  },
-  {
-    "template_id": "energy_roe_threshold_detector",
-    "intent_text": "Screen Energy companies sustaining ROE above a threshold for consecutive years.",
-    "pattern": "(?i)(energy).*(roe|return on equity).*(15%|threshold|streak|consecutive)",
-    "example_questions": [
-      "Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility."
-    ],
-    "metadata": {
-      "parameters": [
-        "sector",
-        "start_year",
-        "end_year",
-        "min_consecutive_years",
-        "min_years_reported",
-        "roe_threshold",
-        "min_equity",
-        "max_roe_pct",
-        "limit"
-      ],
-      "intent_category": "time_series_profitability"
-    }
-  },
-  {
     "template_id": "cfo_to_net_income_trend",
-    "intent_text": "Assess sector earnings quality via CFO-to-net-income ratios over multiple fiscal years.",
-    "pattern": "(?i)(cash flow from operations|cfo).*net income.*(ratio|trend|quality)",
+    "intent_text": "Compares operating cash flow to net income ratios across a sector over multiple fiscal years to gauge earnings quality.",
+    "pattern": "(?i)(cash flow from operations|cfo).*(net income).*(trend|ratio|quality)",
     "example_questions": [
-      "Show the cash flow from operations to net income ratio trends for Healthcare companies from 2019 to 2024, identifying quality of earnings patterns.",
-      "Which pharma companies improved their CFO/Net Income ratios over the last five years?"
+      "(?i)(cash flow from operations|cfo).*(net income).*(trend|ratio|quality)"
     ],
     "metadata": {
       "parameters": [
@@ -807,9 +673,9 @@
   {
     "template_id": "company_return_on_equity",
     "intent_text": "Calculate the latest return on equity for a specific company.",
-    "pattern": "(what|show).*(return on equity|roe).*",
+    "pattern": "(?i)(what|show).*(return on equity|roe).*(\\\\bcompany\\\\b|\\\\bfirm\\\\b|ticker|cik|\\\\b's\\\\b)",
     "example_questions": [
-      "(what|show).*(return on equity|roe).*"
+      "(?i)(what|show).*(return on equity|roe).*(\\\\bcompany\\\\b|\\\\bfirm\\\\b|ticker|cik|\\\\b's\\\\b)"
     ],
     "metadata": {
       "parameters": [
@@ -846,45 +712,24 @@
   },
   {
     "template_id": "current_ratio_trend",
-    "intent_text": "Rank companies by improving current ratio trends",
-    "pattern": "(?i)(current ratio|liquidity).*(trend|improv|strength|change)",
+    "intent_text": "Ranks companies in a sector by FY2019-FY2023 current ratio change using AssetsCurrent/LiabilitiesCurrent.",
+    "pattern": "(?i)(current ratio|liquidity).*(trend|improvement).*(healthcare|hospital|pharma)",
     "example_questions": [
-      "Which Healthcare companies improved their current ratios the most between 2019 and 2023?",
-      "Show liquidity trends for Health Care suppliers across the last five years.",
-      "How have current ratios changed for Financial companies from 2019 to 2023?"
+      "(?i)(current ratio|liquidity).*(trend|improvement).*(healthcare|hospital|pharma)"
     ],
     "metadata": {
       "parameters": [
-        "sector",
-        "start_year",
-        "end_year",
-        "limit"
+        "sector"
       ],
       "intent_category": "liquidity"
     }
   },
   {
     "template_id": "debt_reduction_progression",
-    "intent_text": "Rank companies by multi-year debt reduction",
-    "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
+    "intent_text": "Ranks companies by FY2021-FY2023 total debt reduction with optional sector filter.",
+    "pattern": "(?i)(which|what).*(debt).*(reduc|cut|lower).*",
     "example_questions": [
-      "Which companies across all sectors cut debt the most between 2021 and 2023?",
-      "Show Technology leaders that reduced total debt over the past three fiscal years."
-    ],
-    "metadata": {
-      "parameters": [
-        "sector"
-      ],
-      "intent_category": "leverage"
-    }
-  },
-  {
-    "template_id": "debt_reduction_progression",
-    "intent_text": "Rank companies by multi-year debt reduction",
-    "pattern": "(?i)(which|what).*(companies).*(debt).*(reduc|cut|declin).*",
-    "example_questions": [
-      "Which companies across all sectors cut debt the most between 2021 and 2023?",
-      "Show Technology leaders that reduced total debt over the past three fiscal years."
+      "(?i)(which|what).*(debt).*(reduc|cut|lower).*"
     ],
     "metadata": {
       "parameters": [
@@ -1016,6 +861,47 @@
     }
   },
   {
+    "template_id": "ebitda_margin_improvement_rank",
+    "intent_text": "Ranks sector companies by change in EBITDA margin between two fiscal years with revenue and improvement thresholds.",
+    "pattern": "(?i)(which|what).*(company|companies).*(ebitda margin[s]?|ebitda).*(improv|expand|increase).*(20\\\\d{2}).*(20\\\\d{2})",
+    "example_questions": [
+      "(?i)(which|what).*(company|companies).*(ebitda margin[s]?|ebitda).*(improv|expand|increase).*(20\\\\d{2}).*(20\\\\d{2})"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_revenue",
+        "min_improvement_pp",
+        "limit"
+      ],
+      "intent_category": "profitability_trend"
+    }
+  },
+  {
+    "template_id": "energy_roe_threshold_detector",
+    "intent_text": "Highlight sector companies that sustain return on equity above a user-defined threshold for a minimum consecutive streak.",
+    "pattern": "(?i)(identify|which|list).*(company|companies).*(roe).*(15|fifteen|%|percent).*(consecutive|streak|multi).*year",
+    "example_questions": [
+      "(?i)(identify|which|list).*(company|companies).*(roe).*(15|fifteen|%|percent).*(consecutive|streak|multi).*year"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "end_year",
+        "min_consecutive_years",
+        "min_years_reported",
+        "roe_threshold",
+        "min_equity",
+        "max_roe_pct",
+        "limit"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
     "template_id": "fact_count_by_currency",
     "intent_text": "Count numeric facts for a specific currency/unit of measure",
     "pattern": "(how many|count).*(facts|entries|records).*(currency|denominated|measured in|use|using)",
@@ -1118,6 +1004,33 @@
     }
   },
   {
+    "template_id": "fcf_to_capex_trend",
+    "intent_text": "Ranks sector companies by free-cash-flow retention versus capital expenditure intensity across a multi-year window.",
+    "pattern": "(?i)(free cash flow|fcf).*(capex|capital expenditure).*(trend|coverage|ratio)",
+    "example_questions": [
+      "(?i)(free cash flow|fcf).*(capex|capital expenditure).*(trend|coverage|ratio)"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "year_2",
+        "year_3",
+        "year_4",
+        "year_5",
+        "end_year",
+        "min_years",
+        "min_cfo",
+        "min_capex_abs",
+        "max_fcf_retention",
+        "min_fcf_retention",
+        "max_capex_intensity",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
+    }
+  },
+  {
     "template_id": "form_type_rank",
     "intent_text": "Return the form type with the specified rank by frequency",
     "pattern": "what is the (second|third).*form type",
@@ -1133,11 +1046,10 @@
   },
   {
     "template_id": "gross_margin_trend_sector",
-    "intent_text": "Compare gross margin resilience across a sector between two fiscal years",
-    "pattern": "(?i)(gross margin|pricing power).*(trend|change|evolution|companies).*(20\\d{2}).*(20\\d{2})",
+    "intent_text": "Ranks companies within a sector by gross-margin change between two fiscal years with a revenue floor.",
+    "pattern": "(?i)(gross margin|pricing power).*(trend|change|evolution).*(20\\\\d{2}).*(20\\\\d{2})",
     "example_questions": [
-      "How did gross margins for leading Consumer Staples brands change between FY2019 and FY2023?",
-      "Which Consumer Staples companies expanded gross margin the most over the last five years?"
+      "(?i)(gross margin|pricing power).*(trend|change|evolution).*(20\\\\d{2}).*(20\\\\d{2})"
     ],
     "metadata": {
       "parameters": [
@@ -1146,6 +1058,22 @@
         "end_year",
         "min_revenue",
         "limit"
+      ],
+      "intent_category": "profitability_trend"
+    }
+  },
+  {
+    "template_id": "hardware_gross_margin_trend",
+    "intent_text": "Returns quarterly revenue, cost of revenue, and gross margin percentage for named hardware companies over the most recent N quarters.",
+    "pattern": "(?i)(gross margin).*(quarter|q[1-4]|trend|over time)",
+    "example_questions": [
+      "(?i)(gross margin).*(quarter|q[1-4]|trend|over time)"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "quarter_count",
+        "min_period"
       ],
       "intent_category": "time_series_profitability"
     }
@@ -1164,11 +1092,10 @@
   },
   {
     "template_id": "inventory_turnover_trend",
-    "intent_text": "Track rolling inventory turnover and days-inventory trend for named companies",
-    "pattern": "(?i)(inventory turnover|inventory efficiency|days inventory).*(quarter|trend|last)",
+    "intent_text": "Ranks named retailers by change in inventory turnover over the most recent N quarters and reports the change in days inventory outstanding.",
+    "pattern": "(?i)(inventory turnover|inventory efficiency).*(quarter|trend|over).*",
     "example_questions": [
-      "Show the inventory turnover trends for major retailers over the last 6 quarters, highlighting supply chain efficiency improvements.",
-      "Which Consumer Staples companies improved days inventory the most over the past year?"
+      "(?i)(inventory turnover|inventory efficiency).*(quarter|trend|over).*"
     ],
     "metadata": {
       "parameters": [
@@ -1336,7 +1263,7 @@
     "intent_text": "Latest ROE = Net Income / Equity",
     "pattern": "(what|calculate|show).*(latest|most recent|current).*(return on equity|roe)",
     "example_questions": [
-      "What is the latest return on equity for Microsoft?"
+      "(what|calculate|show).*(latest|most recent|current).*(return on equity|roe)"
     ],
     "metadata": {
       "parameters": [
@@ -1409,11 +1336,10 @@
   },
   {
     "template_id": "net_debt_to_ebitda_trend",
-    "intent_text": "Track net debt-to-EBITDA leverage trends for named companies",
-    "pattern": "(?i)(net debt|debt-to-ebitda|leverage).*(trend|track|progression)",
+    "intent_text": "Computes net debt, EBITDA, and their ratio for a list of companies over a fiscal-year range.",
+    "pattern": "(?i)(net debt|debt-to-EBITDA|leverage).*(trend|track|progression)",
     "example_questions": [
-      "Track the net debt-to-EBITDA progression for major airlines from 2019 through 2023.",
-      "How has airline leverage normalized post-COVID?"
+      "(?i)(net debt|debt-to-EBITDA|leverage).*(trend|track|progression)"
     ],
     "metadata": {
       "parameters": [
@@ -1441,19 +1367,20 @@
   },
   {
     "template_id": "operating_margin_delta",
-    "intent_text": "Rank sector companies by operating margin improvement between two fiscal years",
+    "intent_text": "Ranks companies within a sector by the change in operating margin between two fiscal years with an optional revenue floor.",
     "pattern": "(?i)(which|what).*(company|companies).*(operating margin[s]?|operating income).*(improv|expand|increase).*(20\\d{2}).*(20\\d{2})",
     "example_questions": [
-      "Which Technology companies expanded operating margins the most between FY2022 and FY2023?",
-      "Which Financials companies posted the largest operating margin rebound year over year?"
+      "(?i)(which|what).*(company|companies).*(operating margin[s]?|operating income).*(improv|expand|increase).*(20\\d{2}).*(20\\d{2})"
     ],
     "metadata": {
       "parameters": [
         "sector",
         "start_year",
-        "end_year"
+        "end_year",
+        "min_revenue",
+        "limit"
       ],
-      "intent_category": "time_series_profitability"
+      "intent_category": "profitability_trend"
     }
   },
   {
@@ -1473,11 +1400,10 @@
   },
   {
     "template_id": "profit_margin_consistency_trend",
-    "intent_text": "Rank sector companies by five-year profit margin improvement and consistency",
-    "pattern": "(?i)(which|what).*(technology|tech|software|sector).*(profit|margin).*(improv|consisten).*(5|five).*year",
+    "intent_text": "Ranks companies in a sector by FY2019-FY2023 net profit margin improvement and monotonic consistency.",
+    "pattern": "(?i)(which|what).*(companies|sector).*(profit|margin).*(improv|consisten).*(year|yrs)",
     "example_questions": [
-      "Which Technology companies have shown the most consistent profitability improvement over the last five years?",
-      "Rank cloud software firms by five-year profit margin expansion."
+      "(?i)(which|what).*(companies|sector).*(profit|margin).*(improv|consisten).*(year|yrs)"
     ],
     "metadata": {
       "parameters": [
@@ -1504,9 +1430,9 @@
   {
     "template_id": "revenue_trend_multi_year",
     "intent_text": "Show revenue progression over multiple years with moving average",
-    "pattern": "(show|analyze|display).*revenue.*(trend|progression|over time|history)",
+    "pattern": "(?i)(show|analyze|display).*(revenue (trend|progression)|trend in revenue|revenue history|revenue over time)",
     "example_questions": [
-      "(show|analyze|display).*revenue.*(trend|progression|over time|history)"
+      "(?i)(show|analyze|display).*(revenue (trend|progression)|trend in revenue|revenue history|revenue over time)"
     ],
     "metadata": {
       "parameters": [
@@ -1534,11 +1460,10 @@
   },
   {
     "template_id": "roe_revenue_divergence",
-    "intent_text": "Flag companies whose ROE declines while revenue keeps rising",
+    "intent_text": "Ranks sector companies where ROE decreased between two fiscal years while revenue grew.",
     "pattern": "(?i)(which|what).*(company|companies).*(roe).*(declin|drop|compress).*(revenue).*(grow|increase)",
     "example_questions": [
-      "Which Technology companies saw ROE decline even though revenue grew between FY2021 and FY2023?",
-      "Highlight Industrials whose ROE compressed despite higher sales over the last three years."
+      "(?i)(which|what).*(company|companies).*(roe).*(declin|drop|compress).*(revenue).*(grow|increase)"
     ],
     "metadata": {
       "parameters": [
@@ -1548,15 +1473,15 @@
         "min_growth_pct",
         "limit"
       ],
-      "intent_category": "time_series_profitability"
+      "intent_category": "profitability_trend"
     }
   },
   {
     "template_id": "roe_trend_multi_year",
     "intent_text": "Track Return on Equity evolution over time",
-    "pattern": "(show|analyze|track).*(roe|return on equity).*(trend|over time|history)",
+    "pattern": "(?i)(show|analyze|track).*(roe|return on equity).*(trend|over time|history).*(\\\\bcompany\\\\b|\\\\bfirm\\\\b|ticker|cik|\\\\b's\\\\b)",
     "example_questions": [
-      "(show|analyze|track).*(roe|return on equity).*(trend|over time|history)"
+      "(?i)(show|analyze|track).*(roe|return on equity).*(trend|over time|history).*(\\\\bcompany\\\\b|\\\\bfirm\\\\b|ticker|cik|\\\\b's\\\\b)"
     ],
     "metadata": {
       "parameters": [
@@ -1656,6 +1581,48 @@
         "threshold"
       ],
       "intent_category": "sector_analysis"
+    }
+  },
+  {
+    "template_id": "semiconductor_roe_trend",
+    "intent_text": "Shows annual return on equity progression for a provided set of semiconductor leaders using net income and equity from 10-K filings.",
+    "pattern": "(?i)(?=.*\\b(nvidia|advanced micro devices|amd|intel|texas instruments)\\b)(?=.*(roe|return on equity|equity return))(?=.*(2019|2020|2021|2022|2023|2024)).*",
+    "example_questions": [
+      "(?i)(?=.*\\b(nvidia|advanced micro devices|amd|intel|texas instruments)\\b)(?=.*(roe|return on equity|equity return))(?=.*(2019|2020|2021|2022|2023|2024)).*"
+    ],
+    "metadata": {
+      "parameters": [
+        "company_values",
+        "start_year",
+        "end_year",
+        "min_years",
+        "max_abs_roe",
+        "result_limit"
+      ],
+      "intent_category": "time_series_profitability"
+    }
+  },
+  {
+    "template_id": "shareholder_return_trend",
+    "intent_text": "Ranks sector cohorts by combined dividends and share repurchases relative to operating cash flow over a multi-year window.",
+    "pattern": "(?i)(shareholder return|dividend|buyback).*(trend|trajectory|over|payout)",
+    "example_questions": [
+      "(?i)(shareholder return|dividend|buyback).*(trend|trajectory|over|payout)"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "start_year",
+        "year_2",
+        "year_3",
+        "end_year",
+        "min_years",
+        "min_total_return",
+        "min_cfo",
+        "max_payout_ratio",
+        "limit"
+      ],
+      "intent_category": "capital_allocation"
     }
   },
   {
@@ -1821,6 +1788,31 @@
     }
   },
   {
+    "template_id": "top_tech_cfo_trend",
+    "intent_text": "Shows quarterly operating cash flow history for the top revenue-ranked technology companies to highlight momentum shifts.",
+    "pattern": "(?i)(top|largest|leading).*(technology|tech).*(cash flow|cfo).*(quarter)",
+    "example_questions": [
+      "(?i)(top|largest|leading).*(technology|tech).*(cash flow|cfo).*(quarter)"
+    ],
+    "metadata": {
+      "parameters": [
+        "sector",
+        "ranking_year",
+        "min_revenue",
+        "top_n",
+        "start_year",
+        "end_year",
+        "start_period",
+        "end_period",
+        "min_quarters",
+        "max_abs_cfo",
+        "value_scale",
+        "result_limit"
+      ],
+      "intent_category": "cash_flow"
+    }
+  },
+  {
     "template_id": "total_company_count",
     "intent_text": "Total number of distinct companies represented in the dataset",
     "pattern": "(how many|count).*(companies).*(dataset)",
@@ -1846,11 +1838,10 @@
   },
   {
     "template_id": "working_capital_cash_cycle_trend",
-    "intent_text": "Track working capital / cash conversion cycle improvements over time",
+    "intent_text": "Ranks sector companies by reduction in working-capital days between two fiscal years and reports optional cash conversion cycle metrics.",
     "pattern": "(?i)(working capital|cash conversion).*(trend|improv|days)",
     "example_questions": [
-      "Show the working capital trends for Industrial companies from 2020 to 2023, highlighting the biggest cash conversion improvements.",
-      "Which machinery companies compressed their cash conversion cycle over the last three years?"
+      "(?i)(working capital|cash conversion).*(trend|improv|days)"
     ],
     "metadata": {
       "parameters": [
@@ -1859,26 +1850,7 @@
         "end_year",
         "limit"
       ],
-      "intent_category": "time_series_liquidity"
-    }
-  },
-  {
-    "template_id": "semiconductor_roe_trend",
-    "intent_text": "Annual return on equity trend for leading semiconductor companies.",
-    "pattern": "(?i)(?=.*\\b(nvidia|advanced micro devices|amd|intel|texas instruments)\\b)(?=.*(roe|return on equity|equity return))(?=.*(2019|2020|2021|2022|2023|2024)).*",
-    "example_questions": [
-      "Show year-over-year ROE for NVIDIA, AMD, Intel, and Texas Instruments from 2019 to 2024."
-    ],
-    "metadata": {
-      "parameters": [
-        "company_values",
-        "start_year",
-        "end_year",
-        "min_years",
-        "max_abs_roe",
-        "result_limit"
-      ],
-      "intent_category": "time_series_profitability"
+      "intent_category": "liquidity"
     }
   }
 ]

@@ -339,6 +339,7 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ### Working Agreements
 - Do not add persistent Markdown or throwaway scripts; clean up exploration artifacts before finishing a task.
+- Track all work in `bd`; start by running `bd ready --json` and claim the current item with `bd update <id> --status in_progress`. No markdown TODOs or external trackers; commit `.beads/issues.jsonl` with related code changes.
 - Ask for clarification before starting work that feels ambiguous and stay within the agreed design or plan.
 - Avoid new dependencies unless the team grants explicit approval.
 - Ship in small, meaningful iterations with a clear exit criterion (e.g., targeted pytest run, CLI demo, evaluation harness).

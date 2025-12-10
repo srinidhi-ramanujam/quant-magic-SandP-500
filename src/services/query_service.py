@@ -30,6 +30,7 @@ from src.telemetry import (
     setup_logging,
 )
 from src.llm_guard import LLMAvailabilityError
+from src.session_logger import log_interaction
 
 
 @dataclass
@@ -163,6 +164,9 @@ class QueryService:
                 )
                 if presentation:
                     response.presentation = presentation
+                    # Prefer the polished narrative as the final answer when available.
+                    if presentation.narrative:
+                        response.answer = presentation.narrative
             elif not include_presentation:
                 context.add_metadata("formatter_skipped", True)
 
@@ -194,6 +198,243 @@ class QueryService:
                 query_result=query_result,
                 success=False,
                 error=str(error),
+            )
+
+    def run_streaming(
+        self,
+        question: str,
+        *,
+        debug_mode: bool = False,
+        history: Optional[List[ConversationTurn]] = None,
+        include_presentation: bool = True,
+    ):
+        """
+        Stream the pipeline in stages for UI consumers.
+
+        Yields dicts with shape {"event": <str>, "data": <dict>} in this order:
+        start → entities → sql_preview → execution → reasoning → final (or error).
+        """
+
+        context = create_request_context(question)
+        history = history or []
+        entities: Optional[ExtractedEntities] = None
+        generated_sql: Optional[GeneratedSQL] = None
+        query_result: Optional[QueryResult] = None
+
+        def _emit(event_type: str, payload: dict):
+            return {"event": event_type, "data": payload}
+
+        def _sql_hint() -> Optional[str]:
+            parts: list[str] = []
+            if generated_sql:
+                if generated_sql.template_id:
+                    parts.append(f"template `{generated_sql.template_id}`")
+                elif generated_sql.generation_method:
+                    parts.append(generated_sql.generation_method)
+            if query_result:
+                parts.append(f"{query_result.row_count} rows")
+            return " · ".join(parts) if parts else None
+
+        def _emit_reasoning(stage: str, summary: str, extra: Optional[dict] = None):
+            payload = {
+                "request_id": context.request_id,
+                "stage": stage,
+                "summary": summary,
+            }
+            if extra:
+                payload.update(extra)
+            return _emit("reasoning", payload)
+
+        # Start event with request id for client correlation
+        yield _emit(
+            "start",
+            {
+                "request_id": context.request_id,
+                "message": "Processing started",
+            },
+        )
+
+        try:
+            entities = self.entity_extractor.extract(question, context)
+            yield _emit_reasoning(
+                "interpretation",
+                "Identified entities and metrics from the question.",
+                {
+                    "companies": entities.companies,
+                    "sectors": entities.sectors,
+                    "metrics": entities.metrics,
+                },
+            )
+            yield _emit(
+                "entities",
+                {
+                    "request_id": context.request_id,
+                    "companies": entities.companies,
+                    "sectors": entities.sectors,
+                    "metrics": entities.metrics,
+                },
+            )
+
+            generated_sql = self.sql_generator.generate(entities, question, context)
+            if not generated_sql:
+                raise ValueError("Could not generate SQL query for the question")
+
+            yield _emit_reasoning(
+                "template_selection",
+                "Selected template and generated SQL.",
+                {
+                    "template_id": generated_sql.template_id,
+                    "generation_method": generated_sql.generation_method,
+                },
+            )
+            yield _emit(
+                "sql_preview",
+                {
+                    "request_id": context.request_id,
+                    "template_id": generated_sql.template_id,
+                    "generation_method": generated_sql.generation_method,
+                    "sql": generated_sql.sql,
+                    "parameters": generated_sql.parameters,
+                },
+            )
+
+            with log_component_timing(context, "query_execution"):
+                result_df = self.query_engine.execute(generated_sql.sql)
+                query_result = QueryResult(
+                    data=result_df,
+                    row_count=len(result_df),
+                    columns=list(result_df.columns),
+                    execution_time_seconds=context.component_timings.get(
+                        "query_execution", 0.0
+                    ),
+                    sql_executed=generated_sql.sql,
+                )
+
+            yield _emit_reasoning(
+                "execution",
+                "Executed SQL and collected results.",
+                {
+                    "row_count": query_result.row_count,
+                    "columns": query_result.columns,
+                },
+            )
+            yield _emit(
+                "execution",
+                {
+                    "request_id": context.request_id,
+                    "row_count": query_result.row_count,
+                    "execution_time_seconds": query_result.execution_time_seconds,
+                },
+            )
+
+            response = self.response_formatter.format(
+                query_result, entities, context, debug_mode=debug_mode
+            )
+
+            yield _emit_reasoning(
+                "formatting",
+                "Formatting base response and reasoning trace.",
+                {"row_count": query_result.row_count},
+            )
+            reasoning_trace = self._build_reasoning_trace(
+                generated_sql, query_result, context
+            )
+            response.reasoning_trace = reasoning_trace
+            if reasoning_trace:
+                yield _emit_reasoning(
+                    "reasoning_trace",
+                    reasoning_trace.summary
+                    or "Compiled reasoning trace with template and row insights.",
+                    reasoning_trace.model_dump(),
+                )
+
+            if include_presentation and self.answer_formatter:
+                yield _emit_reasoning(
+                    "answer_formatter",
+                    "Generating polished narrative and highlights.",
+                )
+                presentation = self._invoke_answer_formatter(
+                    question=question,
+                    base_response=response,
+                    entities=entities,
+                    query_result=query_result,
+                    template_id=generated_sql.template_id,
+                    context=context,
+                    history=history,
+                )
+                if presentation:
+                    response.presentation = presentation
+                    if presentation.narrative:
+                        response.answer = presentation.narrative
+            elif not include_presentation:
+                context.add_metadata("formatter_skipped", True)
+
+            generate_telemetry_report(context, success=True)
+
+            result = QueryServiceResult(
+                response=response,
+                context=context,
+                entities=entities,
+                generated_sql=generated_sql,
+                query_result=query_result,
+                success=True,
+            )
+
+            log_interaction(
+                channel="api_stream",
+                question=question,
+                response=response,
+                context=context,
+                entities=entities,
+                generated_sql=generated_sql,
+                debug_mode=debug_mode,
+            )
+
+            final_payload = {
+                "answer": response.answer,
+                "success": True,
+                "sql": query_result.sql_executed if query_result else None,
+                "metadata": {
+                    "request_id": context.request_id,
+                    "total_time_seconds": round(context.elapsed(), 4),
+                    "component_timings": context.component_timings,
+                    "row_count": query_result.row_count if query_result else None,
+                },
+                "sources": response.sources or None,
+                "debug": response.debug_info if debug_mode else None,
+                "error": None,
+                "presentation": response.presentation.model_dump()
+                if response.presentation
+                else None,
+                "reasoning_trace": reasoning_trace.model_dump()
+                if reasoning_trace
+                else None,
+                "sql_collapsible_hint": _sql_hint(),
+            }
+
+            yield _emit("final", final_payload)
+
+        except LLMAvailabilityError as error:
+            log_error(context, error)
+            generate_telemetry_report(context, success=False, error=str(error))
+            yield _emit(
+                "error",
+                {
+                    "request_id": context.request_id,
+                    "error": str(error),
+                    "success": False,
+                },
+            )
+        except Exception as error:  # pragma: no cover - defensive for stream mode
+            log_error(context, error)
+            generate_telemetry_report(context, success=False, error=str(error))
+            yield _emit(
+                "error",
+                {
+                    "request_id": context.request_id,
+                    "error": str(error),
+                    "success": False,
+                },
             )
 
     def close(self) -> None:

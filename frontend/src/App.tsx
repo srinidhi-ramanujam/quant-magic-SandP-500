@@ -34,12 +34,15 @@ type Message = {
   content: string;
   timestamp: string;
   metadata?: {
+    request_id?: string;
     sql?: string | null;
     total_time_seconds?: number;
     row_count?: number;
     presentation?: PresentationPayload | null;
     reasoning_trace?: ReasoningTrace | null;
     sql_hint?: string | null;
+    progress?: string[];
+    streaming?: boolean;
   };
 };
 
@@ -59,6 +62,31 @@ type QueryResponse = {
   presentation?: PresentationPayload | null;
   reasoning_trace?: ReasoningTrace | null;
   sql_collapsible_hint?: string | null;
+};
+
+type StreamEventPayload = {
+  request_id?: string;
+  answer?: string;
+  success?: boolean;
+  sql?: string | null;
+  metadata?: Record<string, unknown>;
+  presentation?: PresentationPayload | null;
+  reasoning_trace?: ReasoningTrace | null;
+  error?: string | null;
+  row_count?: number | null;
+  template_id?: string | null;
+  generation_method?: string | null;
+  execution_time_seconds?: number | null;
+  companies?: string[];
+  sectors?: string[];
+  metrics?: string[];
+  parameters?: Record<string, unknown>;
+  sql_collapsible_hint?: string | null;
+  summary?: string | null;
+  warnings?: string[];
+  stage?: string | null;
+  columns?: string[];
+  details?: Record<string, unknown>;
 };
 
 const logInfo = (label: string, payload: unknown) => {
@@ -124,6 +152,7 @@ function App() {
 
     const trimmedQuestion = question.trim();
     const historyPayload = buildHistoryPayload(messages);
+    const isFirstMessage = messages.length === 0;
     const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
@@ -133,8 +162,22 @@ function App() {
         minute: "2-digit",
       }),
     };
+    const assistantId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantId,
+      type: "assistant",
+      content: "Thinking...",
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      metadata: {
+        progress: [],
+        streaming: true,
+      },
+    };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setQuestion("");
     setLoading(true);
     logInfo("question", {
@@ -147,8 +190,156 @@ function App() {
       textareaRef.current.style.height = "auto";
     }
 
+    const appendProgress = (text: string) => {
+      setMessages((prev) =>
+        prev.map((message) => {
+          if (message.id !== assistantId) return message;
+          const progress = [...(message.metadata?.progress ?? []), text];
+          return {
+            ...message,
+            content: progress.join("\n"),
+            metadata: {
+              ...message.metadata,
+              progress,
+              streaming: true,
+            },
+          };
+        })
+      );
+    };
+
+    const applyFinal = (payload: StreamEventPayload) => {
+      const metadata = payload.metadata || {};
+      const requestId =
+        (metadata.request_id as string | undefined) || payload.request_id;
+      const totalTime =
+        (metadata.total_time_seconds as number | undefined) ?? undefined;
+      const rowCount =
+        (metadata.row_count as number | undefined) ?? payload.row_count ?? null;
+
+      setMessages((prev) =>
+        prev.map((message) => {
+          if (message.id !== assistantId) return message;
+          return {
+            ...message,
+            content: payload.answer ?? message.content,
+            metadata: {
+              ...message.metadata,
+              request_id: requestId,
+              sql: payload.sql ?? null,
+              total_time_seconds: totalTime,
+              row_count: rowCount ?? undefined,
+              presentation: payload.presentation ?? null,
+              reasoning_trace: payload.reasoning_trace ?? null,
+              sql_hint:
+                payload.sql_collapsible_hint ||
+                (metadata.sql_collapsible_hint as string | undefined) ||
+                null,
+              progress: message.metadata?.progress ?? [],
+              streaming: false,
+            },
+          };
+        })
+      );
+
+      if (isFirstMessage) {
+        const newSession: ChatSession = {
+          id: Date.now().toString(),
+          title: userMessage.content.slice(0, 50) + "...",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        setChatHistory((prev) => [newSession, ...prev]);
+      }
+
+      logInfo("response", {
+        id: assistantId,
+        requestId,
+        success: payload.success,
+        sql: payload.sql,
+      });
+    };
+
+    const applyError = (messageText: string) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                content: messageText,
+                metadata: {
+                  ...message.metadata,
+                  streaming: false,
+                },
+              }
+            : message
+        )
+      );
+    };
+
+    const handleStreamEvent = (eventType: string, payload: StreamEventPayload) => {
+      switch (eventType) {
+        case "start":
+          appendProgress("Starting…");
+          break;
+        case "entities": {
+          const companies = payload.companies?.join(", ");
+          const sectors = payload.sectors?.join(", ");
+          appendProgress(
+            `Entities → companies: ${companies || "—"}, sectors: ${
+              sectors || "—"
+            }`
+          );
+          break;
+        }
+        case "sql_preview":
+          appendProgress(
+            `Template: ${payload.template_id || "n/a"} | Method: ${
+              payload.generation_method || "unknown"
+            }`
+          );
+          break;
+        case "execution":
+          appendProgress(
+            `Query executing… rows (so far): ${
+              payload.row_count ?? "unknown"
+            }, time: ${
+              payload.execution_time_seconds !== null &&
+              payload.execution_time_seconds !== undefined
+                ? `${payload.execution_time_seconds.toFixed(2)}s`
+                : "—"
+            }`
+          );
+          break;
+        case "reasoning":
+          {
+            const summary =
+              payload.reasoning_trace?.summary || payload.summary || null;
+            const stage = payload.stage ? `${payload.stage}: ` : "";
+            if (summary) {
+              appendProgress(`${stage}${summary}`);
+            } else {
+              appendProgress(`${stage}Reasoning underway…`);
+            }
+          }
+          break;
+        case "final":
+          applyFinal(payload);
+          setLoading(false);
+          break;
+        case "error":
+          applyError(payload.error || "Streaming error");
+          setLoading(false);
+          break;
+        default:
+          break;
+      }
+    };
+
     try {
-      const response = await fetch("/api/query", {
+      const response = await fetch("/api/query/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -170,46 +361,44 @@ function App() {
         );
       }
 
-      const payload = (await response.json()) as QueryResponse;
+      if (!response.body) {
+        throw new Error("No response body received from stream.");
+      }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "assistant",
-        content: payload.answer,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        metadata: {
-          sql: payload.sql,
-          total_time_seconds: payload.metadata
-            ?.total_time_seconds as number,
-          row_count: payload.metadata?.row_count as number,
-          presentation: payload.presentation ?? null,
-          reasoning_trace: payload.reasoning_trace ?? null,
-          sql_hint: payload.sql_collapsible_hint ?? null,
-        },
-      };
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      logInfo("response", {
-        id: assistantMessage.id,
-        requestId: payload.metadata?.request_id,
-        success: payload.success,
-        sql: payload.sql,
-      });
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
 
-      // Add to chat history if it's the first message in the session
-      if (messages.length === 0) {
-        const newSession: ChatSession = {
-          id: Date.now().toString(),
-          title: userMessage.content.slice(0, 50) + "...",
-          timestamp: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
-        setChatHistory((prev) => [newSession, ...prev]);
+        for (const part of parts) {
+          const lines = part.split("\n");
+          let eventType = "message";
+          const dataLines: string[] = [];
+
+          for (const line of lines) {
+            if (line.startsWith("event:")) {
+              eventType = line.replace("event:", "").trim();
+            } else if (line.startsWith("data:")) {
+              dataLines.push(line.replace("data:", "").trim());
+            }
+          }
+
+          const dataStr = dataLines.join("\n");
+          if (!dataStr) continue;
+
+          try {
+            const payload = JSON.parse(dataStr) as StreamEventPayload;
+            handleStreamEvent(eventType, payload);
+          } catch (parseError) {
+            console.error("[ui] stream parse error", parseError);
+          }
+        }
       }
     } catch (err) {
       console.error("[ui] error", err);
@@ -217,16 +406,7 @@ function App() {
         err instanceof Error
           ? err.message
           : "Unable to reach the API. Please confirm the backend is running.";
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "assistant",
-        content: errorText,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      applyError(errorText);
     } finally {
       setLoading(false);
     }

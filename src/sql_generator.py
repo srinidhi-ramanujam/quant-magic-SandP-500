@@ -1084,7 +1084,7 @@ class SQLGenerator:
         Returns:
             GeneratedSQL if successful, None if unable to generate
         """
-        params = parameter_mapping.copy()
+        params = self._sanitize_parameter_mapping(parameter_mapping, template)
 
         self.logger.debug(
             f"Generating SQL from template: {template.template_id} with LLM parameters: {params}"
@@ -1102,6 +1102,16 @@ class SQLGenerator:
             # Check again
             missing_params = set(template.parameters) - set(params.keys())
             if missing_params:
+                # For asset_turnover_trend, allow sic bounds to default wide when omitted.
+                if template.template_id == "asset_turnover_trend" and missing_params <= {
+                    "sic_min",
+                    "sic_max",
+                }:
+                    params.setdefault("sic_min", "0")
+                    params.setdefault("sic_max", "9999")
+                    missing_params = set(template.parameters) - set(params.keys())
+
+            if missing_params:
                 self.logger.error(
                     f"Still missing parameters after fallback: {missing_params}"
                 )
@@ -1110,6 +1120,8 @@ class SQLGenerator:
         params = self._apply_default_parameters(
             params, missing_params, template, entities
         )
+
+        params = self._apply_template_specific_overrides(params, template)
 
         question_lower = getattr(self, "_current_question", "").lower()
         remaining_missing = set(template.parameters) - set(params.keys())
@@ -1154,6 +1166,36 @@ class SQLGenerator:
         except Exception as e:
             self.logger.error(f"Failed to generate SQL from LLM template: {e}")
             return None
+
+    @staticmethod
+    def _sanitize_parameter_mapping(
+        parameter_mapping: Dict[str, Any], template: QueryTemplate
+    ) -> Dict[str, Any]:
+        """
+        Drop None/empty/null-like values from the LLM parameter map so defaults can fill.
+        """
+        sanitized: Dict[str, Any] = {}
+        for key, value in parameter_mapping.items():
+            if value is None:
+                continue
+            if isinstance(value, str) and value.strip().lower() in {"none", "null", ""}:
+                continue
+            sanitized[key] = value
+        return sanitized
+
+    def _apply_template_specific_overrides(
+        self, params: Dict[str, Any], template: QueryTemplate
+    ) -> Dict[str, Any]:
+        """
+        Apply guard-rail defaults when the LLM provided partial parameters.
+        """
+        if template.template_id == "asset_turnover_trend":
+            sic_flag = params.get("sic_filter_enabled")
+            if str(sic_flag).lower() in {"0", "false"}:
+                # If the filter is off, set wide SIC bounds to avoid "None" in SQL.
+                params.setdefault("sic_min", "0")
+                params.setdefault("sic_max", "9999")
+        return params
 
     def _generate_guided_sql(
         self,

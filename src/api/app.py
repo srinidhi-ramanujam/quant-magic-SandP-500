@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.llm_guard import (
@@ -112,6 +113,12 @@ def _build_sql_hint(result: QueryServiceResult) -> Optional[str]:
         parts.append(f"{result.query_result.row_count} rows")
 
     return " · ".join(parts) if parts else None
+
+
+def _sse_event(event: str, data: Dict[str, Any]) -> str:
+    """Format data for Server-Sent Events streaming."""
+
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
 app = FastAPI(
@@ -223,6 +230,38 @@ async def run_query(request: QueryRequest) -> QueryResponseModel:
 
     debug_payload = response.debug_info if request.debug_mode else None
     return QueryResponseModel.from_service_result(result, response, debug=debug_payload)
+
+
+@app.post("/query/stream", tags=["query"])
+async def run_query_stream(request: QueryRequest):
+    """Stream pipeline progress and final answer as SSE."""
+
+    try:
+        service = _resolve_query_service()
+    except LLMAvailabilityError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{exc}. {OFFLINE_FALLBACK_HELP}",
+        ) from exc
+
+    def event_stream():
+        try:
+            for event in service.run_streaming(
+                request.question,
+                debug_mode=request.debug_mode,
+                history=request.history,
+                include_presentation=request.include_formatted_answer,
+            ):
+                yield _sse_event(event["event"], event["data"])
+        except Exception as exc:  # noqa: BLE001 - surface stream errors
+            yield _sse_event(
+                "error",
+                {
+                    "error": str(exc),
+                },
+            )
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.on_event("shutdown")

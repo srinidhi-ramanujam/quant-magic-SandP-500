@@ -121,7 +121,7 @@ class Config(BaseModel):
         description="How many prior conversation turns to include in formatter prompt",
     )
     formatter_max_tokens: int = Field(
-        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_TOKENS", "900")),
+        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_TOKENS", "3000")),
         ge=100,
         description="Max output tokens for formatter completion",
     )

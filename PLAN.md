@@ -1,756 +1,176 @@
-# Development Plan - S&P 500 Financial Analysis Platform
+# Agile Delivery Plan — S&P 500 Financial Analysis Platform
 
-**Product**: AI-powered financial analytics via natural language  
-**Approach**: Incremental delivery with clear exit criteria  
-**Current Phase**: Phase 1 Complete → Phase 2 Starting  
-**Test Status**: 118 passed / 2 skipped / 2 xfailed
-
----
-
-## Executive Summary
-
-### What's Working ✅
-- **Phase 0**: PoC with 10/10 questions correct
-- **Phase 1**: LLM-first entity extraction & template selection with deterministic fallback when Azure is unavailable
-- **Data**: 15.5M+ facts, 589 companies, 27 SQL templates (schema-aligned)
-- **Tests**: 118 passing (integration marked/skipped), full template execution harness, Phase 0 PoC suite fast again
-- **CLI**: Interactive REPL + single-shot modes now default to LLM paths when credentials exist
-
-### What's Next 🚀
-- **Phase 2**: Custom SQL generation + validation + coverage expansion
-- **Target**: 86+/171 simple questions passing (50%+)
-- **Timeline**: ~20-25 hours of focused development
-
-### Long-Term Goal
-90% pass rate on all 410 evaluation questions (369+/410)
+**Product Goal**: Natural language → SQL → analysis for S&P 500.  
+**Quality Targets**: Simple ≥50% at quality=5 (86+/171), Time-series 100% of curated set, Medium ≥30% pilot at quality=5, Overall long-term 90%+ (369+/410).  
+**Test Baseline**: 100 passing / 2 skipped / 2 xfailed (latest recorded).
 
 ---
 
-## ✅ Phase 0: Foundation (COMPLETE)
+## Task Management (bd/beads)
+- Track all work in `bd`. Before coding, run `bd ready --json` and claim the task with `bd update <id> --status in_progress`.
+- No markdown TODOs or external trackers; commit `.beads/issues.jsonl` with related code changes.
+- Link discovered work with `bd create ... --deps discovered-from:<parent-id>` and close tasks via `bd close <id> --reason "Completed"`.
 
-- Proved the NL→SQL→answer loop with DuckDB, deterministic patterns, and 3 starter templates.
-- Delivered the REPL/CLI, natural-language formatter, telemetry hooks, and 55/55 passing tests with sub-2s latency.
-- Outcome: solid scaffolding for data access + clean architecture; no further action required (Completed Nov 3, 2025).
+## Epic: Data Layer
 
----
+### Feature: Parquet Catalog & DuckDB Access (Done)
+- Curate parquet sources (`data/parquet/`) for facts (15.5M+), companies (589), template metadata, and catalogs.
+- Expose DuckDB-backed `QueryEngine` helpers; keep parquet read-only.
 
-## ✅ Phase 1: AI Integration (COMPLETE)
+### Feature: Schema Docs & Joins (Done)
+- Generate schema docs (`src/schema_docs.py`) with table/column catalog, join hints, and metric taxonomy surfaced to prompts.
 
-- Brought Azure OpenAI online for entity extraction + template routing with retries, circuit breaker, and Pydantic contracts.
-- Expanded template catalog to 27 patterns, added hybrid routing, and verified via 100+/104 tests with deterministic fallback.
-- Outcome: LLM-first pipeline with robust guardrails, ready to support Phase 2 custom SQL (Completed Nov 4, 2025).
-
----
-
-## 🚀 Phase 2: SQL Generation & Coverage (NEXT)
-
-**Goal**: Generate custom SQL for non-template questions and achieve 50%+ coverage
-
-**Current Coverage**: 47/279 evaluation questions matched (16.8%)  
-**Target Coverage**: 86+/171 simple questions (50%+)
-
-### Phase 2A: Custom SQL Generation (8-10 hours)
-
-Current status: schema docs + wiring landed, prompt/test scaffolding pending.
-
-#### Deliverables
-- [x] **Schema Documentation** (`src/schema_docs.py`)
-  - Table/column catalog with join hints
-  - Metric taxonomy for top 50 tags
-  - Helper accessors surfaced to prompts
-- [x] **Custom SQL Generator stub** (`SQLGenerator._generate_custom_sql`)
-  - Uses schema docs + LLM fallback when templates miss
-  - Deterministic guardrails around empty/invalid SQL
-- [x] **Prompt Refinement** (`get_sql_custom_generation_prompt`)
-  - Added curated few-shot set covering joins, aggregations, ranking
-  - Embedded failure-mode guidance and domain hints (currency, thresholds, ordering)
-  - Centralized prompt wiring through Azure client
-- [x] **Validation Hooks**
-  - Enforce read-only (`SELECT`) queries with multi-statement rejection
-  - Require `NUM` joins to pass through `SUB`, block unknown tables
-  - Emit telemetry for every custom SQL attempt with pass/fail reason
-- [x] **Test Suite** (`tests/test_sql_generator.py`)
-  - Unit coverage for prompt assembly, guardrails, telemetry logging
-  - Mocked LLM success/failure paths for custom SQL generation
-  - Integration smoke behind `ENABLE_AZURE_INTEGRATION_TESTS` (pending credentials toggle)
-
-#### Exit Criteria
-- [ ] 10+ non-template evaluation questions answered via custom SQL
-- [ ] Prompt/test coverage prevents regressions on schema drift
-- [ ] Telemetry shows success rate & latency for custom SQL path
-- [ ] No drop in existing deterministic/template coverage
+### Feature: Data Quality & Refresh (Planned)
+- Add lightweight sanity checks (row counts, null thresholds) before releases.
+- Document refresh playbook for parquet swaps and expected-answer updates.
 
 ---
 
-### Phase 2B: Two-Pass Validation (6-8 hours)
+## Epic: Semantic Layer (LLM + Templates + Validation)
 
-#### Deliverables
-- [x] **SQL Validator** (`src/sql_validator.py`)
-  - Pass 1: Static scan for DDL/DML + unbounded deletes/updates
-  - Pass 2: LLM intent alignment with structured verdict (`valid`, `reason`, `confidence`)
-  - Configurable retry budget surfaced via config
-  - Emits telemetry (`sql_validation` + `llm_calls` entries for every attempt)
-- [x] **Validation Prompts** (`get_sql_semantic_validation_prompt`)
-  - Include schema snippets + natural-language question
-  - Require JSON verdict with normalized rationale bullets
-  - Provide examples for allow/deny cases via curated instructions
-- [x] **Pipeline Integration**
-  - Invoke validator for all custom SQL paths (templates remain configurable next)
-  - Short-circuit response if validation fails; return actionable error
-  - Persist validation metadata on the request context for downstream logging
-- [x] **Tests** (`tests/test_sql_validator.py`, `tests/test_sql_generator.py`)
-  - Static checks (dangerous SQL, CTE handling)
-  - Mocked LLM semantic checks (match/mismatch)
-  - Telemetry assertions for success/failure paths
+### Feature: Core Template Engine (Done)
+- Hybrid routing in `sql_generator.py` with deterministic templates, LLM confirmation, and fallback.
+- Entity extraction (`entity_extractor.py`) with LLM + deterministic + hybrid retriever.
+- Azure client with retry/circuit breaker; Pydantic contracts; telemetry hooks.
 
-#### Exit Criteria
-- [ ] 100% of generated SQL passes static scan before execution
-- [ ] Semantic validation confidence ≥0.8 on green paths
-- [ ] Workbook entries capture validation outcome & confidence
-- [ ] No increase in execution failures during eval sweeps
+### Feature: Custom SQL Generation & Two-Pass Validation (Done)
+- Custom SQL path with prompt/few-shots, read-only enforcement, schema guardrails.
+- Two-pass validator (`sql_validator.py`): static scan + LLM semantic verdict; telemetry on every attempt.
+- Tests for generation, validation, guardrails, and telemetry.
 
----
+### Feature: Time-Series Templates (In Progress)
+- Parameterized templates live in `sql_templates/` (e.g., `asset_turnover_trend.sql`, `cfo_to_net_income_trend.sql`, `current_ratio_trend.sql`, `operating_margin_delta.sql`, `gross_margin_trend_sector.sql`, `inventory_turnover_trend.sql`, `working_capital_cash_cycle_trend.sql`, `net_debt_to_ebitda_trend.sql`, `semiconductor_roe_trend.sql`, etc.).
+- **Work Recipe (apply per time-series question)**:
+  1) Author/adjust template SQL with parameters (sector/company filters, fiscal window, thresholds, limits, SIC bounds, coverage guards, casing-safe tags) in `sql_templates/<template_id>.sql`.
+  2) Register intent in `data/parquet/query_intelligence.parquet` + `data/template_intents.json`; rebuild vector store (`python scripts/export_template_intents.py` then `python scripts/build_vector_store.py`).
+  3) Ground truth via DuckDB/QueryEngine; update `evaluation/questions/time_series_analysis.json` (sample_data, business_insight, key_findings) and `time-series-validator.csv`.
+  4) Formatter: ensure `response_formatter` emits narrative + table (`truncated` flag) with any bespoke phrasing.
+  5) Verify: `python -m src.cli "<question>" --debug` and `python scripts/run_eval_suite.py --question "<question>" --no-json`; confirm template ID, validator pass, row counts.
+  6) Tests: add/extend regression in `tests/test_sql_templates.py` (parameter substitution/selection, validator confidence).
+- **Acceptance (per task)**: Parameterized template checked in; intent registered + vector store rebuilt; grounded expected answer/table in JSON + validator CSV; CLI + eval command pass with template ID logged; regression test added.
+- **Pending tasks (28)** — convert each into a reusable parameterized template following the recipe:
+  1) Industrials working capital compression FY2020–FY2023; cash conversion cycle impact.
+  2) Consumer Staples gross-margin trend FY2019–FY2023; inflation resilience.
+  3) Large US banks ROE ≥12% streak 2021–2023.
+  4) Equity-to-assets ratio JPM/BAC/Citi/WFC 2019–2024.
+  5) Financials operating cash flow volatility (coef of variation) quarterly 2021–2023.
+  6) Staples vs Discretionary gross-margin divergence 2019–2024 quarterly.
+  7) Healthcare CFO-to-capex ratios 2019–2024.
+  8) Cloud software (MSFT/ADBE/CRM) operating margin acceleration post-COVID vs pre.
+  9) Apple/Dell/HP gross margins pre-COVID vs supply-chain disruption.
+  10) Exxon/Chevron/Conoco FCF swing 2018–2019 vs 2021–2022.
+  11) US airlines net-debt-to-EBITDA reversion to pre-COVID by 2023.
+  12) Walmart/Target/Costco inventory turnover + CCC across pre/lockdown/normalization.
+  13) Large banks equity-to-assets bands during 2020–2021 and reversion by 2023.
+  14) Pfizer/J&J/Merck cash-to-assets pre-COVID vs vaccine scale-up.
+  15) Semiconductor ROE growth 2021–2023 vs 2018–2019.
+  16) Consumer staples gross-margin compression pre-COVID to 2022 inflation.
+  17) Tech/Energy/Industrials CFO-to-capex ratio lift post-COVID vs baseline.
+  18) Walmart/Target/Costco quarterly revenue growth + inventory turnover lockdown vs restock.
+  19) Specialty retailers (HD/LOW/BBY) operating margins post-COVID vs pre-COVID.
+  20) UPS/FedEx/XPO operating cash flow recovery and steepest year.
+  21) Airline interest coverage 2018–2023.
+  22) Trucking/logistics (JBHT/ODFL/KNX) gross-margin trajectory 2021 spike vs 2023 normalization.
+  23) Healthcare providers/device makers (UNH/HCA/MDT/ABT) OCF vs net income post-COVID.
+  24) Pfizer/Moderna/J&J capex intensity 2020–2022 vs pre-COVID.
+  25) Biotech majors (AMGN/GILD/BIIB) cash-to-assets 2018–2019 through 2020–2021.
+  26) Top US banks ROE within ±200 bps of pre-COVID during 2020–2021 and reversion by 2023.
+  27) Quarterly loan-loss provisions JPM/BAC/Citi/WFC 2018–2023.
+  28) Regional banks (PNC/Truist/USB) net interest income vs interest expense zero-rate vs hike era.
+- **Exit**: 25/25 time-series questions hit templates (no custom SQL), validation clean, tables render, workbook logs template IDs and row counts.
 
-### Phase 2C: Coverage Expansion (6-8 hours)
+### Feature: Medium-Complexity Analysis Templates (Planned)
+- Design ~10–12 reusable templates (comparatives, rankings, deltas: margin/revenue/ROE divergences, EBITDA/FCF quality, acquisition thresholds, sector swaps).
+- Register intents and regenerate vector store; expand few-shots for medium phrasing.
+- Enhance entity extractor for fiscal-period and comparative language.
+- Add unit tests for selection/parameter inference; validator tests for ranking/aggregation semantics.
+- Map medium eval questions (50 active in `medium_analysis_v3.json`) to templates; refresh expected answers where needed.
+- **Acceptance (per task)**: Parameterized template checked in; intent registered + vector store rebuilt; grounded expected answer/table in medium JSON; CLI + eval command for mapped question passes with template ID logged; regression test added (selection + validator).
+- **Planned tasks (initial 12)**:
+  1) Revenue growth vs ROE divergence (identify companies with rising revenue but falling ROE; rank deltas).
+  2) Multi-year operating margin rebound by sector (post-COVID vs pre) with thresholds and limits.
+  3) EBITDA margin improvement rank with revenue floors (sector-agnostic).
+  4) Acquisition/threshold screen (e.g., M&A spend or capex-to-revenue spikes) with parameterized thresholds.
+  5) Debt-to-equity and interest coverage comparative screen across cohorts.
+  6) FCF quality screen (CFO vs net income) with sector filters and outlier caps.
+  7) Dividend + buyback payout ratio leaderboard relative to CFO for top cohorts.
+  8) Gross-margin spread comparisons between two sectors over a multi-year window.
+  9) Working-capital efficiency comparisons (DSO/DIO/DPO) across two sectors.
+  10) Asset turnover rank within sector with revenue/SIC filters.
+  11) Capex intensity rank within sector with revenue floors and SIC ranges.
+  12) Top-N growth vs profitability quadrant (high growth + high margin) with tunable cutoffs.
+- **Exit**: ≥10 medium questions routed to templates (no custom SQL) with validator confidence ≥0.8; workbook shows template IDs and intent confidence.
 
-#### Deliverables
-- [x] **Evaluation Runner Enhancements** (`scripts/run_eval_suite.py`)
-  - CLI flags for tiers/custom questions
-  - Telemetry logging into `evaluation/EVAL_WORKBOOK.csv`
-  - Auto-scoring (5/3/1) with tolerance awareness
-- [ ] **Workbook Analytics**
-  - Add summarizer script for pass-rate by tag/category
-  - Reverse chronological ordering (done) + filters for regressions
-  - Derive top failure taxonomies (template miss, entity miss, SQL error)
-- [ ] **Iteration 1 – High-Impact Fixes**
-  - Close remaining simple-tier numeric deltas (gross margin, other income)
-  - Add EBITDA / acquisition threshold templates and align expected answers
-  - Target ≥150/171 simple-tier scores at 5
-- [ ] **Iteration 2 – Medium Tier Prep**
-  - Refresh medium/time-series expected answers to match current parquet data
-  - Ensure entity extractor & template loader cover fiscal period questions
-  - Stand up regression templates for multi-year KPIs (inc. top-10 by sector)
-- [ ] **Reporting**
-  - Nightly baseline run stored as `RUN_latest`
-  - Markdown summary snippet for PRs (pass %, top failures, new fixes)
+### Feature: Hybrid Retrieval (Planned/Future)
+- Harden FAISS-based entity/template retrieval; measure hit rate vs. LLM fallback.
+- Metrics: entity accuracy ≥98%, template hit ≥95%, LLM calls minimized, latency gain ≥30% vs baseline.
 
-#### Exit Criteria
-- [ ] Simple tier ≥50% coverage with quality=5
-- [ ] Medium tier pilot (>30% quality=5) ready for next iteration
-- [ ] Regression alarms when template answers drift from parquet data
-- [ ] Documented playbook for updating expected answers safely
-  - Target: +15-20 questions passing
-
-- [ ] **Iteration 3**: Reach 50% threshold
-  - Fine-tune prompts
-  - Add edge case handling
-  - Target: 86+ total passing (50%+)
-
-- [ ] **Documentation**: Update README.md and PLAN.md
-  - Document what works and what doesn't
-  - List known limitations
-  - Update performance metrics
-
-#### Exit Criteria
-- [ ] 86+/171 simple questions passing (50%+)
-- [ ] All Phase 2 tests passing (30+ new tests)
-- [ ] Evaluation report generated
-- [ ] Documentation updated
-- [ ] Clean codebase (formatted, linted)
-
----
-
-### Time-Series Template Roadmap (NEW)
-
-**Goal**: Land reusable parameterized SQL templates that unlock the curated 25-question time-series suite without ad-hoc LLM work.
-
-| Template Family | Template IDs | Scope / Notes |
-|-----------------|--------------|---------------|
-| Profitability trends | `profit_margin_consistency_trend`, `consumer_staples_gross_margin_trend`, `hardware_gross_margin_trend`, `cross_sector_gross_margin_spread`, `ebitda_margin_improvement_rank`, `roe_trend_named_semis`, `bank_roe_consecutive_threshold`, `roe_vs_revenue_growth_flag` | Multi-year margin/ROE deltas leveraging revenue, cost, and equity tags plus cohort filters. |
-| Cash flow & capital allocation | `sector_free_cash_flow_trend`, `top_tech_cfo_trend`, `cfo_to_net_income_ratio_trend`, `healthcare_cfo_to_capex_ratio_trend`, `operating_cf_volatility_sector` | Operating cash flow contrasted with capex or net income to gauge quality of earnings and reinvestment. |
-| Balance sheet health | `current_ratio_trend`, `cash_to_assets_ratio_trend`, `equity_to_assets_ratio_trend`, `working_capital_cash_cycle_trend`, `retail_cash_conversion_cycle_trend` | Liquidity metrics derived from assets/liabilities plus CCC decomposition (DSO/DIO/DPO). |
-| Leverage & debt motion | `debt_reduction_progression`, `net_debt_to_ebitda_trend`, `energy_roe_threshold_detector` | Tracks leverage changes, approximated EBITDA, and high-ROE streaks for capital-intensive sectors. |
-| Efficiency metrics | `operating_margin_trend`, `inventory_turnover_trend`, `asset_turnover_trend` | Ratio trends based on inventory, revenue, and asset balances; reusable across cohorts. |
-
-
-### Recent Diagnostics (RUN_181 – Nov 13, 2025)
-
-Observed during time-series eval sweeps and targeted semantic-layer probes with extended timeouts.
-
-What worked
-- Sector-level routes: Healthcare profitability improvement (2020–2024) and Industrials operating-margin delta (2021→2022) executed end-to-end with correct template hits and formatted results.
-- Azure OpenAI connectivity: Health endpoint and direct Responses API probes succeed; parsing of Responses API output via `_parse_api_response` works as expected.
-
-What failed (root causes)
-- Intermittent Responses API errors (HTTP 400/500) and timeouts: Resolved operationally by increasing `QUERY_TIMEOUT_SECONDS` to 300 and allowing retries; reliability still variable under load.
-- Custom SQL generation validation failures for some metric/sector mixes:
-  - Case sensitivity violations on tags and filters (e.g., `assetscurrent`, `liabilitiescurrent`, `form='10-k'`, `fp='fy'` used in lowercase).
-  - Reference to non-existent columns (e.g., `num.segments`) and static scan failures (“SQL must start with SELECT or WITH”).
-  - Financials current-ratio question recommended custom SQL but failed semantic validation due to schema/casing issues.
-- Template-guided generation bug: `cash_to_assets_ratio_trend` path threw `replace() argument 2 must be str, not bool` during parameter substitution for named cohorts (e.g., Pfizer/J&J/Amgen).
-- Template coverage gaps: Some sector swaps (e.g., Energy gross-margin trend) fell back to custom SQL where a sectorized variant/template should exist.
-
-Action items (near-term) ✅ COMPLETED
-1) ✅ Stabilize template parameterization
-   - Fixed the `replace()` non-str argument bug in template parameter substitution for all templates.
-   - Added canonical casing validation for XBRL tags (`AssetsCurrent`, `LiabilitiesCurrent`, `form='10-K'`, `fp='FY'`) in custom SQL generation.
-   - Enhanced prompts with explicit casing requirements.
-2) ✅ Expand deterministic coverage
-   - Parameterized `current_ratio_trend` template to support any sector, start_year, end_year, and limit.
-   - Updated template compatibility logic to allow parameterized templates to work with any sector.
-   - Enhanced `gross_margin_trend_sector` pattern matching for better recognition.
-3) ✅ Improve reliability and pacing
-   - Template matching and parameter substitution now handle edge cases robustly.
-   - Validation provides clear error messages for casing issues.
-4) ✅ Telemetry and tests
-   - Added comprehensive unit tests for parameter substitution and casing validation.
-   - Captured telemetry for semantic layer test questions.
-
-Results from semantic layer remediation (5 modified questions):
-- ✅ Financial current ratios (2019-2023): SUCCESS - Uses `current_ratio_trend` template
-- ✅ Pfizer/JNJ/Amgen cash-to-assets (2019-2024): SUCCESS - Uses `cash_to_assets_ratio_trend` template
-- ❌ Energy gross margins (2020-2024): FAILED - Template selection issue (LLM rejection)
-- ❌ Healthcare profitability (2020-2024): FAILED - Custom SQL casing validation (working as intended)
-- ❌ Industrials operating margins (2021-2022): FAILED - Template parameter bug
-
-Core issues resolved: Template parameter handling, SQL casing validation, and cross-sector template compatibility.
-
-**Next Actions**
-1. Implement slot extractors + SQL builders for the profitability and cash-flow families (highest coverage impact).
-2. Register each template in `data/template_intents.json` with clear natural-language exemplars for FAISS retrieval.
-3. Add focused unit tests per family that validate metric math against DuckDB snapshots.
-4. Re-run `scripts/run_eval_suite.py --suite time_series` and append telemetry to `evaluation/EVAL_WORKBOOK.csv`.
-
-**Progress Log**
-- [x] TS_018 `cash_to_assets_ratio_trend`: Added Microsoft/Adobe/Salesforce liquidity template with FY2019–FY2024 coverage, refreshed FAISS intents + parquet metadata, updated evaluator ground truth, CLI formatter, telemetry, and pytest guardrail (`tests/test_sql_templates.py`).
-- [x] TS_017 `ebitda_margin_improvement_rank`: Ground-truthed FY2021→FY2024 Technology EBITDA margin leaders with a $2B revenue floor and 5 pp improvement guardrail, refreshed JSON/validator artifacts, rebuilt FAISS + parquet metadata, wired formatter/CLI + pytest coverage, logged RUN_036 via `run_eval_suite`, and noted the alias dedupe needed to collapse legacy names (e.g., Trimble, Priceline) across 76 Tech filers with 2024 10-Ks.
-
-**Progress (Nov 10)**
-- Ground-truthed TS_001 using a DuckDB profit-margin consistency query; JSON + validator entries now include the exact SQL, sample data, and insights, so the `profit_margin_consistency_trend` template has a concrete reference implementation.
-- Registered `profit_margin_consistency_trend` in the template catalog / metadata / FAISS store so hybrid retrieval can route Technology profit-margin questions without falling back to the LLM.
-- Ground-truthed TS_003 with FY2021-FY2023 total-debt reductions (AT&T, AIG, US Bancorp, Deere, Apple) and shipped the `debt_reduction_progression` template for leverage questions.
-- Ground-truthed TS_004 with FY2019-FY2023 Healthcare current-ratio trends (Hologic, ResMed, Zoetis, Cooper, STERIS, IDEXX) and added the `current_ratio_trend` template to the catalog/FAISS store.
-- Ground-truthed TS_005 (FY2022→FY2023 Technology operating-margin rebound), refreshed the JSON/validator artifacts with DuckDB-sourced numbers, and registered the new `operating_margin_delta` template (metadata + FAISS) so margin-rebound questions route deterministically.
-- Ground-truthed TS_007 by adding the `working_capital_cash_cycle_trend` template, logging FY2020→FY2023 working-capital day reductions (airlines, rail, industrials) and updating JSON/validator artifacts so the CLI produces the curated list deterministically.
-- Ground-truthed TS_006 with the `roe_revenue_divergence` template, which now powers ROE-decline-vs-revenue-growth questions end-to-end (DuckDB numbers captured in JSON + validator, FAISS rebuilt, CLI verified).
-- Refreshed TS_008 with FY2019→FY2023 Consumer Staples gross-margin deltas (ADM, Constellation, Tyson, PepsiCo, Mondelez, Philip Morris, Monster) and captured the new DuckDB query, insights, and validator metadata ahead of wiring the `gross_margin_trend_sector` template.
-- Ground-truthed TS_009 inventory turnover trends for the top six retailers (new `inventory_turnover_trend` template) and logged the run in the telemetry workbook; formatter now summarizes turnover + DIO deltas.
-- Ground-truthed TS_010 leverage progression for Delta, Southwest, and United (new `net_debt_to_ebitda_trend` template) with FY2019–FY2023 DuckDB data and documented the dataset gap for American Airlines.
-  - Re-validated the DuckDB + QueryEngine outputs on 11 Nov 2025 after tightening the EBITDA guards, reran the CLI end-to-end, and logged RUN_026 in `evaluation/EVAL_WORKBOOK.csv` to capture the refreshed telemetry.
-- Ground-truthed TS_011 (Technology hardware asset-turnover trends) with a new `asset_turnover_trend` template, updated JSON/validator expectations, wired formatter output, and logged RUN_028 to capture the latest telemetry.
-  - Template now supports sector-wide/SIC-configurable cohorts with $10B revenue gating and has regression coverage in `tests/test_sql_templates.py`; README documents how to tune the parameters and validate via CLI/eval harness.
-- Ground-truthed TS_012 (Healthcare CFO-to-net income quality trends) via the new `cfo_to_net_income_trend` template, including canonical company dedupe, cash-to-earnings capping, updated JSON/validator artifacts, formatter support, SQL template regression tests, and telemetry run RUN_030.
-- Ground-truthed TS_015 (IT shareholder capital returns) with the refreshed `shareholder_return_trend` template, updated JSON/validator rows, formatter narratives, regression coverage, and telemetry run RUN_057 capturing FY2020–FY2023 dividends + buybacks vs payout ratios.
-- Ground-truthed TS_014 (Healthcare free cash flow versus capex coverage) with the `fcf_to_capex_trend` template, refreshed JSON/validator assets, rebuilt FAISS, extended formatter/tests, and logged RUN_033 (Quality=5) via CLI and `run_eval_suite`.
-- Ground-truthed TS_013 (Energy 15%+ ROE streak screen) with the `energy_roe_threshold_detector` template: validated DuckDB results (Halliburton, Devon, Marathon, Chesapeake, EOG), refreshed JSON + validator assets, extended CLI formatter coverage, rebuilt FAISS, logged the CLI/eval telemetry run, and added regression coverage in `tests/test_sql_templates.py`.
-- Ground-truthed TS_019 (Semiconductor ROE trendlines) with the `semiconductor_roe_trend` template: validated FY2019–FY2024 DuckDB coverage for NVIDIA/AMD/Intel/Texas Instruments, refreshed evaluation JSON + validator assets, extended CLI formatter/tests, rebuilt FAISS, and logged RUN_060 via CLI + `run_eval_suite`.
-- Ground-truthed TS_020 (Apple/Dell/HP gross margin trend) with the `hardware_gross_margin_trend` template: validated 8-quarter coverage via DuckDB, refreshed evaluation JSON + validator assets, extended CLI formatting/tests, rebuilt FAISS, and logged RUN_061 (Quality=5) via CLI + `run_eval_suite`.
-
-#### Time-Series Template Backlog (Agent Handoff)
-
-| ID | Question Focus | Template Needed | Status |
-|----|----------------|-----------------|--------|
-| TS_013 | Energy ROE streaks (15%+ for ≥3 yrs) | `energy_roe_threshold_detector` | ✅ Completed (12 Nov 2025) |
-| TS_014 | Free-cash-flow vs capex trend | `fcf_to_capex_trend` | Complete (RUN_033) |
-| TS_017 | Technology EBITDA margin delta (FY2021→FY2024) | `ebitda_margin_improvement_rank` | ✅ Completed (RUN_036) |
-| TS_015 | Dividend + buyback shareholder return | `shareholder_return_trend` | ✅ Completed (RUN_057) |
-| TS_016 | `top_tech_cfo_trend` – top 10 Tech CFO trend (FY2023 revenue cohort) | ✅ Completed 12 Nov 2025 – SQL template, CLI formatter, evaluation + validator refreshed | 
-| TS_019 | Semiconductor ROE trendlines (FY2019–FY2024 for NVIDIA/AMD/Intel/TI) | `semiconductor_roe_trend` | ✅ Completed 12 Nov 2025 – SQL template, CLI formatter, evaluation/validator refreshed |
-| TS_020 | Apple/Dell/HP gross margin trend (latest 8 quarters) | `hardware_gross_margin_trend` | ✅ Completed 12 Nov 2025 – Template + formatter + evaluation assets refreshed (RUN_061) |
-| TS_017–TS_025 | COVID recovery, sector KPI deltas (Retail, Transport, Banking, etc.) | Custom templates per question | Pending |
-
-Each remaining TS item should follow the **Agent Work Template** below so multiple agents can execute in parallel without ambiguity.
-
-##### Agent Work Template (per TS question)
-1. **Question + Data Validation**  
-   - Re-read the entry in `evaluation/questions/time_series_analysis.json` and confirm the dataset (DuckDB parquet) includes companies, tags, and time span needed.  
-   - If data is insufficient, document the gap and propose an adjusted question before coding.
-2. **Template / SQL Implementation**  
-   - If an appropriate template already exists, update its parameters; otherwise create a new `sql_templates/<template_id>.sql` file modeled after TS_011/TS_012.  
-   - Ensure canonical company handling, sector filters, guardrails (NULL handling, min coverage, caps) and parameter placeholders for sector, time span, min coverage, limits, thresholds.  
-   - Register the template in `data/parquet/query_intelligence.parquet`, `data/parquet/template_metadata.parquet`, and `data/template_intents.json`; rebuild FAISS via `python scripts/build_vector_store.py`.
-3. **DuckDB Ground Truth + JSON/Validator Updates**  
-   - Run the template via `QueryEngine` to capture the actual numbers.  
-   - Update the corresponding `expected_answer.sample_analysis`, `sample_data`, `business_insight`, `key_findings`, `investment_implications` in `evaluation/questions/time_series_analysis.json`.  
-   - Mirror the SQL + summary in `time-series-validator.csv` (Question, SQL_template, SQL_generated, Answer_expected, Quality).
-4. **Formatter & CLI Verification**  
-   - Add or extend formatter helpers in `src/response_formatter.py` when the template needs bespoke phrasing.  
-   - Run `python -m src.cli "<TS question>" --debug` to confirm deterministic routing and human-friendly output.
-5. **Telemetry + Tests**  
-   - Log a fresh run using `python scripts/run_eval_suite.py --question "<TS question>" --no-json` so `evaluation/EVAL_WORKBOOK.csv` captures RUN_xxx with Quality=5.  
-   - Add a regression entry to `tests/test_sql_templates.py` (and any additional targeted tests) covering the new template.
-6. **Docs + Plan Update**
-   - Update README/PLAN when the new pattern introduces tuning knobs or completion milestones.
-   - Summarize the work in PLAN under Time-Series Template Roadmap with template id + status.
+### Feature: Business-Ready Response Formatting (Planned)
+- Heuristics to emit tables for rankings/aggregations; concise narratives + highlights; warnings on truncation.
+- Parity of presentation payload across CLI/API/UI; toggle for raw vs formatted.
+- Tests for formatter outputs and CLI contract snapshots.
 
 ---
 
-### Template System Fixes (Post-Evaluation RUN_112)
+## Epic: Service Layer (CLI + API)
 
-**Issue**: Evaluation RUN_112 revealed that some templates marked as "completed" are still failing with template-guided generation. The issue is that complex templates with many parameters (>10) are generating invalid SQL when used with LLM guidance.
+### Feature: CLI Core (Done)
+- Interactive and single-shot modes with debug; flags for formatted answers; deterministic fallback when LLM unavailable.
 
-**Failed Templates from RUN_112**:
-- `top_tech_cfo_trend` (TS_016): Failed to generate valid SQL - template has 8+ complex parameters
-- `hardware_gross_margin_trend` (TS_020): Failed SQL validation - schema/tag issues in generated SQL
+### Feature: FastAPI Service (Done)
+- `/health` and `/query` with `QueryService` wiring; mirrors CLI behavior, includes presentation/reasoning/SQL hints; structured errors for LLM unavailability.
 
-**Root Cause**: Template-guided generation works for templates with reasonable parameter counts (≤5-6 parameters), but fails for highly parameterized templates (8+ parameters) because the LLM cannot reliably generate correct SQL with too many constraints.
-
-**Solution Strategy**:
-1. **Parameter Count Limits**: Only use template-guided generation for templates with ≤6 parameters
-2. **Complex Template Fix**: For templates with 7+ parameters, implement them as standard templates with full parameter inference rather than LLM guidance
-3. **Validation Improvements**: Enhance SQL validation to catch schema errors before execution
-4. **Fallback Logic**: When template-guided generation fails, ensure clean fallback to parameter inference + defaults
-
-**Action Items**:
-- [ ] Review all templates with >6 parameters and implement as standard inference-based templates
-- [ ] Fix `top_tech_cfo_trend` parameter inference for company ranking and revenue filtering
-- [ ] Fix `hardware_gross_margin_trend` schema references and tag filtering
-- [ ] Add validation guardrails for quarterly data availability
-- [ ] Test updated templates against evaluation questions
-- [ ] Update template metadata to reflect complexity-appropriate routing
+### Feature: Stability & Telemetry (Planned)
+- Enrich request IDs/latency/component timings in responses; configurable timeouts/retries.
+- Add lightweight rate limiting and clearer error surfacing for validator blocks.
 
 ---
 
-### Phase 2D: Hybrid Retrieval Initiative (Next)
+## Epic: UI (React + Vite)
 
-**Goal**: Replace LLM-heavy entity extraction and template selection with hybrid (keyword + embedding) retrieval while demonstrating measurable gains.
+### Feature: Chat Shell (Done)
+- ASCENDION-branded chat, health badge, SQL toggle, highlights/table rendering, auto-resizing input, local session list.
 
-#### Metrics to Track (Baseline vs. Hybrid)
-- **Entity Extraction Accuracy** – % of evaluation questions where all required slots match the expected context (derived from workbook + entity diff script). Target ≥98%.
-- **Template Hit Rate** – % of questions routed to the correct template without fallback. Target ≥95%.
-- **LLM Reliance** – Average number of LLM calls per question (entity + template + custom SQL). Target near-zero for template-backed queries.
-- **Latency** – Median end-to-end time per question (captured in workbook metadata). Target ≥30% improvement vs RUN_020 baseline.
-- **Custom SQL Success** – Semantic validator pass rate and latency for the remaining LLM-generated SQL cases to ensure no regressions.
+### Feature: UI–Backend Parity (In Progress)
+- Ensure `/api/query` responses render identically to CLI (narrative, highlights, tables with `truncated`, reasoning trace, SQL hint).
+- Better error/loading states; handle empty SQL gracefully; show request IDs for debug (non-invasive).
+- Optional smoke tests (React Testing Library/Cypress) for representative flows.
+- **Exit**: Same answers/structure across CLI and UI for sampled simple, time-series, medium questions; health badge reflects LLM availability.
 
-#### Deliverables
-- [ ] **Entity Catalog + Embeddings** – Curated dictionaries (sectors, jurisdictions, metrics, time phrases, question types) embedded via `sentence-transformers` and stored in FAISS/Chroma.
-- [ ] **HybridEntityRetriever** – Combines existing regex/threshold hints with embedding similarity to produce canonical slot values with confidence.
-- [ ] **TemplateIntentRetriever** – Keyword-filter + embedding similarity over template intent cards to select the template without hitting the LLM.
-- [ ] **Telemetry & Metrics Script** – Log retrieval confidences/result and ship a notebook/script that compares baseline vs. hybrid runs.
-- [ ] **Runbook Updates** – README/PLAN instructions on refreshing embeddings, tuning thresholds, and interpreting the metrics dashboard.
-
-#### Exit Criteria
-- [ ] ≥95% of simple-tier questions resolved without LLM entity/template calls.
-- [ ] Entity extraction accuracy ≥98% on the evaluation suite.
-- [ ] Template hit rate ≥95% with no quality regression.
-- [ ] Median latency improvement ≥30% vs. RUN_020.
-- [ ] Metrics dashboard attached to PRs demonstrating the improvement.
+### Feature: Streaming Thinking Trace (Planned)
+- Add streaming endpoint `/query/stream` (SSE) that emits start → entities → template/SQL preview → row_count/timings → reasoning tokens → final answer/error, preserving existing `/query`.
+- Extend `QueryService` with streaming generator and telemetry/logging; use Azure Responses API streaming where available, fallback to chunked reasoning trace when not.
+- UI: consume `/api/query/stream` with EventSource/streaming fetch; render a live “Thinking” panel showing tokens, SQL hint, and row counts; collapse into final answer message and support abort/retry.
+- **Exit**: Visible tokens start within ~1–2s during long (≈21s) queries; final payload matches existing answer/sql/presentation/reasoning fields; graceful fallback when streaming disabled.
 
 ---
 
-## Phase 3: Advanced Features (FUTURE)
+## Epic: Evaluation, Telemetry, and Reporting
 
-**Goal**: Support medium questions and time series analysis
+### Feature: Eval Runner (Done)
+- `scripts/run_eval_suite.py` to run suites (`simple`, `medium`, `time-series`) or custom questions; logs to `evaluation/EVAL_WORKBOOK.csv` and `evaluation/logs/`.
 
-### Deliverables (Planned)
-- [ ] Medium question support (multi-step analysis)
-  - Ratio calculations with context
-  - Company comparisons
-  - Sector benchmarking
-  - Target: 35+/50 medium questions (70%+)
+### Feature: Workbook Analytics (Planned)
+- Summaries by tier/tag/failure type (template miss, entity miss, SQL error); regression filters; markdown snippet for PRs.
+- Nightly/regular baseline runs stored as `RUN_latest` (simple + time-series + selected medium).
 
-- [ ] Time series analysis
-  - Trend detection
-  - Growth rate calculations
-  - Seasonality handling
-  - Target: 32+/40 time series questions (80%+)
-
-- [ ] Enhanced response formatting
-  - Tables and charts (JSON spec for UI)
-  - Comparisons with context
-  - Sector benchmarks
-
-- [ ] Caching layer
-  - In-memory cache for repeat queries
-  - 40%+ cache hit rate target
-
-### Exit Criteria (Planned)
-- [ ] 70%+ medium questions passing
-- [ ] 80%+ time series questions passing
-- [ ] Response formatting enhanced
-- [ ] Cache working with metrics
+### Feature: Test & Formatting Discipline (Ongoing)
+- Commands: `python -m pytest -m "not integration"` (fast), `python -m pytest tests/ -v` (full), `python -m black src/ tests/`.
+- No new deps beyond `requirements.txt`; no stray files.
 
 ---
 
-## Phase 4: Production Ready (FUTURE)
+## Quick Runbooks
 
-**Goal**: 90%+ overall pass rate and production deployment
-
-### Deliverables (Planned)
-- [ ] Complex question support
-  - Strategic analysis
-  - Multi-dimensional queries
-  - Target: 19+/25 complex questions (75%+)
-
-- [ ] Web UI integration
-  - Export Pydantic schemas to TypeScript
-  - REST API wrapper around CLI
-  - Mock FastAPI for UI testing
-
-- [ ] Performance optimization
-  - Query result caching
-  - Template pre-compilation
-  - Target: <1s for 80%+ of queries
-
-- [ ] Production deployment
-  - Azure deployment artifacts
-  - Monitoring and alerting
-  - Cost tracking
-
-### Exit Criteria (Planned)
-- [ ] 369+/410 questions passing (90%+)
-- [ ] Production-ready API
-- [ ] UI integration proven
-- [ ] Deployment automated
+- **Connectivity/Smoke**: `source .venv/bin/activate && source .env && python -m src.cli "How many companies are in Technology?" --debug`
+- **Eval Suites**: `source .venv/bin/activate && source .env && python scripts/run_eval_suite.py --suite simple --no-json` (add `--suite time-series` / `--suite medium` as needed)
+- **API + UI Local**: `./scripts/run_local_ui.sh` (starts uvicorn + Vite; requires `.env` and `frontend/node_modules/`)
 
 ---
 
-## Success Metrics
-
-### Coverage Targets by Phase
-| Phase | Simple | Medium | Complex | Time Series | Overall |
-|-------|--------|--------|---------|-------------|---------|
-| Phase 0 | 10/295 (3%) | 0/50 | 0/25 | 0/40 | 10/410 (2%) |
-| Phase 1 | ~47/171 (27%)* | 0/50 | 0/25 | 0/40 | ~47/410 (11%) |
-| **Phase 2** | **86+/171 (50%+)** | 0/50 | 0/25 | 0/40 | **86+/410 (21%+)** |
-| Phase 3 | 120+/171 (70%+) | 35+/50 (70%) | 0/25 | 32+/40 (80%) | 187+/410 (45%+) |
-| Phase 4 | 150+/171 (87%+) | 43+/50 (85%+) | 19+/25 (75%+) | 32+/40 (80%+) | **369+/410 (90%+)** ✅ |
-
-*Phase 1 template matching shows 47/279 matched, but actual execution not validated yet
-
-### Performance Targets
-- **Latency**: <1s for template path, <10s for LLM path
-- **Accuracy**: 90%+ overall (369+/410 questions)
-- **Test Coverage**: 100% pass rate on unit/integration tests
-- **Code Quality**: <5,000 total lines, Black formatted, type-hinted
-
----
-
-## Technical Architecture
-
-### Hybrid AI System
-
-```
-User Question
-     ↓
-┌─────────────────────────┐
-│ 1. Entity Extraction    │ ← LLM-enhanced (GPT-5)
-│    - Companies          │
-│    - Metrics            │
-│    - Time periods       │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│ 2. Template Selection   │ ← Hybrid Router
-│    - Fast path (≥0.8)   │   • No LLM call
-│    - LLM confirm (0.5-0.8) │   • LLM validates
-│    - LLM fallback (<0.5)│   • LLM selects
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│ 3. SQL Generation       │
-│    - Template-based     │ ← 27 patterns
-│    - Custom (LLM)       │ ← Phase 2
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│ 4. Validation (2-pass)  │ ← Phase 2
-│    - Syntax check       │
-│    - Semantic check (LLM)│
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│ 5. Query Execution      │
-│    DuckDB on parquet    │
-└────────────┬────────────┘
-             ↓
-┌─────────────────────────┐
-│ 6. Response Formatting  │
-│    Natural language     │
-└─────────────────────────┘
-             ↓
-        Answer
-```
-
-### Technology Stack
-
-**Core**:
-- Python 3.11+
-- DuckDB (OLAP queries on parquet)
-- Pydantic v2 (data validation)
-- pandas + pyarrow (data manipulation)
-
-**AI**:
-- Azure OpenAI (GPT-5 deployment)
-- Responses API with retry logic
-- Token tracking + cost monitoring
-- Circuit breaker pattern
-
-**Testing**:
-- pytest (104 tests)
-- 410 evaluation questions
-- Unit + integration + end-to-end tests
-
-**Code Quality**:
-- Black (formatting)
-- Type hints (100% coverage)
-- Pydantic models (all contracts)
-- ~2,500 lines application code
-
----
-
-## Development Workflow
-
-### Daily Process
-```bash
-# 1. Activate environment
-source .venv/bin/activate
-
-# 2. Run tests
-python -m pytest tests/ -v
-
-# 3. Work on feature
-# ... write test first ...
-# ... implement feature ...
-
-# 4. Run tests again
-python -m pytest tests/test_your_feature.py -v
-
-# 5. Format code
-python -m black src/ tests/
-
-# 6. Commit
-git add .
-git commit -m "feat: description"
-```
-
-### Phase 2 Workflow
-1. **Schema Documentation** → tests → implement
-2. **Custom SQL Generation** → tests → implement
-3. **Two-Pass Validation** → tests → implement
-4. **Evaluation** → iterate → achieve 50%+
-5. **Document** → commit → ready for Phase 3
-
----
-
-## Risk Mitigation
-
-### Known Risks
-1. **LLM Cost**: Mitigated by fast path (70%+ queries skip LLM)
-2. **LLM Latency**: Acceptable for demo, can optimize later
-3. **SQL Injection**: Validation blocks dangerous keywords
-4. **Template Coverage**: Custom SQL generator fills gaps
-
-### Quality Gates
-- All tests must pass before proceeding to next phase
-- No regressions tolerated (100+ tests must stay green)
-- Exit criteria must be met before claiming phase complete
-
----
-
-## Current File Structure
-
-```
-quant-magic-SandP-500/
-├── data/parquet/              # 253MB data
-│   ├── num.parquet            # 15.5M facts
-│   ├── companies_with_sectors.parquet  # 589 companies
-│   ├── query_intelligence.parquet      # 27 templates
-│   ├── financial_concepts.parquet
-│   ├── financial_ratios_definitions.parquet
-│   └── company_aliases.csv    # 161 aliases
-│
-├── src/                       # ~2,500 lines
-│   ├── azure_client.py        # 720 lines - Azure OpenAI wrapper
-│   ├── entity_extractor.py    # LLM + deterministic extraction
-│   ├── sql_generator.py       # Hybrid template selection
-│   ├── prompts.py             # LLM prompt templates
-│   ├── models.py              # 14 Pydantic models
-│   ├── cli.py                 # Interactive CLI
-│   ├── query_engine.py        # DuckDB wrapper
-│   ├── response_formatter.py  # NL formatting
-│   ├── intelligence_loader.py # Template loader
-│   ├── telemetry.py           # Logging + timing
-│   └── config.py              # Configuration
-│
-├── tests/                     # 104 tests (100 passing)
-│   ├── test_entity_extractor_llm.py    # 13 tests
-│   ├── test_sql_generator_hybrid.py    # 16 tests
-│   ├── test_eval_poc.py                # 11 tests (Phase 0)
-│   ├── test_azure_client.py            # 20 tests
-│   └── ... (9 other test files)
-│
-├── evaluation/questions/      # 410 questions
-│   ├── simple_lineitem.json   # 171 validated (from 295)
-│   ├── medium_analysis.json   # 50 questions
-│   ├── complex_strategic.json # 25 questions
-│   └── time_series_analysis.json # 40 questions
-│
-├── README.md                  # User documentation
-└── PLAN.md                    # This file
-```
-
----
-
-## Phase 2 Detailed Timeline
-
-### Week 1: Core Implementation (14-18 hours)
-- **Day 1-2**: Schema docs + custom SQL generation (8-10 hours)
-- **Day 3-4**: Two-pass validation (6-8 hours)
-- **Checkpoint**: 20+ new tests passing, no regressions
-
-### Week 2: Coverage Expansion (6-8 hours)
-- **Day 5**: Evaluation runner + Iteration 1 (3 hours)
-- **Day 6**: Iteration 2 + Iteration 3 (3 hours)
-- **Day 7**: Documentation + cleanup (2 hours)
-- **Checkpoint**: 86+/171 passing (50%+), Phase 2 complete
-
-**Total Estimate**: 20-26 hours of focused development
-
----
-
-## Next Actions (Phase 2 Start)
-
-1. ✅ **Complete Phase 1 cleanup** (DONE)
-   - All tests passing (100/104)
-   - Documentation updated
-   - Code committed
-
-2. [ ] **Phase 2A: Schema Documentation**
-   - Create `src/schema_docs.py`
-   - Document all tables, columns, join patterns
-   - Add XBRL tag reference
-
-3. [ ] **Phase 2A: Custom SQL Generation**
-   - Implement `_generate_custom_sql()` in `sql_generator.py`
-   - Create prompt in `prompts.py`
-   - Write 10 tests
-
-4. [ ] **Phase 2B: Validation**
-   - Create `src/sql_validator.py`
-   - Implement two-pass validation
-   - Write 10 tests
-
-5. [ ] **Phase 2C: Coverage Expansion**
-- Audit simple-tier templates for schema compatibility (replace stprinc/companies_with_sectors usage, ensure DuckDB column names match)
-- Add deterministic/custom templates for missing simple-tier patterns (currency usage, footnote counts, CIK lookups, latest filing dates, etc.)
-- Refresh simple-tier evaluation answers/tolerances once SQL alignment is complete
-
-   - Run evaluation (171 simple questions)
-   - Fix issues iteratively
-   - Achieve 86+ passing (50%+)
-
----
-
-## Parallel UI & Codespaces Roadmap
-
-These tracks run alongside Phase 2 backend work so the product can demo via a browser from GitHub Codespaces.
-
-### 1. Codespaces & Devcontainer Enablement ✅
-- ✅ Add `.devcontainer/devcontainer.json` using `mcr.microsoft.com/devcontainers/python:3.11` with Node 20 feature.
-- ✅ Preinstall Python dependencies (`pip install -r requirements.txt`) and prep for future `npm install`.
-- ✅ Forward ports 8000 (FastAPI) and 5173 (Vite), enable public URLs, and document DuckDB parquet handling plus required Azure secrets via Codespaces settings.
-
-### 2. FastAPI Service Layer
-- Introduce `src/services/query_service.py` (wraps entity extraction, SQL generation, execution, telemetry).
-- Stand up `src/api/app.py` exposing `POST /query` returning structured answers, SQL, and metadata; include graceful fallbacks when Azure creds are absent.
-- Add pytest coverage using `TestClient` for happy path, validation errors, and failure handling.
-
-### 3. Frontend Scaffold (React + HTMX) ✅
-- ✅ Create `frontend/` via Vite (React + TypeScript); configure Tailwind/PostCSS and load HTMX for progressive enhancement.
-- ✅ Implement initial query form + results shell calling FastAPI; keep composition extensible for future charts/visuals.
-- ✅ Skip authentication for first release; rely on Codespaces share links while leaving hooks for future auth layers.
-- ✅ Establish fetch client conventions and state management (start lightweight hooks, evaluate React Query later).
-
-#### Chat Interface (Completed November 6, 2025)
-- ✅ **Production-Ready Chat UI** - Modern chat interface with:
-  - Left sidebar (fixed): ASCENDION branding, chat history, quick access menu, settings
-  - Main chat area (scrollable): conversation thread with user questions and AI responses
-  - Bottom text input with aligned send button and auto-resize
-  - API connection status indicator (top right)
-  - Color scheme: Professional indigo/blue palette (indigo-600 to blue-500 gradient for user messages)
-  - Chat session management and history tracking
-  - Built with React + TypeScript + Tailwind CSS + Vite
-  - Responsive design with smooth scrolling and animations
-
-### 4. Tooling & Documentation ✅
-- ✅ Provide shared commands (Makefile or tasks) for `pytest -m "not integration"`, `uvicorn src.api.app:app --reload`, and `npm run dev`.
-- ✅ Update onboarding docs (`README.md`, AGENTS.md if needed) with Codespaces setup, env vars, and run instructions.
-- ✅ Document chat interface features, setup, and usage patterns.
-- ✅ Capture open questions (parquet distribution, streaming updates) for next iteration before implementation.
-- ✅ Add per-session logging (CLI/API/UI) with structured Q&A records rotating via `.logs/session-<timestamp>/`.
-
-### 5. Next UI Enhancements (Planned)
-
-#### A. LLM Answer Polishing Layer
-- Add optional “answer formatting” pass in the backend:
-  - After SQL execution, call Azure Responses API with the original question, extracted entities, SQL template metadata, and the full result set (capped via row limit / JSON summary) to produce a business-ready narrative.
-  - Use existing conversation history (last N question-answer pairs) from the UI payload so the formatter can reference prior context.
-- API changes:
-  - Extend `QueryResponseModel` with a `presentation` field containing the polished text + optional table schema.
-  - Introduce request flag `include_formatted_answer` (default true for API/UI, optional false for CLI).
-  - Log formatter prompts/responses in `session_logger` so we can debug bad phrasing.
-- Quality gates:
-  - Enforce max token usage (e.g., trim table data to top rows with summary stats) to keep formatter responsive.
-  - Add tests that stub formatter responses to ensure the API degrades gracefully when the LLM fails (fallback to template formatter).
-
-#### B. Collapsible SQL & Reasoning Trace (UI)
-- Backend: continue returning raw SQL + metadata, but add a short “reasoning trace” object (template ID, key filters, constraints) for display. No change for CLI.
-- Frontend:
-  - Replace the static SQL block with a collapsible panel (default closed) styled like ChatGPT’s reasoning trace. Show summary (“SQL generated via `company_sector` template”) with a toggle to reveal the full query.
-  - Add a second panel for the formatter’s explanation so the user can inspect how the answer was synthesized.
-  - Maintain accessibility: keyboard-focusable toggles, copy-to-clipboard icon for SQL.
-- UX polish:
-  - Render tables returned by the formatter using responsive `<table>` components; collapse large datasets into paginated or scrollable areas.
-  - Surface formatter errors inline (e.g., “Polished answer unavailable; showing raw summary”).
-
-#### C. Validation & Rollout
-- Update `tests/api/test_query_endpoint.py` to cover the new response fields and failure modes.
-- Add unit tests for the formatter orchestration (mock Azure client).
-- Extend README with “Formatted Answers & SQL Toggle” section describing the behavior and troubleshooting tips.
-- Measure impact: capture latency stats for the formatter and expose them in metadata so we can monitor cost/perf.
-
-#### D. Formatter Insight Polish (In Progress)
-- **Goal**: Ensure the LLM formatter delivers analyst-quality narratives with clear bullets for comparison-style queries.
-- **Scope**:
-  - Capture 5–7 representative prompts (asset turnover, working capital cycles, sector comps) and log current formatter output.
-  - Update the formatter prompt with stricter structure (headline sentence, concise context, explicit leader/laggard bullets) and add light post-processing to guarantee bullet characters render in Markdown/HTML.
-  - Add snapshot-style unit tests that assert bullet presence, sentence count, and tone hints for regression safety.
-  - Validate via API + UI flow; document QA steps in README/Runbook.
-- **Exit Criteria**: Every formatter response for multi-row datasets contains a 2–3 sentence narrative, ≥2 bullet highlights, and renders correctly in the chat UI.
-
-#### E. Streaming Reasoning Output (Seperate Branch: `feature/streamed-thinking`)
-- **Objective**: Stream the “thinking” trace to the UI while the final answer is composed, keeping the current branch focused on formatter polish.
-- **Plan**:
-  1. **Backend Streaming API**: Introduce a `POST /query/stream` endpoint (Server-Sent Events or FastAPI WebSocket) that emits `{"phase":"thinking","chunk":...}` events followed by the final payload. Reuse `QueryService` but surface intermediate reasoning trace updates.
-  2. **Service Hooks**: Extend `QueryService`/formatter to provide generator-style updates (entity extraction, SQL selection, validation) without blocking the final answer; gate behind config flag so default path stays unchanged.
-  3. **UI Prototype**: In the new branch, add a streaming client (EventSource or fetch reader) to display “Thinking…” tokens in the chat bubble before replacing them with the polished response.
-  4. **Telemetry & Testing**: Log streaming latency, add contract tests for the new endpoint, and document fallback behavior when SSE/WebSocket isn’t supported.
-- **Dependencies**: Requires separate PR so we can iterate on UX without destabilizing current formatter work. Target branch: `feature/streamed-thinking`.
-
-**Implementation Notes**
-- Backend
-  - New `AnswerFormatter` module (prompt + Responses API call) producing `{narrative, highlights, table, warnings}` payload.
-  - `QueryRequest` accepts optional `history` (last N messages) and `include_polished_answer` flag; UI supplies history, CLI stays default.
-  - `QueryResponseModel` gains `presentation` (structured narrative/table) and `reasoning_trace` (template ID, filters, row_count) plus a `sql_collapsible_hint`.
-  - Session logger records both raw `FormattedResponse` and `presentation` payload for debugging.
-  - Telemetry captures formatter latency/tokens; fallback to original answer when formatter fails (log warning).
-  - Tests: `tests/test_answer_formatter.py` (new), extended API tests for presentation fields and failure cases.
-- Frontend
-  - Update message rendering to prefer `presentation.narrative` + `highlights`; render `presentation.table` as responsive Tailwind table with capped height, optional download icon.
-  - Add collapsible “Reasoning & SQL” panel modeled after ChatGPT’s trace: summary row with template name + elapsed time; toggled body showing reasoning trace + copyable SQL block.
-  - Expose formatter warnings inline (e.g., truncated rows); fall back to legacy answer with badge when `presentation` missing.
-  - Wire question history (last 3 Q&A pairs) into API request payload; store history in React state.
-  - Tests: snapshot test for new toggle component, Playwright/RTL test for table rendering, logging smoke test.
-
----
-
-**Status**: Phase 1 Complete (100/104 tests passing)  
-**Next**: Phase 2 - Custom SQL + Validation + Coverage  
-**Goal**: 86+/171 simple questions (50%+)  
-**Timeline**: 20-26 hours
-
----
-
-**Last Updated**: November 6, 2025  
-**Version**: 2.1 (Added Chat Interface)
+## Completion Definition (per Epic)
+- **Data Layer**: Parquet catalog documented; schema docs current; refresh and quality checks documented.
+- **Semantic Layer**: Time-series templates complete and grounded; medium templates live; formatter produces business-ready narratives/tables; validator + retriever telemetry healthy.
+- **Service Layer**: CLI/API parity with robust errors, telemetry, and rate/timeout controls.
+- **UI**: End-to-end parity with CLI/API including tables/reasoning; resilient health/error states.
+- **Evaluation**: Workbook and analytics reflect latest runs; regression alarms on coverage drops; tests and formatting clean.

@@ -814,15 +814,19 @@ def get_answer_formatter_prompt(
         {result_json}
 
         REQUIREMENTS
-        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the FY time frame (FY2020-FY2023). Make it read like an analyst note, not a raw data recap.
+        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the timeframe actually asked (e.g., FY2020–FY2023 or just FY2023 if that was the ask). Make it read like an analyst note, not a raw data recap.
         2. Highlights: produce 2-3 short, insight-focused bullets when data is available (leaders vs laggards, biggest deltas, noteworthy growth). Use [] ONLY when the dataset is empty.
-        3. Table: echo the most helpful columns if data exists.
+        3. Table: include only when helpful; match the grain implied by the question and columns.
+           - Multi-year asks → show per-year columns (not just start/end).
+           - Single-year asks → use quarters/months if present, otherwise the key single-period columns.
+           - If monthly is requested and available, show months; if quarterly, show quarters.
+           - Keep columns concise and ordered by time ascending; include deltas when present in DATA.
            {{
              "columns": [...],
              "rows": [{{"col1": "value"}}],
              "truncated": true/false
            }}
-           Set table to null if no data or if narrative already covers everything.
+           Set table to null only when the question is a simple lookup or when DATA is empty.
         4. Warnings: note truncation, sparse data, or assumptions (use [] if none).
         5. DO NOT hallucinate metrics. Cite only from DATA. If DATA is empty, explain that.
         6. Output MUST be minified JSON matching:
