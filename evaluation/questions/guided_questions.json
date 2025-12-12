@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "name": "Guided Questions",
+    "description": "Deterministic guided sector and company deep-dive templates (revenue, margins, FCF, ROIC, leverage).",
+    "version": "1.0",
+    "created_date": "2025-02-15",
+    "total_questions": 10,
+    "tier": "guided_questions"
+  },
+  "questions": [
+    {
+      "id": "GUIDED_001",
+      "tier": "guided_questions",
+      "template_id": "sector_growth_leaders",
+      "question": "Which Technology companies lead revenue growth since 2020?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Top revenue CAGR technology companies with revenue floor and minimum years."
+      }
+    },
+    {
+      "id": "GUIDED_002",
+      "tier": "guided_questions",
+      "template_id": "sector_margin_trend",
+      "question": "How have operating margins trended for Information Technology over the last 4 years?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Operating margin progression per company with latest margin ranking."
+      }
+    },
+    {
+      "id": "GUIDED_003",
+      "tier": "guided_questions",
+      "template_id": "sector_fcf_stability",
+      "question": "Top Technology companies by free cash flow stability since 2020?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "FCF average and volatility plus coefficient of variation."
+      }
+    },
+    {
+      "id": "GUIDED_004",
+      "tier": "guided_questions",
+      "template_id": "sector_roic_improvers",
+      "question": "Which Healthcare firms improved ROIC the most over the past 3 years?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "ROIC start vs end with percentage point change."
+      }
+    },
+    {
+      "id": "GUIDED_005",
+      "tier": "guided_questions",
+      "template_id": "sector_share_gainers",
+      "question": "Who gained revenue share in Energy since 2020 based on revenue CAGR and margins?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Sector revenue share change between start and end years."
+      }
+    },
+    {
+      "id": "GUIDED_006",
+      "tier": "guided_questions",
+      "template_id": "company_rev_margin_trend",
+      "question": "Show revenue and operating margin trends for Apple since 2020.",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Annual revenue and operating margin for Apple."
+      }
+    },
+    {
+      "id": "GUIDED_007",
+      "tier": "guided_questions",
+      "template_id": "company_fcf_stability",
+      "question": "How stable is free cash flow for Microsoft over the last 4 fiscal years?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Annual FCF and volatility statistics."
+      }
+    },
+    {
+      "id": "GUIDED_008",
+      "tier": "guided_questions",
+      "template_id": "company_peer_margin_compare",
+      "question": "Compare Tesla's margins vs peers in its sector for the last 3 years.",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Average company margin vs peer median with delta."
+      }
+    },
+    {
+      "id": "GUIDED_009",
+      "tier": "guided_questions",
+      "template_id": "company_segment_growth",
+      "question": "Which segments drive growth for Amazon since 2020?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Segment revenue start vs end with CAGR ranking."
+      }
+    },
+    {
+      "id": "GUIDED_010",
+      "tier": "guided_questions",
+      "template_id": "company_leverage_liquidity",
+      "question": "How did Tesla's leverage and cash balance change over the last 4 years?",
+      "expected_answer": {
+        "type": "table",
+        "notes": "Debt, net debt, cash and leverage ratios per fiscal year."
+      }
+    }
+  ]
+}
+

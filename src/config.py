@@ -71,6 +71,10 @@ class Config(BaseModel):
     entity_extraction_timeout: int = Field(
         default=30, description="Timeout for entity extraction in seconds"
     )
+    entity_extraction_max_tokens: int = Field(
+        default=1500,
+        description="Max output tokens budget for entity extraction Responses API call",
+    )
 
     # Stage 2: Template Selection Settings
     template_selection_fast_path_threshold: float = Field(
@@ -95,6 +99,10 @@ class Config(BaseModel):
     template_selection_timeout: int = Field(
         default=10, ge=1, description="Timeout for LLM template selection (seconds)"
     )
+    template_selection_max_tokens: int = Field(
+        default=3000,
+        description="Max output tokens budget for template selection Responses API call (increased for GPT-5 reasoning tokens)",
+    )
 
     # Answer formatter settings
     formatter_enabled: bool = Field(
@@ -113,7 +121,7 @@ class Config(BaseModel):
         description="How many prior conversation turns to include in formatter prompt",
     )
     formatter_max_tokens: int = Field(
-        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_TOKENS", "900")),
+        default_factory=lambda: int(os.getenv("ANSWER_FORMATTER_MAX_TOKENS", "3000")),
         ge=100,
         description="Max output tokens for formatter completion",
     )

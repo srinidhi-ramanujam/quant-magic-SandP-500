@@ -24,6 +24,22 @@ python -m pytest tests/ -v
 
 ---
 
+## Project Overview
+
+**What**  
+- NL → SQL copilot for S&P 500 companies: asks, routes, generates SQL, executes on DuckDB, and formats answers with reasoning traces.
+
+**Why**  
+- Eliminate manual spreadsheet/EDGAR digging, speed up sector/company analysis, and provide repeatable answers backed by telemetry.
+
+**How**  
+- Hybrid pipeline: deterministic entity extraction + template routing with LLM confirmation/fallback; two-pass SQL validation (syntax + semantic).  
+- Data: 15.5M+ financial facts, 589 companies, rich template intelligence catalogs in Parquet (read-only).  
+- Stack: Python 3.11, DuckDB, Pydantic, Azure OpenAI (GPT-5 responses API), FastAPI service layer, React + Tailwind chat UI.  
+- Reliability: retry/circuit-breaker guards, formatter for narratives/tables, CLI/API parity, evaluation harness with 400+ questions.
+
+---
+
 ## GitHub Codespaces
 
 1. Create a Codespace from this repo (`Code → Codespaces → Create codespace on master`) or open the shared link.<br>Make sure the repository-level Codespaces setting is enabled.
@@ -62,7 +78,7 @@ Once you stop the script, restart it to clear old logs and begin a fresh session
 ## Status Snapshot
 
 - **Phase 0/1**: Foundation + LLM integration complete (Azure OpenAI, hybrid template routing, 27 templates, 100+ tests). No further action required.
-- **Phase 2 (Active)**: Custom SQL generation + validation + coverage push (goal: 86+/171 simple questions). See `PLAN.md` for live roadmap.
+- **Phase 2 (Active)**: Custom SQL generation + validation + coverage push (goal: 86+/171 simple questions). Template system enhanced with intelligent parameter inference and semantic guidance. See `PLAN.md` for live roadmap.
 
 ---
 
@@ -85,9 +101,15 @@ Natural Language Answer
 ```
 
 **Hybrid Approach**:
-- **Fast Path** (confidence ≥0.8): Template → SQL (sub-second)
-- **LLM Confirmation** (0.5-0.8): LLM validates template
+- **Fast Path** (confidence ≥0.8): Template → SQL (sub-second) with intelligent parameter inference
+- **LLM Confirmation** (0.5-0.8): LLM validates template with parameter completion
 - **LLM Fallback** (<0.5): Full LLM-powered generation
+- **Template-Guided Generation**: Templates as semantic guides rather than rigid contracts
+
+**Template Intelligence**:
+- **Parameter Inference**: Automatically fills missing template parameters from question context (sectors, years, thresholds)
+- **Semantic Guidance**: Templates provide business logic hints to LLM rather than requiring exact parameter matches
+- **Flexible Adaptation**: System adapts to user intent rather than failing on missing parameters
 
 ---
 
@@ -114,6 +136,11 @@ Natural Language Answer
 - **Financial Facts**: 15.5M+ records (2014-2026)
 - **XBRL Tags**: 481K definitions
 - **Templates**: 27 SQL patterns across 7 categories
+
+### Data layout & schema
+- Parquet catalogs live in `data/parquet/` and are mounted in DuckDB via external tables; no runtime mutation.  
+- Core files: `num.parquet` (facts), `companies_with_sectors.parquet` (entities), `query_intelligence.parquet` (template metadata), plus supporting JSON/CSV lookups.  
+- Query engine (`src/query_engine.py`) reads these tables and joins derived views for metrics, ratios, and template guidance; FastAPI/UI consume the same layer.
 
 ### Intelligence Layer
 - `query_intelligence.parquet`: 27 NL→SQL templates
@@ -261,9 +288,11 @@ The chat interface connects to the FastAPI backend at `/api/query` and displays:
 
 ## Performance
 
-**Current** (Phase 1):
+**Current** (Phase 1 + Phase 2 fixes):
 - Simple queries: <1s (deterministic fast path)
 - LLM-assisted: ~8s (GPT-5 API call)
+- Template parameter handling: Robust with proper type casting and validation
+- SQL casing validation: Automatic detection of lowercase XBRL tags
 - PoC validation: 10/10 correct, <1.1s average
 
 **Targets** (Phase 2+):
@@ -331,6 +360,7 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 ### Working Agreements
 - Do not add persistent Markdown or throwaway scripts; clean up exploration artifacts before finishing a task.
+- Track all work in `bd`; start by running `bd ready --json` and claim the current item with `bd update <id> --status in_progress`. No markdown TODOs or external trackers; commit `.beads/issues.jsonl` with related code changes.
 - Ask for clarification before starting work that feels ambiguous and stay within the agreed design or plan.
 - Avoid new dependencies unless the team grants explicit approval.
 - Ship in small, meaningful iterations with a clear exit criterion (e.g., targeted pytest run, CLI demo, evaluation harness).

@@ -79,6 +79,49 @@ COMPANY_SUFFIXES = [
     ", inc",
 ]
 
+# Tokens that frequently appear as question phrasing and should not be treated as company names.
+_QUESTION_PREFIXES = {
+    "which",
+    "what",
+    "show",
+    "track",
+    "compare",
+    "across",
+    "identify",
+    "highlight",
+    "summarize",
+    "analyze",
+    "examine",
+    "list",
+    "name",
+    "how",
+    "who",
+}
+
+_GENERIC_COMPANY_TOKENS = {
+    "companies",
+    "company",
+    "sector",
+    "sectors",
+    "leaders",
+    "leader",
+    "giants",
+    "cohort",
+    "retail",
+    "retailers",
+    "technology",
+    "energy",
+    "industrials",
+    "healthcare",
+    "health",
+    "information",
+    "top",
+    "largest",
+    "major",
+    "trend",
+    "trends",
+}
+
 # Company name aliases (loaded once)
 _COMPANY_ALIASES: Dict[str, str] = {}
 _ALIASES_LOADED = False
@@ -189,7 +232,18 @@ def normalize_company_name(company_name: str) -> str:
 QUESTION_TYPES = {
     "count": ["how many", "count", "number of"],
     "lookup": ["what is", "what are", "get", "find", "show me"],
-    "comparison": ["compare", "versus", "vs", "difference between"],
+    "comparison": [
+        "compare",
+        "compared to",
+        "versus",
+        "vs",
+        "vs.",
+        "difference between",
+        "relative to",
+        "against",
+        "spread",
+        "gap",
+    ],
     "trend": ["trend", "over time", "growth", "change"],
 }
 
@@ -326,11 +380,9 @@ class EntityExtractor:
                         "LLM entity extraction failed (%s); falling back to deterministic path",
                         exc,
                     )
-                    self.use_llm = False
-                    self.azure_client = None
                     context.add_metadata("entity_llm_fallback_reason", str(exc))
                     entities = self._extract_entities(question)
-                    extraction_method = "deterministic"
+                    extraction_method = "deterministic_fallback"
             else:
                 entities = self._extract_entities(question)
                 extraction_method = "deterministic"
@@ -389,7 +441,7 @@ class EntityExtractor:
             question=prompt,
             context={},
             temperature=self.config.entity_extraction_temperature,
-            max_tokens=500,  # Entity extraction shouldn't need many tokens
+            max_tokens=2000,  # Increased to accommodate LLM reasoning overhead
         )
 
         # Call Azure OpenAI with retry logic
@@ -418,13 +470,24 @@ class EntityExtractor:
                         "Respond with minified JSON only (no prose)."
                     ),
                     input=prompt,
-                    max_output_tokens=500,
+                    max_output_tokens=self.config.entity_extraction_max_tokens,
                 )
 
                 elapsed_ms = int((time.time() - start_time) * 1000)
 
+                if getattr(response, "incomplete_details", None):
+                    reason = getattr(response.incomplete_details, "reason", "unknown")
+                    raise ValueError(f"LLM response incomplete (reason={reason})")
+
                 # Extract content from response
                 content = self.azure_client._parse_api_response(response)
+                if not content.strip():
+                    dump = (
+                        response.model_dump()
+                        if hasattr(response, "model_dump")
+                        else str(response)
+                    )
+                    self.logger.warning("LLM response content empty: %s", dump)
 
                 # Parse JSON from LLM response
                 llm_output = self._parse_llm_response(content)
@@ -478,15 +541,21 @@ class EntityExtractor:
 
             except json.JSONDecodeError as e:
                 last_error = f"JSON parsing error: {e}"
-                self.logger.warning(f"Attempt {attempt + 1} failed: {last_error}")
+                self.logger.warning(
+                    "Attempt %s failed: %s\nLLM raw output: %s",
+                    attempt + 1,
+                    last_error,
+                    content if "content" in locals() else "",
+                )
                 if attempt < max_retries:
                     time.sleep(1 * (attempt + 1))  # Exponential backoff
                     continue
                 else:
-                    self.use_llm = False
-                    self.azure_client = None
+                    context.add_metadata(
+                        "entity_llm_fallback_reason", f"json_parse_error:{e}"
+                    )
                     self.logger.warning(
-                        "Disabling LLM entity extraction after repeated parsing failures"
+                        "Falling back to deterministic extraction after repeated LLM JSON parsing failures"
                     )
                     raise ValueError(
                         f"Failed to parse LLM response after {max_retries + 1} attempts: {last_error}"
@@ -499,11 +568,11 @@ class EntityExtractor:
                     time.sleep(1 * (attempt + 1))
                     continue
                 else:
-                    self.use_llm = False
-                    self.azure_client = None
+                    context.add_metadata(
+                        "entity_llm_fallback_reason", f"llm_error:{last_error}"
+                    )
                     self.logger.warning(
-                        "Disabling LLM entity extraction after repeated failures; "
-                        "falling back to deterministic extraction"
+                        "Falling back to deterministic extraction after repeated LLM failures"
                     )
                     raise Exception(
                         f"LLM extraction failed after {max_retries + 1} attempts: {last_error}"
@@ -544,6 +613,9 @@ class EntityExtractor:
 
         # Parse JSON
         if not json_str:
+            self.logger.warning(
+                "LLM entity extractor received empty response: %s", response_text
+            )
             raise json.JSONDecodeError("Empty LLM response", json_str, 0)
         try:
             result = json.loads(json_str)
@@ -647,14 +719,37 @@ class EntityExtractor:
                 # Capitalize first letter for standardization
                 companies.append(company.capitalize())
 
-        aliases = _load_company_aliases()
         normalized: List[str] = []
         for company_name in companies:
+            if self._is_noise_company_candidate(company_name):
+                continue
+
             canonical = normalize_company_name(company_name)
             if canonical and canonical not in normalized:
                 normalized.append(canonical)
 
         return normalized
+
+    @staticmethod
+    def _is_noise_company_candidate(value: str) -> bool:
+        """Heuristic filter to drop question phrasing mis-identified as company names."""
+        if not value:
+            return True
+
+        tokens = re.sub(r"[^a-z0-9 ]", " ", value.lower()).split()
+        if not tokens:
+            return True
+
+        if tokens[0] in _QUESTION_PREFIXES:
+            return True
+
+        if all(token in _GENERIC_COMPANY_TOKENS for token in tokens):
+            return True
+
+        if len(tokens) <= 2 and any(token in _QUESTION_PREFIXES for token in tokens):
+            return True
+
+        return False
 
     def _extract_metrics(self, question_lower: str) -> List[str]:
         """Extract financial metrics from question."""
@@ -714,6 +809,7 @@ class EntityExtractor:
     def _extract_time_periods(self, question: str) -> List[str]:
         """Extract time periods from question."""
         periods = []
+        question_lower = question.lower()
 
         # Pattern 1: Year (YYYY)
         year_pattern = r"\b(20\d{2}|19\d{2})\b"
@@ -729,6 +825,33 @@ class EntityExtractor:
         fy_pattern = r"\b(FY\s*20\d{2})\b"
         fiscal_years = re.findall(fy_pattern, question, re.IGNORECASE)
         periods.extend([fy.replace(" ", "") for fy in fiscal_years])
+
+        # Pattern 4: Relative quarters/years (last/past N quarters/years)
+        trailing_quarters = re.findall(
+            r"(?:last|past|previous)\s+(\d+)\s+quarters?", question_lower
+        )
+        periods.extend([f"last_{n}_quarters" for n in trailing_quarters])
+
+        trailing_years = re.findall(
+            r"(?:last|past|previous)\s+(\d+)\s+years?", question_lower
+        )
+        periods.extend([f"last_{n}_years" for n in trailing_years])
+
+        # Pattern 5: Since/after/from YEAR → capture anchor year and flag
+        since_matches = re.findall(
+            r"(?:since|after|from)\s+(20\d{2}|19\d{2})", question_lower
+        )
+        for year in since_matches:
+            periods.append(year)
+            periods.append(f"since_{year}")
+
+        if "trailing twelve months" in question_lower or "ttm" in question_lower:
+            periods.append("TTM")
+
+        if "post-covid" in question_lower or "post covid" in question_lower:
+            periods.append("post_covid")
+        if "pre-covid" in question_lower or "pre covid" in question_lower:
+            periods.append("pre_covid")
 
         return list(set(periods))
 

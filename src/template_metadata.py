@@ -128,6 +128,134 @@ class TemplateMetadata(BaseModel):
         }
 
 
+ADDITIONAL_TEMPLATE_METADATA: List[TemplateMetadata] = [
+    TemplateMetadata(
+        template_id="roe_consecutive_streak_blueprint",
+        name="ROE consecutive streak blueprint",
+        description="Blueprint for identifying companies whose return on equity stays above a threshold across consecutive fiscal years.",
+        category="financial_ratios",
+        subcategory="profitability",
+        requires_company=False,
+        requires_sector=False,
+        requires_time=True,
+        requires_threshold=True,
+        metric_type="roe",
+        ratio_type="profitability",
+        time_granularity="annual",
+        answer_type="time_series_table",
+        returns_multiple_rows=True,
+        sql_complexity="high",
+        estimated_execution_time="1-3s",
+        keywords=["roe", "return on equity", "consecutive", "streak", "threshold"],
+        example_questions=[
+            "Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?"
+        ],
+        semantic_description=(
+            "Guidance for computing ROE (NetIncomeLoss divided by StockholdersEquity) and applying window logic to enforce consecutive-year streaks."
+        ),
+        when_to_use=(
+            "Use when the user references ROE thresholds across consecutive fiscal years or streak analysis."
+        ),
+        similar_templates=[
+            "energy_roe_threshold_detector",
+            "roe_revenue_divergence",
+            "semiconductor_roe_trend",
+        ],
+    ),
+    TemplateMetadata(
+        template_id="equity_to_assets_trend_blueprint",
+        name="Equity-to-assets ratio blueprint",
+        description="Blueprint for tracking stockholders' equity relative to total assets across companies and fiscal years.",
+        category="financial_ratios",
+        subcategory="leverage",
+        requires_company=False,
+        requires_sector=False,
+        requires_time=True,
+        requires_threshold=False,
+        metric_type="equity_to_assets_ratio",
+        ratio_type="leverage",
+        time_granularity="annual",
+        answer_type="time_series_table",
+        returns_multiple_rows=True,
+        sql_complexity="moderate",
+        estimated_execution_time="1-3s",
+        keywords=["equity to assets", "balance sheet ratio", "capital adequacy"],
+        example_questions=[
+            "Track the equity-to-total-assets ratio for JPMorgan, Bank of America, Citigroup, and Wells Fargo from 2019 to 2024."
+        ],
+        semantic_description=(
+            "Shows how to combine StockholdersEquity and Assets tags for cohorts, with hooks for optional sector or geography filters."
+        ),
+        when_to_use="Use when the user requests equity-to-assets ratios across a multi-year window.",
+        similar_templates=[
+            "current_ratio_trend",
+            "net_debt_to_ebitda_trend",
+            "asset_turnover_trend",
+        ],
+    ),
+    TemplateMetadata(
+        template_id="operating_cfo_volatility_blueprint",
+        name="Operating cash flow volatility blueprint",
+        description="Blueprint for measuring the volatility (coefficient of variation) of quarterly operating cash flow.",
+        category="cash_flow",
+        subcategory="quality_of_earnings",
+        requires_company=False,
+        requires_sector=False,
+        requires_time=True,
+        requires_threshold=False,
+        metric_type="operating_cash_flow",
+        ratio_type="volatility",
+        time_granularity="quarterly",
+        answer_type="time_series_table",
+        returns_multiple_rows=True,
+        sql_complexity="high",
+        estimated_execution_time="1-3s",
+        keywords=["operating cash flow", "volatility", "coefficient of variation"],
+        example_questions=[
+            "Show quarterly operating cash flow volatility (coefficient of variation) for Financial sector companies from 2021 to 2023."
+        ],
+        semantic_description=(
+            "Illustrates how to gather quarterly NetCashProvidedByUsedInOperatingActivities values and compute STDDEV/AVG for volatility analysis."
+        ),
+        when_to_use="Use when the user explicitly mentions volatility or coefficient of variation on operating cash flow.",
+        similar_templates=[
+            "top_tech_cfo_trend",
+            "cfo_to_net_income_trend",
+        ],
+    ),
+    TemplateMetadata(
+        template_id="loan_loss_provision_trend_blueprint",
+        name="Loan-loss provision trend blueprint",
+        description="Blueprint for extracting quarterly loan-loss provision expense trends for specified banks.",
+        category="financial_metrics",
+        subcategory="credit_quality",
+        requires_company=False,
+        requires_sector=False,
+        requires_time=True,
+        requires_threshold=False,
+        metric_type="loan_loss_provision",
+        ratio_type=None,
+        time_granularity="quarterly",
+        answer_type="time_series_table",
+        returns_multiple_rows=True,
+        sql_complexity="moderate",
+        estimated_execution_time="1-3s",
+        keywords=["loan loss provision", "credit quality", "banks", "allowance"],
+        example_questions=[
+            "Track quarterly loan-loss provision expense for JPMorgan, Bank of America, Citigroup, and Wells Fargo across 2018-2023 to highlight spikes and normalization."
+        ],
+        semantic_description=(
+            "Shows how to pull ProvisionForLoanAndLeaseLosses facts for major banks across quarters."
+        ),
+        when_to_use="Use when the user requests loan-loss or credit reserve trends over time.",
+        similar_templates=[
+            "operating_cfo_volatility_blueprint",
+            "roe_consecutive_streak_blueprint",
+        ],
+    ),
+]
+
+
 class TemplateMetadataStore:
     """Store and manage template metadata."""
 
@@ -181,6 +309,10 @@ class TemplateMetadataStore:
 
                 metadata = TemplateMetadata(**metadata_dict)
                 self.metadata_dict[template_id] = metadata
+
+            for metadata in ADDITIONAL_TEMPLATE_METADATA:
+                if metadata.template_id not in self.metadata_dict:
+                    self.metadata_dict[metadata.template_id] = metadata
 
             self.logger.info(f"Loaded metadata for {len(self.metadata_dict)} templates")
 

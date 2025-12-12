@@ -16,7 +16,7 @@ base_filings AS (
     FROM sub s
     JOIN sector_companies sc USING (cik)
     WHERE s.form IN ('10-K','10-K/A')
-      AND s.fy BETWEEN 2019 AND 2023
+      AND s.fy BETWEEN {start_year} AND {end_year}
 ),
 filings AS (
     SELECT adsh, cik, fiscal_year, period
@@ -67,13 +67,10 @@ ordered AS (
 )
 SELECT
     display_name AS name,
-    ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END) * 100, 2) AS margin_2019_pct,
-    ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END) * 100, 2) AS margin_2020_pct,
-    ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END) * 100, 2) AS margin_2021_pct,
-    ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END) * 100, 2) AS margin_2022_pct,
-    ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) * 100, 2) AS margin_2023_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = {start_year} THEN profit_margin END) * 100, 2) AS margin_{start_year}_pct,
+    ROUND(MAX(CASE WHEN fiscal_year = {end_year} THEN profit_margin END) * 100, 2) AS margin_{end_year}_pct,
     ROUND(
-        (MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))
+        (MAX(CASE WHEN fiscal_year = {end_year} THEN profit_margin END) - MIN(CASE WHEN fiscal_year = {start_year} THEN profit_margin END))
         * 100,
         2
     ) AS improvement_pct,
@@ -87,6 +84,6 @@ SELECT
     ) AS consistency_steps
 FROM ordered
 GROUP BY canonical_name, display_name
-HAVING COUNT(DISTINCT fiscal_year) = 5
+HAVING COUNT(DISTINCT fiscal_year) = ({end_year} - {start_year} + 1)
 ORDER BY consistency_steps DESC, improvement_pct DESC, display_name
-LIMIT 5;
+LIMIT {limit};

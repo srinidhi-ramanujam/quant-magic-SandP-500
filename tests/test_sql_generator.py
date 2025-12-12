@@ -2,6 +2,8 @@
 Tests for SQL generation from entities and templates.
 """
 
+from datetime import datetime
+
 import pytest
 from src.sql_generator import SQLGenerator
 from src.models import ExtractedEntities, LLMResponse, SQLValidationVerdict
@@ -109,6 +111,38 @@ def test_invalid_entity_handling():
     # Should return None or handle gracefully
     # (In Phase 0, we expect None for unmatched patterns)
     assert sql is None
+
+
+def test_growth_profit_quadrant_nl_defaults():
+    """Natural-language growth/margin asks should auto-fill thresholds and years."""
+    generator = SQLGenerator(use_llm=False)
+    context = create_request_context("test")
+
+    entities = ExtractedEntities(
+        sectors=["Information Technology"],
+        metrics=["revenue_growth", "profit_margin"],
+        time_periods=["since_2019"],
+        confidence=0.8,
+    )
+
+    question = (
+        "Which Technology companies have high growth and high margins since 2019?"
+    )
+    template = generator.intelligence.get_template_by_id(
+        "growth_profitability_quadrant"
+    )
+    assert template is not None
+
+    result = generator._generate_from_template_with_params(
+        template, {}, entities, context
+    )
+    assert result is not None
+    assert result.template_id == "growth_profitability_quadrant"
+    params = result.parameters
+    assert params.get("start_year") == "2019"
+    assert params.get("end_year") == str(datetime.utcnow().year - 1)
+    assert params.get("growth_threshold_pct") == "10"
+    assert params.get("margin_threshold_pct") == "15"
 
 
 def test_generate_custom_sql_helper(monkeypatch):
@@ -500,3 +534,23 @@ def test_fact_count_with_footnotes_template():
 
     assert not df.empty
     assert df.iloc[0]["fact_count"] > 0
+
+
+def test_repair_known_sql_issues():
+    """Heuristic repairs should fix schema typos in guided SQL."""
+    generator = SQLGenerator(use_llm=False)
+
+    raw_sql = (
+        "SELECT num.segments AS segs, sub.form FROM num "
+        "JOIN sub ON num.adsh = sub.adsh "
+        "WHERE sub.form IN ('10-k','10-k/a') "
+        "AND num.tag = 'netincomeloss' AND num.qtrs IN (0,4);"
+    )
+
+    repaired = generator._repair_known_sql_issues(raw_sql)
+
+    assert "num.segments" not in repaired.lower()
+    assert "NULL AS segs" in repaired
+    assert "'10-K'" in repaired and "'10-K/A'" in repaired
+    assert "NetIncomeLoss" in repaired
+    assert "qtrs = 0" in repaired

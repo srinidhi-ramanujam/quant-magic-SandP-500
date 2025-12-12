@@ -9,7 +9,9 @@ company_dim AS (
         c.name AS dataset_name
     FROM companies c
     JOIN provided_companies pc
-      ON UPPER(c.name) = UPPER(pc.company_name)
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') =
+         REGEXP_REPLACE(UPPER(TRIM(pc.company_name)), '[^A-Z0-9]', '', 'g')
+      OR UPPER(c.name) LIKE '%' || UPPER(pc.company_name) || '%'
 ),
 ranked_filings AS (
     SELECT
@@ -56,14 +58,14 @@ quarter_values AS (
         MAX(
             CASE
                 WHEN n.tag IN ('InventoryNet', 'Inventory', 'InventoryCurrent')
-                     AND COALESCE(n.qtrs, 0) = 0
+                     AND COALESCE(n.qtrs, 0) IN (0, 1)
                 THEN n.value
             END
         ) AS inventory,
         MAX(
             CASE
                 WHEN n.tag IN ('CostOfRevenue', 'CostOfGoodsSold', 'CostOfGoodsAndServicesSold')
-                     AND COALESCE(n.qtrs, 0) = 1
+                     AND COALESCE(n.qtrs, 0) IN (0, 1)
                 THEN n.value
             END
         ) AS cost_of_revenue
@@ -79,7 +81,6 @@ quarter_values AS (
         'CostOfGoodsSold',
         'CostOfGoodsAndServicesSold'
     )
-      AND COALESCE(TRIM(n.segments), '') = ''
       AND COALESCE(TRIM(n.coreg), '') = ''
     GROUP BY f.cik, f.period_end, f.fiscal_year, f.fp
 ),

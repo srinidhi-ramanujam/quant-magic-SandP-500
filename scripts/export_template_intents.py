@@ -68,6 +68,7 @@ def build_entries(df: pd.DataFrame) -> list[dict]:
             "metadata": {
                 "parameters": normalize_parameters(row.get("parameters")),
                 "intent_category": row.get("intent_category"),
+                "tier": row.get("tier") or row.get("intent_category"),
             },
         }
         entries.append(entry)

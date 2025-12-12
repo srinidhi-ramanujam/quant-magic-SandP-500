@@ -652,7 +652,7 @@ class LLMEntityResponse(BaseModel):
     processing_time_ms: int = Field(
         default=0, ge=0, description="LLM processing time in milliseconds"
     )
-    token_usage: Dict[str, int] = Field(
+    token_usage: Dict[str, float] = Field(
         default_factory=dict,
         description="Token usage breakdown (prompt_tokens, completion_tokens)",
     )
@@ -756,16 +756,16 @@ class LLMTemplateSelectionResponse(BaseModel):
     use_custom_sql: bool = Field(
         ..., description="Whether custom SQL generation is recommended"
     )
-    parameter_mapping: Dict[str, str] = Field(
+    parameter_mapping: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Mapping of template parameters to entity values",
+        description="Mapping of template parameters to entity values (can be str, int, float, or None)",
     )
 
     # Processing metadata
     processing_time_ms: int = Field(
         default=0, ge=0, description="LLM processing time in milliseconds"
     )
-    token_usage: Dict[str, int] = Field(
+    token_usage: Dict[str, float] = Field(
         default_factory=dict,
         description="Token usage breakdown (prompt_tokens, completion_tokens)",
     )

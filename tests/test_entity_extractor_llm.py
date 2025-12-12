@@ -75,7 +75,11 @@ def mock_azure_client():
             side_effect=lambda resp: resp.output_text
         )
         mock_client._extract_token_usage = Mock(
-            return_value={"prompt_tokens": 120, "completion_tokens": 36, "total_tokens": 156}
+            return_value={
+                "prompt_tokens": 120,
+                "completion_tokens": 36,
+                "total_tokens": 156,
+            }
         )
 
         mock_client_class.return_value = mock_client
@@ -307,9 +311,7 @@ def test_extract_with_llm_failure_fallback(
     question = "How many companies in Technology?"
 
     # Mock LLM to raise exception
-    mock_azure_client.client.responses.create.side_effect = Exception(
-        "API Error"
-    )
+    mock_azure_client.client.responses.create.side_effect = Exception("API Error")
 
     # Should fallback to deterministic extraction
     entities = entity_extractor.extract(question, request_context)

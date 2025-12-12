@@ -145,3 +145,67 @@ def test_semantic_validation_skipped_when_llm_disabled():
         if record["stage"] == "semantic"
     ]
     assert semantic_records and semantic_records[0].get("skipped")
+
+
+def test_static_validation_blocks_lowercase_asset_tags():
+    validator = SQLValidator(use_llm=False)
+    sql = """
+    SELECT n.value FROM num n
+    JOIN sub s ON n.adsh = s.adsh
+    WHERE n.tag = 'assetscurrent'
+    """
+    is_valid, reason = validator.validate_static(sql)
+    assert not is_valid
+    assert "should use proper casing" in reason
+    assert "AssetsCurrent" in reason
+
+
+def test_static_validation_blocks_lowercase_liability_tags():
+    validator = SQLValidator(use_llm=False)
+    sql = """
+    SELECT n.value FROM num n
+    JOIN sub s ON n.adsh = s.adsh
+    WHERE n.tag = 'liabilitiescurrent'
+    """
+    is_valid, reason = validator.validate_static(sql)
+    assert not is_valid
+    assert "should use proper casing" in reason
+    assert "LiabilitiesCurrent" in reason
+
+
+def test_static_validation_blocks_lowercase_form_filter():
+    validator = SQLValidator(use_llm=False)
+    sql = "SELECT * FROM sub WHERE form = '10-k'"
+    is_valid, reason = validator.validate_static(sql)
+    assert not is_valid
+    assert "should use proper casing" in reason
+    assert "10-K" in reason
+
+
+def test_static_validation_blocks_lowercase_fp_filter():
+    validator = SQLValidator(use_llm=False)
+    sql = "SELECT * FROM sub WHERE fp = 'fy'"
+    is_valid, reason = validator.validate_static(sql)
+    assert not is_valid
+    assert "should use proper casing" in reason
+    assert "FY" in reason
+
+
+def test_static_validation_allows_proper_case_tags():
+    validator = SQLValidator(use_llm=False)
+    sql = """
+    SELECT n.value FROM num n
+    JOIN sub s ON n.adsh = s.adsh
+    WHERE n.tag IN ('AssetsCurrent', 'LiabilitiesCurrent')
+    """
+    is_valid, reason = validator.validate_static(sql)
+    assert is_valid
+    assert reason is None
+
+
+def test_static_validation_allows_proper_case_form_filters():
+    validator = SQLValidator(use_llm=False)
+    sql = "SELECT * FROM sub WHERE form IN ('10-K', '10-K/A')"
+    is_valid, reason = validator.validate_static(sql)
+    assert is_valid
+    assert reason is None

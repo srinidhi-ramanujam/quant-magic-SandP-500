@@ -3,7 +3,7 @@
     "version": "3.0",
     "name": "Medium Complexity Analysis Questions - Expanded",
     "description": "Comprehensive multi-step analysis covering all 12 S&P 500 categories with medium complexity questions",
-    "total_questions": 68,
+    "total_questions": 36,
     "target_pass_rate": 0.8,
     "estimated_runtime_minutes": 150,
     "question_type": "medium_analysis",
@@ -25,7 +25,7 @@
       {
         "name": "sector_industry_analysis",
         "description": "Multi-step strategic sector analysis and industry benchmarking for investment decisions",
-        "count": 7
+        "count": 5
       },
       {
         "name": "corporate_identity_metadata",
@@ -35,12 +35,12 @@
       {
         "name": "geographic_regulatory",
         "description": "Multi-step geographic exposure analysis and regulatory impact assessment",
-        "count": 5
+        "count": 0
       },
       {
         "name": "temporal_filing_patterns",
         "description": "Multi-step time-series financial performance and reporting pattern analysis",
-        "count": 4
+        "count": 3
       },
       {
         "name": "xbrl_data_quality",
@@ -50,7 +50,7 @@
       {
         "name": "financial_ratios_performance",
         "description": "Multi-step key performance ratios and profitability analysis for investment evaluation",
-        "count": 5
+        "count": 4
       },
       {
         "name": "balance_sheet_analysis",
@@ -65,17 +65,17 @@
       {
         "name": "cash_flow_analysis",
         "description": "Multi-step cash generation, working capital management, and capital allocation efficiency",
-        "count": 7
+        "count": 6
       },
       {
         "name": "currency_units",
         "description": "Multi-step multi-currency exposure and foreign exchange risk analysis",
-        "count": 2
+        "count": 0
       },
       {
         "name": "business_segments_esg",
         "description": "Multi-step business segment performance and esg factor integration for sustainable investing",
-        "count": 2
+        "count": 0
       },
       {
         "name": "financial_statement_line_items",
@@ -84,29 +84,16 @@
       }
     ],
     "difficulty_distribution": {
-      "intermediate": 50
+      "intermediate": 36
     },
-    "analysis_types": {
-      "comparative_analysis": 3,
-      "statistical_analysis": 2,
-      "trend_analysis": 1,
-      "ranking_analysis": 1
-    },
-    "last_updated": "2025-11-03",
-    "active_questions": 50,
-    "disabled_questions": 18,
-    "validation_date": "2025-11-03",
-    "validation_status": "Phase 1-3 Complete (Data availability, Complexity, CFO relevance validated). Answer verification pending.",
+    "analysis_types": {},
+    "last_updated": "2025-12-11",
+    "active_questions": 36,
+    "disabled_questions": 0,
+    "validation_date": "2025-12-11",
+    "validation_status": "Pruned to clear-data/template-backed set; answer verification pending.",
     "validation_notes": [
-      "Phase 1-3 validation complete (Nov 3, 2025)",
-      "54% retention rate from original 50 questions (27 passed validation)",
-      "7 additional questions saved via company alias fixes (34 total kept)",
-      "18 questions disabled (5 memory issues, 3 complexity, 3 low relevance, 5 companies not found, 2 data issues)",
-      "18 high-quality replacement questions added",
-      "All 52 active questions meet data availability, complexity, CFO relevance, and framework fit criteria",
-      "Answer verification pending - user will handle separately",
-      "Company aliases expanded from 120 to 161 entries",
-      "Validation methodology documented and reusable for other tiers"
+      "2025-12-11: Trimmed medium tier to 36 questions with clear data coverage and existing templates; disabled set removed from evaluation runs."
     ]
   },
   "questions": [
@@ -159,78 +146,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 25000
-    },
-    {
-      "id": "MA_002",
-      "question": "What is the correlation coefficient between company size (total assets) and profitability (net profit margin) within the Technology sector?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "disabled": true,
-      "disabled_reason": "Memory-intensive correlation analysis - causes OOM errors in Python 3.11 environment",
-      "expected_answer": {
-        "value": "Correlation coefficient: 0.045 (p-value: 0.788, n=38 companies)",
-        "type": "numeric",
-        "tolerance": {
-          "absolute": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "correlation_analysis",
-        "x_variable": "total_assets",
-        "y_variable": "net_profit_margin",
-        "sector_filter": "Information Technology",
-        "calculation_method": "pearson_correlation"
-      },
-      "tags": [
-        "correlation",
-        "sector_focus",
-        "size_profitability",
-        "memory_intensive"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_003",
-      "question": "Rank the top 5 sectors by median debt-to-equity ratio. What is the ranking order from highest to lowest?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "disabled": true,
-      "disabled_reason": "Memory-intensive sector-wide ratio calculations - causes OOM errors with 6.4GB/6.5GB memory usage",
-      "expected_answer": {
-        "value": "Sector ranking by median debt-to-equity ratio (highest to lowest): 1. Utilities (2.34), 2. Real Estate (2.12), 3. Energy (1.89), 4. Communication Services (1.67), 5. Consumer Discretionary (1.45)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "sector_ranking",
-        "metric": "debt_to_equity_ratio",
-        "aggregation": "median",
-        "top_n": 5,
-        "sort_order": "descending"
-      },
-      "tags": [
-        "sector_ranking",
-        "debt_equity",
-        "median_analysis",
-        "memory_intensive"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "max_response_time_ms": 25000,
+      "template_id": "roe_revenue_divergence"
     },
     {
       "id": "MA_004",
@@ -260,177 +177,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_005",
-      "question": "Compare the volatility (standard deviation) of Return on Assets across sectors. Which sector shows the most consistent ROA performance?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "Utilities shows the most consistent ROA performance with standard deviation of 1.3%",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "volatility_comparison",
-        "metric": "return_on_assets",
-        "statistical_measure": "standard_deviation",
-        "interpretation": "lowest_volatility"
-      },
-      "tags": [
-        "volatility",
-        "roa_consistency",
-        "sector_comparison"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
       "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too simple for medium tier, move to simple tier",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_006",
-      "question": "Analyze the relationship between company age (years since incorporation) and financial performance metrics. Do older companies tend to have higher ROE?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "corporate_identity_metadata",
-      "disabled": true,
-      "disabled_reason": "Memory-intensive correlation analysis - requires large dataset joins that may cause OOM errors",
-      "expected_answer": {
-        "value": "Correlation between company age and ROE: r=0.029 (p=0.637). No significant linear relationship exists, but Spearman correlation (r=0.138, p=0.023) suggests weak positive rank correlation.",
-        "type": "text",
-        "tolerance": {
-          "absolute": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "age_performance_correlation",
-        "age_calculation": "years_since_incorporation",
-        "performance_metrics": [
-          "return_on_equity"
-        ],
-        "statistical_test": "correlation_analysis"
-      },
-      "tags": [
-        "company_age",
-        "performance_correlation",
-        "incorporation_analysis",
-        "memory_intensive"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_007",
-      "question": "Compare the average market capitalization of companies incorporated in Delaware vs other states. What is the percentage difference?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "corporate_identity_metadata",
-      "expected_answer": {
-        "value": "Delaware companies are 98.7% larger than other states by average assets (Delaware avg: $138.5b vs Others: $69.7b)",
-        "type": "numeric",
-        "tolerance": {
-          "relative": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "incorporation_state_comparison",
-        "grouping_variable": "state_of_incorporation",
-        "metric": "market_capitalization",
-        "comparison_groups": [
-          "Delaware",
-          "Other States"
-        ]
-      },
-      "tags": [
-        "delaware_advantage",
-        "market_cap",
-        "incorporation_state"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Data availability issue - requires external market capitalization data",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_008",
-      "question": "Analyze the geographic distribution of high-growth companies (revenue growth >20%). Which states have the highest concentration of fast-growing S&P 500 companies?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "States with highest concentration of high-efficiency companies: 1. Tennessee (71.4%), 2. Rhode Island (66.7%), 3. Virginia (46.7%)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "geographic_growth_analysis",
-        "growth_metric": "revenue_growth",
-        "growth_threshold": 0.2,
-        "geographic_unit": "state",
-        "ranking_metric": "concentration"
-      },
-      "tags": [
-        "geographic_distribution",
-        "high_growth",
-        "state_analysis"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_009",
-      "question": "Compare the average effective tax rates of companies headquartered in high-tax vs low-tax states. What is the difference in tax efficiency?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "Companies in high-tax states have 2.0 percentage point LOWER effective tax rates than low-tax states (High: 18.5% vs Low: 20.6%)",
-        "type": "numeric",
-        "tolerance": {
-          "absolute": 0.02
-        }
-      },
-      "context": {
-        "analysis_type": "tax_efficiency_by_location",
-        "tax_metric": "effective_tax_rate",
-        "geographic_grouping": "tax_jurisdiction",
-        "comparison_type": "high_vs_low_tax_states"
-      },
-      "tags": [
-        "tax_efficiency",
-        "geographic_impact",
-        "regulatory_analysis"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000
+      "template_id": "companies_current_ratio_above_threshold"
     },
     {
       "id": "MA_010",
@@ -460,147 +208,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_011",
-      "question": "Compare quarterly vs annual filing patterns for financial performance metrics. Do companies that file more frequently show different volatility in earnings?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "value": "Companies with frequent quarterly filing patterns show 9.7 percentage points LOWER earnings volatility than infrequent filers (Frequent: 84.1% vs Infrequent: 93.8%)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "filing_frequency_analysis",
-        "performance_metric": "earnings_volatility",
-        "filing_types": [
-          "quarterly",
-          "annual"
-        ],
-        "volatility_measure": "standard_deviation"
-      },
-      "tags": [
-        "filing_patterns",
-        "earnings_volatility",
-        "reporting_frequency"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
       "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - filing pattern analysis has limited business value",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_012",
-      "question": "Analyze the completeness of XBRL data across different financial statement items. Which statement (Balance Sheet, Income Statement, Cash Flow) has the highest data completeness rate?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "xbrl_data_quality",
-      "expected_answer": {
-        "value": "Cash Flow Statement has the highest data completeness rate at 99.8% (vs Balance Sheet: 99.9%, Income Statement: 99.7%)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "data_completeness_analysis",
-        "financial_statements": [
-          "balance_sheet",
-          "income_statement",
-          "cash_flow"
-        ],
-        "completeness_metric": "non_null_percentage",
-        "comparison_method": "statement_level"
-      },
-      "tags": [
-        "data_completeness",
-        "xbrl_quality",
-        "statement_comparison"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - XBRL data completeness analysis has limited business value",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_013",
-      "question": "Identify patterns in XBRL tag usage consistency. Which companies use non-standard taxonomy extensions most frequently?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "xbrl_data_quality",
-      "expected_answer": {
-        "value": "Top 5 companies using non-standard extensions: 1. Regency Centers Corp (95.0%), 2. Equity Residential (94.1%), 3. KeyCorp (93.6%), 4. American International Group (93.5%), 5. Sempra (93.4%)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "taxonomy_extension_analysis",
-        "standard_taxonomy": "us-gaap",
-        "extension_identification": "non_standard_tags",
-        "ranking_metric": "extension_frequency"
-      },
-      "tags": [
-        "taxonomy_extensions",
-        "data_standardization",
-        "company_ranking"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Low CFO relevance (score: 2/5) - taxonomy extension usage has limited business value",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_014",
-      "question": "Calculate the DuPont analysis (ROE decomposition) for the top 5 companies by market cap. Which component (profit margin, asset turnover, or financial leverage) contributes most to ROE differences?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "disabled": true,
-      "disabled_reason": "Memory-intensive DuPont ratio calculations - causes OOM errors with complex financial decomposition analysis",
-      "expected_answer": {
-        "value": "Asset Turnover contributes most to ROE differences among top 5 companies (variance: 1.46 vs Profit Margin: 1.46, Financial Leverage: 0.75)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "dupont_analysis",
-        "roe_components": [
-          "profit_margin",
-          "asset_turnover",
-          "financial_leverage"
-        ],
-        "company_filter": "top_5_by_market_cap",
-        "comparison_method": "component_contribution"
-      },
-      "tags": [
-        "dupont_analysis",
-        "roe_decomposition",
-        "ratio_analysis",
-        "memory_intensive"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
+      "template_id": "companies_research_expense_reported"
     },
     {
       "id": "MA_015",
@@ -655,7 +264,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 35000
+      "max_response_time_ms": 35000,
+      "template_id": "leverage_coverage_comparison"
     },
     {
       "id": "MA_016",
@@ -687,7 +297,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "companies_debt_to_equity_above_threshold"
     },
     {
       "id": "MA_017",
@@ -738,7 +349,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 30000
+      "max_response_time_ms": 30000,
+      "template_id": "working_capital_efficiency_compare"
     },
     {
       "id": "MA_018",
@@ -768,7 +380,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "companies_intangible_assets_above_threshold"
     },
     {
       "id": "MA_019",
@@ -797,42 +410,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_020",
-      "question": "Examine revenue recognition patterns by analyzing the relationship between revenue growth and accounts receivable growth. Which companies show potential aggressive revenue recognition?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Top companies with potential aggressive revenue recognition: Rivian Automotive (AR growth: +175%, Revenue growth: +12%, Divergence: +163pp), Diamondback Energy (AR growth: +112%, Revenue growth: +15%, Divergence: +97pp), First Solar (AR growth: +91%, Revenue growth: +27%, Divergence: +64pp)",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "revenue_recognition_analysis",
-        "metrics": [
-          "revenue_growth",
-          "accounts_receivable_growth"
-        ],
-        "red_flag_criterion": "ar_growth_exceeds_revenue_growth",
-        "threshold": "significant_divergence"
-      },
-      "tags": [
-        "revenue_recognition",
-        "accounts_receivable",
-        "quality_analysis"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
       "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too simple for medium tier, move to simple tier",
-      "disabled_date": "2025-11-03"
+      "template_id": "cfo_to_net_income_trend"
     },
     {
       "id": "MA_021",
@@ -887,7 +466,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 35000
+      "max_response_time_ms": 35000,
+      "template_id": "operating_margin_rebound_sector"
     },
     {
       "id": "MA_022",
@@ -916,7 +496,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
+      "max_response_time_ms": 20000,
+      "template_id": "capex_intensity_rank"
     },
     {
       "id": "MA_023",
@@ -945,139 +526,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_024",
-      "question": "Analyze the impact of foreign currency exposure on earnings volatility for multinational companies. Do companies with higher foreign revenue show greater earnings volatility?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "disabled": true,
-      "disabled_reason": "Memory-intensive correlation analysis - requires complex multinational data processing that may cause OOM errors",
-      "expected_answer": {
-        "value": "Companies with higher foreign revenue do NOT show greater earnings volatility. Correlation coefficient: -0.017 (p-value: 0.379, not significant). High international companies average 55.6% volatility vs utilities 49.8%.",
-        "type": "text",
-        "tolerance": {
-          "absolute": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "currency_exposure_volatility",
-        "exposure_metric": "foreign_currency_revenue_percentage",
-        "volatility_metric": "earnings_standard_deviation",
-        "company_filter": "multinational_operations"
-      },
-      "tags": [
-        "currency_exposure",
-        "earnings_volatility",
-        "multinational",
-        "memory_intensive"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
       "max_response_time_ms": 20000,
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_025",
-      "question": "Compare hedging effectiveness across companies by analyzing the relationship between foreign exchange gains/losses and revenue volatility. Which companies show better currency risk management?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": "Top currency risk management companies: Henry Schein (effectiveness score: 3.0, 1.1% volatility), Ecolab (effectiveness score: 3.0, 7.8% volatility). Limited companies show superior FX hedging effectiveness due to data constraints.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "hedging_effectiveness_analysis",
-        "hedging_metric": "fx_gains_losses_to_revenue_ratio",
-        "effectiveness_criteria": "lower_revenue_volatility_despite_fx_exposure",
-        "comparison_method": "risk_adjusted_performance"
-      },
-      "tags": [
-        "hedging_effectiveness",
-        "currency_risk",
-        "risk_management"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_026",
-      "question": "Analyze segment performance contribution by calculating the return on assets for each business segment. Which companies have the most balanced segment performance?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "Limited segment-level data available in standard financial filings constrains detailed segment ROA balance analysis. Most companies lack granular segment asset allocation required for precise ROA calculations.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "segment_performance_balance",
-        "performance_metric": "segment_return_on_assets",
-        "balance_criterion": "low_variance_across_segments",
-        "ranking_method": "coefficient_of_variation"
-      },
-      "tags": [
-        "segment_analysis",
-        "performance_balance",
-        "diversification"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_027",
-      "question": "Examine sustainability reporting patterns by analyzing the correlation between environmental metrics disclosure and financial performance. Do companies with better ESG disclosure show superior returns?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "Limited ESG-specific data available in standard financial filings constrains comprehensive environmental disclosure scoring. Analysis suggests mixed relationship between disclosure practices and financial performance.",
-        "type": "text",
-        "tolerance": {
-          "absolute": 0.05
-        }
-      },
-      "context": {
-        "analysis_type": "esg_disclosure_performance_correlation",
-        "esg_metric": "environmental_metrics_completeness",
-        "performance_metrics": [
-          "return_on_equity",
-          "return_on_assets"
-        ],
-        "statistical_test": "correlation_analysis"
-      },
-      "tags": [
-        "esg_disclosure",
-        "sustainability",
-        "performance_correlation"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Data availability issue - correlation analysis may be memory-intensive",
-      "disabled_date": "2025-11-03"
+      "template_id": "operating_cf_volatility_sector"
     },
     {
       "id": "MA_028",
@@ -1113,44 +563,8 @@
         "cross_reference_validation",
         "business_logic_validation"
       ],
-      "max_response_time_ms": 20000
-    },
-    {
-      "id": "MA_029",
-      "question": "Examine cash flow statement predictive power by analyzing how well operating cash flow patterns predict future earnings growth. Which cash flow metrics are most predictive?",
-      "type": "medium_analysis",
-      "difficulty": "advanced",
-      "category": "financial_statement_line_items",
-      "expected_answer": {
-        "value": "Most predictive cash flow metric: OCF/Earnings Ratio (correlation: -0.264 with future earnings growth), indicating companies with lower cash conversion show higher subsequent growth.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "predictive_cash_flow_analysis",
-        "predictor_variables": [
-          "operating_cash_flow",
-          "free_cash_flow",
-          "cash_conversion_cycle"
-        ],
-        "target_variable": "future_earnings_growth",
-        "prediction_horizon": "1_year",
-        "statistical_method": "regression_analysis"
-      },
-      "tags": [
-        "predictive_analysis",
-        "cash_flow_patterns",
-        "earnings_forecasting"
-      ],
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
       "max_response_time_ms": 20000,
-      "disabled": true,
-      "disabled_reason": "Complexity misalignment - too complex for medium tier, move to complex tier or simplify",
-      "disabled_date": "2025-11-03"
+      "template_id": "companies_positive_return_on_equity"
     },
     {
       "id": "MA_030",
@@ -1183,7 +597,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "working_capital_efficiency_compare"
     },
     {
       "id": "MA_031",
@@ -1217,7 +632,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "companies_research_expense_reported"
     },
     {
       "id": "MA_032",
@@ -1251,157 +667,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_033",
-      "question": "Analyze the Price-to-Book ratio distribution across FAANG stocks (Facebook/Meta, Apple, Amazon, Netflix, Google). Which company offers the best value based on P/B ratio, and how does this compare to the Technology sector median?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "financial_ratios_performance",
-      "expected_answer": {
-        "value": "Amazon offers best value with P/B ratio of 5.59x vs FAANG premium valuations and Technology sector median ~6.0x, trading at discount to sector benchmark.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "price_to_book_analysis",
-        "companies": [
-          "Meta Platforms Inc.",
-          "Apple Inc.",
-          "Amazon.com Inc.",
-          "Netflix Inc.",
-          "Alphabet Inc."
-        ],
-        "sector_benchmark": "Information Technology",
-        "value_assessment": "lowest_pb_ratio_identification"
-      },
-      "tags": [
-        "price_to_book",
-        "faang_stocks",
-        "value_analysis",
-        "sector_comparison"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_034",
-      "question": "Compare the revenue concentration risk across major retailers (Walmart, Target, Home Depot, Costco) by analyzing their geographic revenue distribution and customer demographics exposure. Which retailer has the most diversified revenue base?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "Walmart demonstrates most diversified revenue base with score 9/10 vs Costco 8/10, Target 5/10, Home Depot 6/10, driven by global presence and multi-format strategy.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "revenue_diversification_analysis",
-        "companies": [
-          "Walmart Inc.",
-          "Target Corp.",
-          "Home Depot Inc.",
-          "Costco Wholesale Corp."
-        ],
-        "sector": "Consumer Discretionary",
-        "risk_factors": [
-          "geographic_concentration",
-          "customer_segment_exposure",
-          "revenue_stream_diversity"
-        ]
-      },
-      "tags": [
-        "revenue_diversification",
-        "retail_analysis",
-        "concentration_risk",
-        "consumer_discretionary"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_035",
-      "question": "Assess the regulatory risk exposure of major pharmaceutical companies (Johnson & Johnson, Pfizer, Merck, Bristol Myers Squibb) by analyzing their FDA approval pipeline, patent cliff exposure, and international regulatory dependencies. Which company faces the highest regulatory risk in the next 3 years?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "Bristol Myers Squibb faces highest regulatory risk with score 8/10 due to multiple blockbuster patent cliffs 2024-2027 and high intangible asset dependency (28.4%).",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "regulatory_risk_assessment",
-        "companies": [
-          "Johnson & Johnson",
-          "Pfizer Inc.",
-          "Merck & Co. Inc.",
-          "Bristol Myers Squibb Co."
-        ],
-        "sector": "Health Care",
-        "risk_factors": [
-          "fda_pipeline_risk",
-          "patent_cliff_exposure",
-          "international_regulatory_exposure"
-        ],
-        "time_horizon": "3_years"
-      },
-      "tags": [
-        "regulatory_risk",
-        "pharmaceutical",
-        "fda_analysis",
-        "patent_cliff"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_036",
-      "question": "Analyze the earnings guidance reliability of major technology companies by comparing their quarterly guidance accuracy vs actual results over the past 8 quarters. Which companies consistently provide the most conservative vs optimistic guidance?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "value": "Apple demonstrates most conservative guidance with consistent beats and early filing patterns, while high-volatility companies like Meta (82.6% volatility) face guidance challenges.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "earnings_guidance_reliability",
-        "sector": "Information Technology",
-        "time_period": "8_quarters",
-        "reliability_metrics": [
-          "guidance_accuracy",
-          "conservative_vs_optimistic_bias",
-          "guidance_consistency"
-        ],
-        "comparison_method": "guidance_vs_actual_variance"
-      },
-      "tags": [
-        "earnings_guidance",
-        "forecast_accuracy",
-        "technology_sector",
-        "management_credibility"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "asset_turnover_trend"
     },
     {
       "id": "MA_037",
@@ -1441,7 +708,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "airlines_net_debt_to_ebitda_recovery"
     },
     {
       "id": "MA_038",
@@ -1483,7 +751,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "cloud_margin_pre_post_covid"
     },
     {
       "id": "MA_039",
@@ -1523,88 +792,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_040",
-      "question": "Assess the foreign exchange sensitivity of multinational beverage companies (Coca-Cola, PepsiCo, Mondelez) by analyzing their international revenue exposure, natural hedging capabilities, and currency hedging strategies. Which company is best positioned for a strong USD environment?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": "PepsiCo best positioned for strong USD environment with ~60% North American revenue concentration vs Mondelez ~75% international exposure creating highest FX sensitivity.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "fx_sensitivity_analysis",
-        "companies": [
-          "Coca-Cola Co.",
-          "PepsiCo Inc.",
-          "Mondelez International Inc."
-        ],
-        "sector": "Consumer Staples",
-        "fx_factors": [
-          "international_revenue_exposure",
-          "natural_hedging_capability",
-          "currency_hedging_strategy"
-        ],
-        "scenario": "strong_usd_environment"
-      },
-      "tags": [
-        "foreign_exchange",
-        "currency_hedging",
-        "multinational_exposure",
-        "consumer_staples"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Coca-Cola Co. not found in database",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_041",
-      "question": "Analyze the ESG transition impact on major oil companies (ExxonMobil, Chevron, ConocoPhillips) by comparing their renewable energy investments as a percentage of capex, carbon intensity reduction targets, and stranded asset exposure. Which company is best positioned for ESG-focused institutional investment?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "ConocoPhillips best positioned for ESG-focused institutional investment with 35.0% FCF margin ($28.3B FCF) and $5.6B cash providing superior financial flexibility for transition investments.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "esg_transition_assessment",
-        "companies": [
-          "Exxon Mobil Corp.",
-          "Chevron Corp.",
-          "ConocoPhillips"
-        ],
-        "sector": "Energy",
-        "esg_metrics": [
-          "renewable_energy_capex_percentage",
-          "carbon_intensity_targets",
-          "stranded_asset_exposure"
-        ],
-        "investment_criteria": "esg_institutional_investment_readiness"
-      },
-      "tags": [
-        "esg_analysis",
-        "energy_transition",
-        "carbon_intensity",
-        "renewable_investment"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "payout_ratio_leaderboard"
     },
     {
       "id": "MA_042",
@@ -1644,47 +833,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_043",
-      "question": "Compare the competitive positioning of major payment processors (Visa, Mastercard, American Express, PayPal) by analyzing their network effects, take rates, and digital transformation capabilities. Which company has the strongest moat against fintech disruption?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "sector_industry_analysis",
-      "expected_answer": {
-        "value": "Visa demonstrates strongest moat against fintech disruption with 55% net margin, $36B revenue scale, and 0.77 composite moat score indicating exceptional network effects.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "competitive_moat_analysis",
-        "companies": [
-          "Visa Inc.",
-          "Mastercard Inc.",
-          "American Express Co.",
-          "PayPal Holdings Inc."
-        ],
-        "sector": "Financials",
-        "competitive_factors": [
-          "network_effects_strength",
-          "take_rate_sustainability",
-          "digital_transformation_capability"
-        ],
-        "disruption_analysis": "fintech_competitive_threat"
-      },
-      "tags": [
-        "payment_processors",
-        "competitive_moats",
-        "fintech_disruption",
-        "network_effects"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "semiconductor_roe_momentum"
     },
     {
       "id": "MA_044",
@@ -1723,7 +873,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "capex_intensity_rank"
     },
     {
       "id": "MA_045",
@@ -1763,217 +914,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_046",
-      "question": "Analyze the pricing power sustainability of luxury goods companies (LVMH, Herm\u00e8s, Tiffany via LVMH, Est\u00e9e Lauder) by comparing their gross margin trends, price elasticity indicators, and brand strength metrics. Which company demonstrates the strongest pricing power in economic downturns?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "income_statement_analysis",
-      "expected_answer": {
-        "value": "Tapestry demonstrates strongest pricing power in economic downturns with 1.116 composite score, 70% gross margin, 56.1% brand investment, and exceptional 91.9% cash-to-revenue ratio.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "pricing_power_sustainability",
-        "companies": [
-          "LVMH (US ADR)",
-          "Herm\u00e8s (International)",
-          "Est\u00e9e Lauder Companies Inc."
-        ],
-        "sector": "Consumer Discretionary",
-        "pricing_indicators": [
-          "gross_margin_trends",
-          "price_elasticity_metrics",
-          "brand_strength_indicators"
-        ],
-        "stress_scenario": "economic_downturn_pricing_resilience"
-      },
-      "tags": [
-        "pricing_power",
-        "luxury_goods",
-        "brand_strength",
-        "margin_sustainability"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - LVMH, Herm\u00e8s, Est\u00e9e Lauder not found in database (European companies)",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_047",
-      "question": "Compare the capital allocation priorities of major industrial conglomerates (General Electric, Honeywell, 3M, Caterpillar) by analyzing their cash flow allocation between R&D, capex, dividends, and share buybacks. Which company demonstrates the most strategic capital allocation for long-term competitiveness?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "Honeywell demonstrates most strategic capital allocation with 0.626 composite score, 39.1% growth investment focus, 4.0% R&D intensity, and sustainable 1.1x OCF coverage.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "capital_allocation_strategy",
-        "companies": [
-          "General Electric Co.",
-          "Honeywell International Inc.",
-          "3M Co.",
-          "Caterpillar Inc."
-        ],
-        "sector": "Industrials",
-        "allocation_categories": [
-          "rd_investment",
-          "capital_expenditures",
-          "dividend_payments",
-          "share_buybacks"
-        ],
-        "strategic_focus": "long_term_competitive_positioning"
-      },
-      "tags": [
-        "capital_allocation",
-        "industrial_conglomerates",
-        "cash_flow_allocation",
-        "strategic_investment"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - General Electric Co. not found in database",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_048",
-      "question": "Evaluate the geopolitical risk exposure of major technology hardware companies (Apple, Taiwan Semiconductor via suppliers, Intel, Advanced Micro Devices) by analyzing their supply chain concentration, manufacturing geographic dependencies, and China market exposure. Which company faces the highest geopolitical supply chain risk?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "AMD faces greatest geopolitical supply chain risk with 0.823 composite score due to TSMC dependency, Taiwan manufacturing concentration, and limited alternative advanced node suppliers.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "geopolitical_supply_chain_risk",
-        "companies": [
-          "Apple Inc.",
-          "Intel Corp.",
-          "Advanced Micro Devices Inc."
-        ],
-        "sector": "Information Technology",
-        "risk_factors": [
-          "supply_chain_concentration",
-          "manufacturing_geographic_dependencies",
-          "china_market_exposure"
-        ],
-        "risk_assessment": "geopolitical_vulnerability_ranking"
-      },
-      "tags": [
-        "geopolitical_risk",
-        "supply_chain_analysis",
-        "china_exposure",
-        "technology_hardware"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_049",
-      "question": "Analyze the earnings seasonality patterns of major streaming/entertainment companies (Disney, Netflix, Warner Bros Discovery, Paramount) by comparing their quarterly revenue patterns, subscriber addition cycles, and content investment timing. Which company has the most predictable seasonal earnings profile?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "temporal_filing_patterns",
-      "expected_answer": {
-        "value": "Netflix demonstrates the most predictable seasonal earnings profile with 8.7% revenue coefficient of variation, showing consistent quarterly performance patterns with limited seasonal volatility.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "earnings_seasonality_analysis",
-        "companies": [
-          "Walt Disney Co.",
-          "Netflix Inc.",
-          "Warner Bros Discovery Inc.",
-          "Paramount Global"
-        ],
-        "sector": "Communication Services",
-        "seasonality_factors": [
-          "quarterly_revenue_patterns",
-          "subscriber_addition_cycles",
-          "content_investment_timing"
-        ],
-        "predictability_assessment": "seasonal_earnings_consistency"
-      },
-      "tags": [
-        "earnings_seasonality",
-        "streaming_entertainment",
-        "subscriber_patterns",
-        "content_investment"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Walt Disney Co. not found in database",
-      "disabled_date": "2025-11-03"
-    },
-    {
-      "id": "MA_050",
-      "question": "Evaluate the business model transformation of major automotive companies (Ford, General Motors, Stellantis) toward electric vehicles by analyzing their EV segment profitability, traditional ICE segment decline rates, and transition capex requirements. Which automaker has the most viable EV transition strategy?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "business_segments_esg",
-      "expected_answer": {
-        "value": "General Motors demonstrates the most viable EV transition strategy with 0.742 composite score, combining strong financial sustainability (4.8% margins), balanced investment (3.9% capex intensity), and comprehensive transformation approach.",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "ev_transition_viability",
-        "companies": [
-          "Ford Motor Co.",
-          "General Motors Co.",
-          "Stellantis N.V."
-        ],
-        "sector": "Consumer Discretionary",
-        "transformation_metrics": [
-          "ev_segment_profitability",
-          "ice_segment_decline_rate",
-          "transition_capex_requirements"
-        ],
-        "strategy_assessment": "ev_transition_viability_ranking"
-      },
-      "tags": [
-        "ev_transition",
-        "automotive_transformation",
-        "business_model_shift",
-        "segment_analysis"
-      ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ],
-      "disabled": true,
-      "disabled_reason": "Data availability issue - Stellantis N.V. not found in database (recently formed/European company)",
-      "disabled_date": "2025-11-03"
+      "template_id": "bank_loan_loss_provision_trend"
     },
     {
       "id": "MA_002_NEW",
@@ -2012,7 +954,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "roe_trend_multi_year"
     },
     {
       "id": "MA_003_NEW",
@@ -2046,7 +989,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "latest_debt_to_equity"
     },
     {
       "id": "MA_005_NEW",
@@ -2080,7 +1024,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "operating_cf_volatility_sector"
     },
     {
       "id": "MA_006_NEW",
@@ -2114,7 +1059,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "companies_return_on_equity_above_threshold"
     },
     {
       "id": "MA_007_NEW",
@@ -2151,7 +1097,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "companies_by_incorporation_state"
     },
     {
       "id": "MA_011_NEW",
@@ -2182,7 +1129,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "quarterly_revenue_trend"
     },
     {
       "id": "MA_012_NEW",
@@ -2216,7 +1164,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "operating_margin_quarterly"
     },
     {
       "id": "MA_013_NEW",
@@ -2247,7 +1196,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "asset_turnover_trend"
     },
     {
       "id": "MA_014_NEW",
@@ -2282,7 +1232,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "asset_turnover_trend"
     },
     {
       "id": "MA_020_NEW",
@@ -2313,38 +1264,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_024_NEW",
-      "replaces": "MA_024",
-      "reason": "Memory-intensive correlation analysis",
-      "question": "Compare revenue concentration by analyzing the percentage of companies with international revenue disclosures across sectors. Which sector has the highest proportion of internationally diversified companies?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "geographic_regulatory",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "international_diversification_assessment",
-        "metric": "international_revenue_presence",
-        "comparison_level": "sector",
-        "classification": "diversified_vs_domestic"
-      },
-      "tags": [
-        "international_revenue",
-        "geographic_diversification",
-        "sector_comparison"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "working_capital_efficiency_compare"
     },
     {
       "id": "MA_027_NEW",
@@ -2378,7 +1299,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "operating_margin_rebound_sector"
     },
     {
       "id": "MA_029_NEW",
@@ -2410,41 +1332,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_040_NEW",
-      "replaces": "MA_040",
-      "reason": "Companies not in database (Coca-Cola)",
-      "question": "Assess the foreign exchange exposure of multinational Consumer Staples companies by analyzing the relationship between reported currency impacts and revenue volatility. Which companies demonstrate the most effective natural hedging through balanced geographic portfolios?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "currency_units",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "natural_hedging_effectiveness",
-        "sector": "Consumer Staples",
-        "fx_factors": [
-          "currency_impact_disclosure",
-          "revenue_volatility"
-        ],
-        "assessment": "geographic_balance_score"
-      },
-      "tags": [
-        "foreign_exchange",
-        "natural_hedging",
-        "consumer_staples"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "fcf_quality_screen"
     },
     {
       "id": "MA_046_NEW",
@@ -2478,7 +1367,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "gross_margin_sector_spread"
     },
     {
       "id": "MA_047_NEW",
@@ -2513,7 +1403,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
+      ],
+      "template_id": "capital_allocation_spike_screen"
     },
     {
       "id": "MA_049_NEW",
@@ -2544,42 +1435,8 @@
         "statistical_analysis_validation",
         "cross_reference_validation",
         "business_logic_validation"
-      ]
-    },
-    {
-      "id": "MA_050_NEW",
-      "replaces": "MA_050",
-      "reason": "Companies not in database (Stellantis)",
-      "question": "Evaluate the financial sustainability of Consumer Discretionary automotive companies' transition investments by analyzing free cash flow generation relative to capital expenditure intensity. Which companies maintain positive FCF while investing in future technologies?",
-      "type": "medium_analysis",
-      "difficulty": "intermediate",
-      "category": "cash_flow_analysis",
-      "expected_answer": {
-        "value": "PLACEHOLDER - To be calculated",
-        "type": "text"
-      },
-      "context": {
-        "analysis_type": "investment_sustainability_assessment",
-        "sector": "Consumer Discretionary",
-        "subsector": "automotive",
-        "metrics": [
-          "free_cash_flow",
-          "capex_intensity"
-        ],
-        "assessment": "fcf_positive_with_growth_investment"
-      },
-      "tags": [
-        "free_cash_flow",
-        "capex_intensity",
-        "automotive_transition"
       ],
-      "max_response_time_ms": 20000,
-      "validation_rules": [
-        "multi_step_calculation_validation",
-        "statistical_analysis_validation",
-        "cross_reference_validation",
-        "business_logic_validation"
-      ]
+      "template_id": "quarterly_revenue_trend"
     }
   ]
 }

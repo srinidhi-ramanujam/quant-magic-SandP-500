@@ -140,6 +140,25 @@ class SQLValidator:
                 "NUM table does not expose CIK; join through SUB for issuer details",
             )
 
+        # Check for common lowercase tag casing issues
+        casing_fixes = {
+            r"'assetscurrent'": "AssetsCurrent",
+            r"'liabilitiescurrent'": "LiabilitiesCurrent",
+            r"form\s*=\s*'10-k'": "10-K",
+            r"fp\s*=\s*'fy'": "FY",
+            r"'revenues'": "Revenues",
+            r"'netincomeloss'": "NetIncomeLoss",
+            r"'assets'": "Assets",
+            r"'liabilities'": "Liabilities",
+            r"'equity'": "Equity",
+        }
+        for pattern, proper_casing in casing_fixes.items():
+            if re.search(pattern, sql_stripped):
+                return (
+                    False,
+                    f"Tag should use proper casing (e.g., '{proper_casing}'). Found lowercase version.",
+                )
+
         return True, None
 
     def validate(

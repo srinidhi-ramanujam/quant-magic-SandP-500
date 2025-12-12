@@ -36,7 +36,21 @@ TEMPLATE_INDEX_PATH = ARTIFACT_DIR / "templates.index"
 TEMPLATE_METADATA_PATH = ARTIFACT_DIR / "templates_metadata.json"
 
 DEFAULT_THRESHOLD = 0.55
-DEFAULT_TEMPLATE_THRESHOLD = 0.6
+DEFAULT_TEMPLATE_THRESHOLD = 0.55
+GUIDED_TEMPLATE_THRESHOLD = 0.45
+GUIDED_SCORE_BOOST = 0.08
+GUIDED_TEMPLATE_IDS = {
+    "sector_growth_leaders",
+    "sector_margin_trend",
+    "sector_fcf_stability",
+    "sector_roic_improvers",
+    "sector_share_gainers",
+    "company_rev_margin_trend",
+    "company_fcf_stability",
+    "company_peer_margin_compare",
+    "company_segment_growth",
+    "company_leverage_liquidity",
+}
 TOP_K = 16
 
 
@@ -222,21 +236,34 @@ class TemplateIntentRetriever:
             return None
         vector = self._encode_question(question)
         scores, idxs = self.index.search(vector, top_k)
+        candidates = []
         for score, idx in zip(scores[0], idxs[0]):
             if idx < 0 or idx >= len(self.index.metadata):
-                continue
-            if score < DEFAULT_TEMPLATE_THRESHOLD:
                 continue
             meta = self.index.metadata[idx]
             template_id = meta.get("template_id")
             if not template_id:
                 continue
-            return TemplateRetrievalResult(
-                template_id=template_id,
-                score=float(score),
-                metadata=meta.get("metadata", {}),
-            )
-        return None
+            tier = (meta.get("metadata") or {}).get("tier")
+            is_guided = tier == "guided_questions" or template_id in GUIDED_TEMPLATE_IDS
+            threshold = GUIDED_TEMPLATE_THRESHOLD if is_guided else DEFAULT_TEMPLATE_THRESHOLD
+            if score < threshold:
+                continue
+            adjusted_score = float(score) + (GUIDED_SCORE_BOOST if is_guided else 0.0)
+            candidates.append((adjusted_score, float(score), is_guided, template_id, meta))
+
+        if not candidates:
+            return None
+
+        _adjusted, raw_score, _, template_id, meta = sorted(
+            candidates, key=lambda row: (row[0], row[2], row[1]), reverse=True
+        )[0]
+
+        return TemplateRetrievalResult(
+            template_id=template_id,
+            score=raw_score,
+            metadata=meta.get("metadata", {}),
+        )
 
     def _encode_question(self, question: str) -> np.ndarray:
         vec = self.encoder.encode(

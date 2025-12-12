@@ -107,3 +107,37 @@ def test_ambiguous_entity_handling(deterministic_extractor):
 
     # Should identify question type
     assert entities.question_type is not None
+
+
+def test_filters_noise_company_tokens(deterministic_extractor):
+    """Ensure question phrasing tokens don't become pseudo company names."""
+    extractor = deterministic_extractor
+
+    context_delta = create_request_context("delta-question")
+    question_delta = "Track the net debt-to-EBITDA progression for Delta, Southwest, and United airlines."
+    entities_delta = extractor.extract(question_delta, context_delta)
+
+    assert all(
+        not name.startswith("TRACK") and name.lower() != "track"
+        for name in entities_delta.companies
+    )
+    assert any("DELTA" in name for name in entities_delta.companies)
+
+    context_retail = create_request_context("retail-question")
+    question_retail = (
+        "Which retail companies improved inventory turnover trends recently?"
+    )
+    entities_retail = extractor.extract(question_retail, context_retail)
+    assert "WHICH RETAIL" not in entities_retail.companies
+
+
+def test_extract_relative_time_phrases(deterministic_extractor):
+    """Ensure relative fiscal phrasing is captured for routing."""
+    extractor = deterministic_extractor
+    context = create_request_context("relative-periods")
+
+    question = "Which Technology names rebounded post-COVID with better margins over the last 4 quarters?"
+    entities = extractor.extract(question, context)
+
+    assert any(tp.lower().startswith("last_4_quarters") for tp in entities.time_periods)
+    assert any(tp.lower() == "post_covid" for tp in entities.time_periods)

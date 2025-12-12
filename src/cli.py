@@ -62,7 +62,7 @@ class FinancialCLI:
         result = self.query_service.run(
             question,
             debug_mode=debug_mode,
-            include_presentation=False,
+            include_presentation=True,
         )
 
         log_interaction(

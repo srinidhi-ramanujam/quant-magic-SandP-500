@@ -166,7 +166,8 @@
           "Turnaround names (Uber, First Solar) carry higher volatility but can rapidly add 25-65pp of margin once scale and mix inflect; size positions accordingly.",
           "CFO teams should annotate one-time gains (e.g., Emerson disposals) before feeding automated storytellers, so downstream answers stay decision grade."
         ],
-        "sample_analysis": "WITH tech_companies AS (\n    SELECT DISTINCT cik, name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Information Technology'\n),\nbase_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN tech_companies t USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nfilings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM base_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT f.cik, f.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM filings f\n    JOIN read_parquet('data/parquet/num.parquet') n\n      ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n    SELECT t.name, v.cik, v.fiscal_year, v.net_income, v.revenue,\n           v.net_income / NULLIF(v.revenue, 0) AS profit_margin\n    FROM values v\n    JOIN tech_companies t ON v.cik = t.cik\n    WHERE v.net_income IS NOT NULL\n      AND v.revenue IS NOT NULL\n),\nordered AS (\n    SELECT m.*,\n           LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin,\n           LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year\n    FROM margins m\n)\nSELECT name,\n       ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END)*100, 2) AS margin_2019_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END)*100, 2) AS margin_2020_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END)*100, 2) AS margin_2021_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END)*100, 2) AS margin_2022_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END)*100, 2) AS margin_2023_pct,\n       ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))*100, 2) AS improvement_pct,\n       SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps\nFROM ordered\nGROUP BY name\nHAVING COUNT(DISTINCT fiscal_year) = 5\nORDER BY consistency_steps DESC, improvement_pct DESC, name\nLIMIT 5;"
+        "sample_analysis": "WITH tech_companies AS (\n    SELECT DISTINCT cik, name\n    FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    WHERE gics_sector = 'Information Technology'\n),\nbase_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period, s.filed,\n           ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM read_parquet('data/parquet/sub.parquet') s\n    JOIN tech_companies t USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2019 AND 2023\n),\nfilings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM base_filings\n    WHERE rn = 1\n),\nvalues AS (\n    SELECT f.cik, f.fiscal_year,\n           MAX(CASE WHEN n.tag = 'NetIncomeLoss' THEN n.value END) AS net_income,\n           MAX(CASE WHEN n.tag IN ('Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet') THEN n.value END) AS revenue\n    FROM filings f\n    JOIN read_parquet('data/parquet/num.parquet') n\n      ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('NetIncomeLoss','Revenues','RevenueFromContractWithCustomerExcludingAssessedTax','SalesRevenueNet')\n    GROUP BY f.cik, f.fiscal_year\n),\nmargins AS (\n    SELECT t.name, v.cik, v.fiscal_year, v.net_income, v.revenue,\n           v.net_income / NULLIF(v.revenue, 0) AS profit_margin\n    FROM values v\n    JOIN tech_companies t ON v.cik = t.cik\n    WHERE v.net_income IS NOT NULL\n      AND v.revenue IS NOT NULL\n),\nordered AS (\n    SELECT m.*,\n           LEAD(m.profit_margin) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_margin,\n           LEAD(m.fiscal_year) OVER (PARTITION BY m.cik ORDER BY m.fiscal_year) AS next_year\n    FROM margins m\n)\nSELECT name,\n       ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN profit_margin END)*100, 2) AS margin_2019_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN profit_margin END)*100, 2) AS margin_2020_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN profit_margin END)*100, 2) AS margin_2021_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN profit_margin END)*100, 2) AS margin_2022_pct,\n       ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END)*100, 2) AS margin_2023_pct,\n       ROUND((MAX(CASE WHEN fiscal_year = 2023 THEN profit_margin END) - MIN(CASE WHEN fiscal_year = 2019 THEN profit_margin END))*100, 2) AS improvement_pct,\n       SUM(CASE WHEN next_year = fiscal_year + 1 AND next_margin IS NOT NULL AND next_margin >= profit_margin THEN 1 ELSE 0 END) AS consistency_steps\nFROM ordered\nGROUP BY name\nHAVING COUNT(DISTINCT fiscal_year) = 5\nORDER BY consistency_steps DESC, improvement_pct DESC, name\nLIMIT 5;",
+        "template_id": "profit_margin_consistency_trend"
       },
       "max_response_time_ms": 15000
     },
@@ -253,7 +254,8 @@
           "Banks that pre-funded growth (US Bancorp) mitigated regulatory capital pressure by shrinking wholesale debt, improving resilience ahead of tighter credit cycles.",
           "Industrial names such as Deere that delevered while margins stayed high highlight disciplined capital allocation\u2014an important screening factor for CFO offices."
         ],
-        "sample_analysis": "WITH company_dim AS (\n    SELECT cik, name, gics_sector\n    FROM (\n        SELECT cik, name, gics_sector,\n               ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n        FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    )\n    WHERE rn = 1\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period\n    FROM read_parquet('data/parquet/sub.parquet') s\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2021 AND 2023\n),\ndebt_inputs AS (\n    SELECT f.cik,\n           f.fiscal_year,\n           MAX(CASE WHEN n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation') THEN n.value END) AS total_debt_tag,\n           MAX(CASE WHEN n.tag IN ('LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts') THEN n.value END) AS long_term_debt,\n           MAX(CASE WHEN n.tag IN ('DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') THEN n.value END) AS short_term_debt\n    FROM annual_filings f\n    JOIN read_parquet('data/parquet/num.parquet') n ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation','LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts','DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent')\n    GROUP BY f.cik, f.fiscal_year\n),\ntotal_debt AS (\n    SELECT cik,\n           fiscal_year,\n            COALESCE(total_debt_tag, long_term_debt + COALESCE(short_term_debt, 0), long_term_debt, short_term_debt) AS total_debt\n    FROM debt_inputs\n),\nranked AS (\n    SELECT td.cik,\n           MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021,\n           MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022,\n           MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023\n    FROM total_debt td\n    GROUP BY td.cik\n    HAVING COUNT(DISTINCT fiscal_year) = 3\n),\njoined AS (\n    SELECT cd.name,\n           cd.gics_sector,\n           debt_2021,\n           debt_2022,\n           debt_2023,\n           (debt_2021 - debt_2023) AS debt_reduction\n    FROM ranked r\n    JOIN company_dim cd USING (cik)\n)\nSELECT name, gics_sector,\n       ROUND(debt_2021/1000000, 2) AS debt_2021_m,\n       ROUND(debt_2022/1000000, 2) AS debt_2022_m,\n       ROUND(debt_2023/1000000, 2) AS debt_2023_m,\n       ROUND((debt_2021 - debt_2023)/1000000, 2) AS reduction_m,\n       ROUND(((debt_2021 - debt_2023) / NULLIF(debt_2021, 0)) * 100, 2) AS reduction_pct\nFROM joined\nWHERE debt_2021 IS NOT NULL AND debt_2023 IS NOT NULL\nORDER BY reduction_m DESC\nLIMIT 5;"
+        "sample_analysis": "WITH company_dim AS (\n    SELECT cik, name, gics_sector\n    FROM (\n        SELECT cik, name, gics_sector,\n               ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n        FROM read_parquet('data/parquet/companies_with_sectors.parquet')\n    )\n    WHERE rn = 1\n),\nannual_filings AS (\n    SELECT s.adsh, s.cik, CAST(s.fy AS INTEGER) AS fiscal_year, s.period\n    FROM read_parquet('data/parquet/sub.parquet') s\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2021 AND 2023\n),\ndebt_inputs AS (\n    SELECT f.cik,\n           f.fiscal_year,\n           MAX(CASE WHEN n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation') THEN n.value END) AS total_debt_tag,\n           MAX(CASE WHEN n.tag IN ('LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts') THEN n.value END) AS long_term_debt,\n           MAX(CASE WHEN n.tag IN ('DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent') THEN n.value END) AS short_term_debt\n    FROM annual_filings f\n    JOIN read_parquet('data/parquet/num.parquet') n ON f.adsh = n.adsh AND n.ddate = f.period\n    WHERE n.tag IN ('DebtAndCapitalLeaseObligations','Totaldebtrecordeduponconsolidation','LongTermDebt','LongTermDebtNoncurrent','LongTermDebtAndCapitalLeaseObligations','LongTermDebtAndCapitalLeaseObligationsNoncurrent','UnsecuredLongTermDebt','LongTermDebtOfConsolidatedInvestmentProducts','DebtCurrent','ShortTermBorrowings','ShortTermBorrowingsIncludingLongTermDebtCurrent','ShortTermDebtAndCurrentPortionOfLongTermDebt','DebtAndCapitalLeaseObligationsCurrent')\n    GROUP BY f.cik, f.fiscal_year\n),\ntotal_debt AS (\n    SELECT cik,\n           fiscal_year,\n            COALESCE(total_debt_tag, long_term_debt + COALESCE(short_term_debt, 0), long_term_debt, short_term_debt) AS total_debt\n    FROM debt_inputs\n),\nranked AS (\n    SELECT td.cik,\n           MIN(CASE WHEN fiscal_year = 2021 THEN total_debt END) AS debt_2021,\n           MIN(CASE WHEN fiscal_year = 2022 THEN total_debt END) AS debt_2022,\n           MIN(CASE WHEN fiscal_year = 2023 THEN total_debt END) AS debt_2023\n    FROM total_debt td\n    GROUP BY td.cik\n    HAVING COUNT(DISTINCT fiscal_year) = 3\n),\njoined AS (\n    SELECT cd.name,\n           cd.gics_sector,\n           debt_2021,\n           debt_2022,\n           debt_2023,\n           (debt_2021 - debt_2023) AS debt_reduction\n    FROM ranked r\n    JOIN company_dim cd USING (cik)\n)\nSELECT name, gics_sector,\n       ROUND(debt_2021/1000000, 2) AS debt_2021_m,\n       ROUND(debt_2022/1000000, 2) AS debt_2022_m,\n       ROUND(debt_2023/1000000, 2) AS debt_2023_m,\n       ROUND((debt_2021 - debt_2023)/1000000, 2) AS reduction_m,\n       ROUND(((debt_2021 - debt_2023) / NULLIF(debt_2021, 0)) * 100, 2) AS reduction_pct\nFROM joined\nWHERE debt_2021 IS NOT NULL AND debt_2023 IS NOT NULL\nORDER BY reduction_m DESC\nLIMIT 5;",
+        "template_id": "debt_reduction_progression"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "FY2021-FY2023",
@@ -343,7 +345,8 @@
           "Device makers with >3x current ratios can self-fund tuck-in deals and platform upgrades even if rates stay elevated.",
           "Improved working-capital cushions lower refinancing risk and provide shock absorbers for supply-chain disruptions.",
           "Liquidity expansion highlights the health of recurring-revenue models in diagnostics, animal health, and vision care."
-        ]
+        ],
+        "template_id": "current_ratio_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "FY2019-FY2023",
@@ -427,7 +430,8 @@
           "Platforms that pair AI demand with cost discipline (NVIDIA, Palo Alto) demonstrate repeatable operating leverage and deserve premium multiples.",
           "Turnaround names (FIS, DoorDash) proved that restructuring actions translated into tangible margin repair, de-risking 2024 guidance.",
           "Double-digit improvements on $5B+ revenue bases highlight CFO playbooks that can be redeployed across adjacent sectors (software, payments, cybersecurity)."
-        ]
+        ],
+        "template_id": "operating_margin_delta"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "FY2022-FY2023",
@@ -508,7 +512,8 @@
           "Cloud and AI buildouts can depress ROE for several years; investors should model a delayed return on incremental equity.",
           "Software consolidators with goodwill-heavy balance sheets (e.g., Gen Digital) need disciplined integration to restore ROE.",
           "Screening for \u201crevenue up / ROE down\u201d scenarios highlights where activist pressure or capital allocation pivots may emerge."
-        ]
+        ],
+        "template_id": "roe_revenue_divergence"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "3 years",
@@ -597,7 +602,8 @@
           "Railroads and diversified industrials that tightened working capital are positioned to outgenerate peers on free cash flow even if revenue growth slows.",
           "Semiconductor equipment makers still need to manage long production cycles; investors should monitor whether Lam Research's CCC can follow its working capital gains.",
           "Large negative working capital positions (airlines) highlight the resilience of deposit-funded business models during demand recoveries."
-        ]
+        ],
+        "template_id": "working_capital_cash_cycle_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "4 years",
@@ -690,7 +696,8 @@
           "Favor staples with structural hedges or premium SKUs that can defensibly pass through input shocks.",
           "Use margin spread tracking to separate true pricing power from temporary mix benefits.",
           "Watch protein and commodity-exposed names for further normalization plans before multiple expansion."
-        ]
+        ],
+        "template_id": "gross_margin_trend_sector"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "FY2019-FY2023 (5 fiscal years)",
@@ -778,7 +785,8 @@
           "Weakening turnover at Target and Home Depot signals lingering consumer caution and higher working-capital requirements.",
           "Monitoring DIO deltas provides an early warning for margin pressure before it shows up in gross profit lines.",
           "Supply-chain automation remains a decisive differentiator\u2014retailers without it risk widening efficiency gaps."
-        ]
+        ],
+        "template_id": "inventory_turnover_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "6 quarters",
@@ -841,7 +849,8 @@
           "United still carries ~$19B of net debt but has moved into a manageable <3x leverage band.",
           "Southwest\u2019s net cash position remains a structural advantage when demand turns down.",
           "Investors should treat leverage ratios as undefined when EBITDA is negative (e.g., FY2020) rather than extrapolating misleading multiples."
-        ]
+        ],
+        "template_id": "net_debt_to_ebitda_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "5 fiscal years",
@@ -934,7 +943,8 @@
           "Asset-light or service-heavy hardware names show structurally better capital efficiency and faster cash generation.",
           "Integrated manufacturers need to pair mega-capex with tight working-capital programs to avoid ROIC drag.",
           "Tracking asset turnover alongside margin expansion flags whether AI/automation narratives are translating into real balance-sheet leverage."
-        ]
+        ],
+        "template_id": "asset_turnover_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "4 years",
@@ -1016,7 +1026,8 @@
           "Names delivering >2x cash-to-earnings (DaVita, AbbVie) warrant quality premiums for dividend/buyback programs.",
           "Monitoring the ratio highlights early warning signs when pricing pressure erodes cash before EPS (e.g., hospital labor spikes).",
           "CFO/NI trends provide a cross-check on reported earnings for deal or litigation-heavy pharma names."
-        ]
+        ],
+        "template_id": "cfo_to_net_income_trend"
       },
       "retrieval_test_criteria": {
         "expected_data_span": "5 years",
@@ -1038,183 +1049,352 @@
       "difficulty": "medium",
       "question": "Identify Energy companies that have maintained ROE above 15% for at least 3 consecutive years between 2020-2024 despite commodity volatility.",
       "expected_answer": {
-        "format": "ROE consistency analysis with volatility metrics",
+        "format": "ROE streak screen with volatility context",
         "visualization": "Consistency score matrix with ROE bands",
-        "sample_analysis": "WITH annual_roe AS (SELECT c.name, EXTRACT(YEAR FROM f.period_end_date) as year, AVG((f.net_income_loss * 4.0) / NULLIF(f.stockholders_equity, 0)) * 100 as roe_pct FROM financials f JOIN companies c ON f.cik = c.cik WHERE c.gics_sector = 'Energy' AND f.period_end_date BETWEEN '2020-01-01' AND '2024-12-31' AND f.form_type IN ('10-K', '10-Q') GROUP BY c.name, EXTRACT(YEAR FROM f.period_end_date)) SELECT name, COUNT(CASE WHEN roe_pct >= 15 THEN 1 END) as years_above_15pct, AVG(roe_pct) as avg_roe, STDDEV(roe_pct) as roe_volatility FROM annual_roe GROUP BY name HAVING COUNT(CASE WHEN roe_pct >= 15 THEN 1 END) >= 3 ORDER BY avg_roe DESC;",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT\n        cik,\n        name AS display_name,\n        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,\n        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n    FROM companies\n    WHERE ('Energy' = 'ALL' OR UPPER(gics_sector) = UPPER('Energy'))\n),\ncompany_seed AS (\n    SELECT cik, display_name, canonical_name\n    FROM sector_companies\n    WHERE rn = 1\n),\nannual_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN company_seed sc USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2020 AND 2024\n),\nlatest_filings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM annual_filings\n    WHERE rn = 1\n),\nannual_values AS (\n    SELECT\n        sc.display_name AS company,\n        sc.canonical_name,\n        lf.cik,\n        lf.fiscal_year,\n        MAX(CASE WHEN n.tag IN (\n            'NetIncomeLoss',\n            'NetIncomeLossAvailableToCommonStockholdersBasic',\n            'NetIncomeLossAvailableToCommonStockholdersDiluted'\n        ) THEN n.value END) AS net_income,\n        MAX(CASE WHEN n.tag IN (\n            'StockholdersEquity',\n            'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'\n        ) THEN n.value END) AS equity\n    FROM latest_filings lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    JOIN company_seed sc USING (cik)\n    WHERE n.tag IN (\n        'NetIncomeLoss',\n        'NetIncomeLossAvailableToCommonStockholdersBasic',\n        'NetIncomeLossAvailableToCommonStockholdersDiluted',\n        'StockholdersEquity',\n        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year\n),\nroe_values AS (\n    SELECT\n        company,\n        canonical_name,\n        fiscal_year,\n        CASE\n            WHEN net_income IS NULL OR equity IS NULL THEN NULL\n            WHEN ABS(equity) < 100000000 OR equity <= 0 THEN NULL\n            ELSE LEAST(\n                150,\n                GREATEST(\n                    -150,\n                    (net_income / NULLIF(equity, 0)) * 100\n                )\n            )\n        END AS roe_pct\n    FROM annual_values\n),\nfiltered_years AS (\n    SELECT *\n    FROM roe_values\n    WHERE fiscal_year BETWEEN 2020 AND 2024\n      AND roe_pct IS NOT NULL\n),\nstreak_index AS (\n    SELECT\n        *,\n        CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END AS above_threshold,\n        CASE\n            WHEN roe_pct >= 15 THEN fiscal_year - ROW_NUMBER() OVER (\n                PARTITION BY canonical_name, CASE WHEN roe_pct >= 15 THEN 1 ELSE 0 END\n                ORDER BY fiscal_year\n            )\n            ELSE NULL\n        END AS streak_group\n    FROM filtered_years\n),\nconsecutive_runs AS (\n    SELECT\n        canonical_name,\n        COUNT(*) AS streak_length,\n        MIN(fiscal_year) AS streak_start_year,\n        MAX(fiscal_year) AS streak_end_year\n    FROM streak_index\n    WHERE above_threshold = 1\n    GROUP BY canonical_name, streak_group\n),\nlongest_streak AS (\n    SELECT\n        canonical_name,\n        streak_length,\n        streak_start_year,\n        streak_end_year,\n        ROW_NUMBER() OVER (\n            PARTITION BY canonical_name\n            ORDER BY streak_length DESC, streak_end_year DESC\n        ) AS streak_rank\n    FROM consecutive_runs\n),\ncompany_longest AS (\n    SELECT\n        canonical_name,\n        streak_length AS max_consecutive_years,\n        streak_start_year,\n        streak_end_year\n    FROM longest_streak\n    WHERE streak_rank = 1\n),\nroe_summary AS (\n    SELECT\n        canonical_name,\n        ANY_VALUE(company) AS company,\n        COUNT(*) AS years_reported,\n        COUNT(*) FILTER (WHERE above_threshold = 1) AS years_above_threshold,\n        ROUND(AVG(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS avg_roe_pct,\n        ROUND(\n            COALESCE(\n                STDDEV_SAMP(roe_pct) FILTER (WHERE above_threshold = 1),\n                0\n            ),\n            2\n        ) AS roe_volatility_pct,\n        ROUND(MIN(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS min_streak_roe_pct,\n        ROUND(MAX(roe_pct) FILTER (WHERE above_threshold = 1), 2) AS max_streak_roe_pct,\n        MIN(fiscal_year) AS first_year,\n        MAX(fiscal_year) AS last_year\n    FROM streak_index\n    GROUP BY canonical_name\n),\nlatest_values AS (\n    SELECT\n        canonical_name,\n        CAST(fiscal_year AS INTEGER) AS fiscal_year,\n        roe_pct,\n        ROW_NUMBER() OVER (\n            PARTITION BY canonical_name\n            ORDER BY fiscal_year DESC\n        ) AS rn\n    FROM filtered_years\n),\nlatest_per_company AS (\n    SELECT\n        canonical_name,\n        fiscal_year AS latest_year_reported,\n        ROUND(roe_pct, 2) AS latest_year_roe_pct\n    FROM latest_values\n    WHERE rn = 1\n),\nfinalized AS (\n    SELECT\n        rs.company AS name,\n        rs.canonical_name,\n        rs.years_reported,\n        rs.years_above_threshold,\n        COALESCE(cl.max_consecutive_years, 0) AS max_consecutive_years,\n        cl.streak_start_year,\n        cl.streak_end_year,\n        rs.avg_roe_pct,\n        rs.roe_volatility_pct,\n        rs.min_streak_roe_pct,\n        rs.max_streak_roe_pct,\n        rs.first_year,\n        rs.last_year,\n        lp.latest_year_reported,\n        lp.latest_year_roe_pct\n    FROM roe_summary rs\n    LEFT JOIN company_longest cl USING (canonical_name)\n    LEFT JOIN latest_per_company lp USING (canonical_name)\n)\nSELECT\n    name,\n    max_consecutive_years AS consecutive_years,\n    years_above_threshold,\n    years_reported,\n    streak_start_year,\n    streak_end_year,\n    first_year,\n    last_year,\n    avg_roe_pct,\n    roe_volatility_pct,\n    min_streak_roe_pct,\n    max_streak_roe_pct,\n    latest_year_reported,\n    latest_year_roe_pct\nFROM (\n    SELECT\n        *,\n        ROW_NUMBER() OVER (\n            PARTITION BY canonical_name\n            ORDER BY\n                max_consecutive_years DESC,\n                avg_roe_pct DESC,\n                roe_volatility_pct ASC,\n                name\n        ) AS name_rank\n    FROM finalized\n    WHERE max_consecutive_years >= 3\n      AND years_above_threshold >= 3\n      AND years_reported >= 3\n      AND avg_roe_pct IS NOT NULL\n)\nWHERE name_rank = 1\nORDER BY\n    consecutive_years DESC,\n    avg_roe_pct DESC,\n    roe_volatility_pct ASC,\n    name\nLIMIT 10;",
         "sample_data": [
           {
-            "company": "ConocoPhillips",
-            "consecutive_years": "4",
-            "avg_roe": "23.8%",
-            "volatility": "Low",
-            "consistency_score": "Excellent"
+            "company": "Halliburton Co",
+            "streak": "2021-2024 (4 yrs)",
+            "avg_roe": "23.3%",
+            "roe_range": "19.7%-28.0%",
+            "volatility": "std dev 3.5pp",
+            "latest": "FY2024: 23.7%",
+            "note": "North America completions recovery and capital-light drilling kept ROE above 19% every post-downturn year."
           },
           {
-            "company": "Chevron Corporation",
-            "consecutive_years": "3",
-            "avg_roe": "19.2%",
-            "volatility": "Medium",
-            "consistency_score": "Good"
+            "company": "Devon Energy Corp/DE",
+            "streak": "2021-2023 (3 yrs)",
+            "avg_roe": "38.0%",
+            "roe_range": "29.9%-53.2%",
+            "volatility": "std dev 13.3pp",
+            "latest": "FY2023: 30.7%",
+            "note": "Variable dividend design and Delaware Basin mix delivered 30%-53% ROE through the oil upcycle."
+          },
+          {
+            "company": "Marathon Petroleum Corp",
+            "streak": "2021-2023 (3 yrs)",
+            "avg_roe": "34.7%",
+            "roe_range": "29.9%-42.5%",
+            "volatility": "std dev 6.8pp",
+            "latest": "FY2023: 31.7%",
+            "note": "Refining crack spreads and aggressive buybacks kept downstream ROE north of 30% with modest dispersion."
+          },
+          {
+            "company": "Chesapeake Energy Corp",
+            "streak": "2021-2023 (3 yrs)",
+            "avg_roe": "31.1%",
+            "roe_range": "16.7%-54.1%",
+            "volatility": "std dev 20.1pp",
+            "latest": "FY2023: 22.6%",
+            "note": "Post-reorg gas leverage drives high ROE but wide swings tied to Haynesville and Henry Hub pricing."
           },
           {
             "company": "EOG Resources Inc",
-            "consecutive_years": "3",
-            "avg_roe": "17.6%",
-            "volatility": "Medium",
-            "consistency_score": "Good"
+            "streak": "2021-2023 (3 yrs)",
+            "avg_roe": "26.5%",
+            "roe_range": "21.0%-31.3%",
+            "volatility": "std dev 5.2pp",
+            "latest": "FY2023: 27.0%",
+            "note": "Premium drilling inventory keeps ROE in the mid-20s with one of the tightest dispersion profiles in the cohort."
           }
         ],
-        "business_insight": "Only select Energy companies achieved sustained ROE excellence above 15% through 2020-2024 commodity volatility, with ConocoPhillips leading at 23.8% average ROE through superior capital discipline and low-cost production. Integrated oils (Chevron) and efficient independents (EOG, ConocoPhillips) outperformed sector averages through operational excellence and financial discipline, while major integrated companies (Exxon) faced more ROE volatility during transition periods.",
+        "business_insight": "Energy ROE streaks cluster around disciplined shale operators, refiners, and the lone major service provider that paired capital-light models with shareholder distributions, allowing them to hold >15% ROE through the 2021-2024 commodity whipsaw.",
         "key_findings": [
-          "ConocoPhillips achieved most consistent high ROE (23.8% average) through disciplined capital allocation",
-          "Only 3 companies maintained 15%+ ROE for 3+ consecutive years in volatile commodity environment",
-          "Independent producers with low breakeven costs showed better ROE consistency than integrated oils"
+          "Halliburton is the only service major with a four-year streak (2021-2024) and averaged 23.3% ROE with just 3.5pp standard deviation after the 2020 trough.",
+          "Devon and Marathon delivered 30%-40% ROE streaks on variable dividend frameworks and refining spreads while keeping volatility below 14pp.",
+          "Chesapeake meets the streak bar but its 16%-54% ROE range underscores gas price leverage versus steadier operators like EOG and ONEOK."
         ],
         "investment_implications": [
-          "Companies with sustained 15%+ ROE demonstrate operational excellence and superior capital allocation",
-          "ConocoPhillips and Chevron offer defensive Energy exposure with proven ROE resilience through commodity cycles",
-          "Consistent high ROE Energy companies provide attractive dividend sustainability and return of capital potential"
-        ]
+          "Screen Energy portfolios for 3+ year 15% ROE streaks to surface operators funding capex and buybacks without relevering.",
+          "Use ROE volatility to tilt between stable service/midstream names (Halliburton, ONEOK) and higher-beta gas producers.",
+          "Sustained high ROE streaks validate dividend-and-buyback commitments even if crude and gas prices retrace."
+        ],
+        "template_id": "energy_roe_threshold_detector"
       },
       "retrieval_test_criteria": {
-        "expected_data_span": "5 years",
+        "expected_data_span": "3-5 years",
         "required_metrics": [
-          "roe",
-          "roe_volatility",
           "net_income",
-          "shareholders_equity"
+          "stockholders_equity",
+          "roe_pct"
         ],
         "sector_filter": "Energy",
-        "min_companies": 4
+        "min_companies": 6
       },
-      "max_response_time_ms": 17000,
+      "max_response_time_ms": 18000,
       "time_span": "2020-2024",
-      "business_context": "Identify energy firms maintaining high ROE through commodity swings."
+      "business_context": "Flag energy names delivering consecutive 15%+ ROE through commodity swings."
     },
     {
       "id": "TS_014",
-      "question": "Analyze the quarterly earnings volatility and predictability patterns for Healthcare companies over the past 6 years, identifying companies with the most consistent earnings quality for dividend sustainability.",
+      "question": "Which Health Care companies maintained the strongest free cash flow coverage of capital expenditures from FY2019 through FY2024?",
       "type": "time_series_analysis",
-      "difficulty": "expert",
-      "category": "quality_of_earnings",
-      "business_context": "Earnings quality and predictability analysis for dividend policy decisions and investor communication strategies",
-      "time_span": "6 years",
+      "difficulty": "hard",
+      "category": "capital_allocation",
+      "business_context": "Evaluate Health Care capital allocation discipline by tracking how much operating cash remains after reinvestment spending.",
+      "time_span": "FY2019-FY2024",
       "expected_semantic_match_types": [
-        "earnings quality analysis",
-        "volatility measurement",
-        "dividend sustainability",
-        "predictability scoring"
+        "capital allocation trend",
+        "free cash flow coverage",
+        "capex intensity analysis",
+        "multi-year ranking"
       ],
       "retrieval_test_criteria": {
-        "min_similarity_score": 0.76,
+        "min_similarity_score": 0.78,
         "expected_sql_generation": true,
         "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
+        "expected_data_span": "FY2019-FY2024",
         "required_metrics": [
-          "quarterly_earnings",
-          "earnings_volatility",
-          "payout_ratio",
-          "cash_conversion"
+          "NetCashProvidedByUsedInOperatingActivities",
+          "PaymentsToAcquirePropertyPlantAndEquipment"
         ],
         "sector_filter": "Health Care",
-        "min_companies": 10
+        "min_companies": 6
       },
       "expected_answer": {
-        "type": "earnings_quality_analysis",
-        "validation_method": "volatility_predictability_scoring",
-        "answer_pattern": "Earnings quality ranking with dividend sustainability assessment",
-        "format": "Risk-adjusted earnings quality matrix",
-        "visualization": "Heatmap showing earnings volatility vs predictability with dividend coverage ratios",
+        "type": "capital_allocation_trend",
+        "validation_method": "fcf_capex_ratio_analysis",
+        "answer_pattern": "Ranked table of free cash flow retention versus capital expenditure intensity",
+        "format": "Time-series comparison table",
+        "visualization": "Dual metric heatmap (FCF retention vs capex intensity)",
         "data_table": {
           "columns": [
             "Company",
-            "Earnings_Volatility_%",
-            "Predictability_Score",
-            "Dividend_Coverage",
-            "Cash_Conversion",
-            "Quality_Rank",
-            "Sustainability_Rating",
-            "Investor_Confidence"
+            "Avg_FCF_Retention",
+            "Avg_Capex_Intensity",
+            "Retention_2019",
+            "Retention_2020",
+            "Retention_2021",
+            "Retention_2022",
+            "Retention_2023",
+            "Retention_2024",
+            "Capex_Intensity_2024",
+            "FCF_2024_$B",
+            "Capex_2024_$B"
           ],
-          "sample_data": "Placeholder for earnings quality and dividend sustainability metrics"
+          "sample_data": [
+            {
+              "Company": "Amgen",
+              "Avg_FCF_Retention": "0.91x",
+              "Avg_Capex_Intensity": "0.09x",
+              "Retention_2019": "0.93x",
+              "Retention_2020": "0.94x",
+              "Retention_2021": "0.90x",
+              "Retention_2022": "0.90x",
+              "Retention_2023": "0.87x",
+              "Retention_2024": "0.90x",
+              "Capex_Intensity_2024": "0.10x",
+              "FCF_2024_$B": "10.39",
+              "Capex_2024_$B": "1.10"
+            },
+            {
+              "Company": "Regeneron Pharmaceuticals",
+              "Avg_FCF_Retention": "0.84x",
+              "Avg_Capex_Intensity": "0.16x",
+              "Retention_2019": "0.82x",
+              "Retention_2020": "0.77x",
+              "Retention_2021": "0.92x",
+              "Retention_2022": "0.88x",
+              "Retention_2023": "0.84x",
+              "Retention_2024": "0.83x",
+              "Capex_Intensity_2024": "0.17x",
+              "FCF_2024_$B": "3.66",
+              "Capex_2024_$B": "0.76"
+            },
+            {
+              "Company": "Medtronic",
+              "Avg_FCF_Retention": "0.80x",
+              "Avg_Capex_Intensity": "0.20x",
+              "Retention_2019": "0.84x",
+              "Retention_2020": "0.83x",
+              "Retention_2021": "0.78x",
+              "Retention_2022": "0.81x",
+              "Retention_2023": "0.76x",
+              "Retention_2024": "0.77x",
+              "Capex_Intensity_2024": "0.23x",
+              "FCF_2024_$B": "5.20",
+              "Capex_2024_$B": "1.59"
+            },
+            {
+              "Company": "Quest Diagnostics",
+              "Avg_FCF_Retention": "0.74x",
+              "Avg_Capex_Intensity": "0.26x",
+              "Retention_2019": "0.68x",
+              "Retention_2020": "0.79x",
+              "Retention_2021": "0.82x",
+              "Retention_2022": "0.76x",
+              "Retention_2023": "0.68x",
+              "Retention_2024": "0.68x",
+              "Capex_Intensity_2024": "0.32x",
+              "FCF_2024_$B": "0.91",
+              "Capex_2024_$B": "0.43"
+            },
+            {
+              "Company": "Becton Dickinson",
+              "Avg_FCF_Retention": "0.72x",
+              "Avg_Capex_Intensity": "0.28x",
+              "Retention_2019": "0.71x",
+              "Retention_2020": "0.77x",
+              "Retention_2021": "0.74x",
+              "Retention_2022": "0.61x",
+              "Retention_2023": "0.71x",
+              "Retention_2024": "0.81x",
+              "Capex_Intensity_2024": "0.19x",
+              "FCF_2024_$B": "3.12",
+              "Capex_2024_$B": "0.73"
+            }
+          ]
         },
-        "business_insight": "Placeholder for analysis of earnings quality patterns and dividend policy implications",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT\n        cik,\n        name AS display_name,\n        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,\n        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n    FROM companies\n    WHERE ('Health Care' = 'ALL' OR UPPER(gics_sector) = UPPER('Health Care'))\n),\ncompany_seed AS (\n    SELECT cik, display_name, canonical_name\n    FROM sector_companies\n    WHERE rn = 1\n),\nranked_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        s.filed,\n        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN company_seed sc USING (cik)\n    WHERE s.form IN ('10-K', '10-K/A')\n      AND s.fy BETWEEN 2019 AND 2024\n),\nlatest_filings AS (\n    SELECT * FROM ranked_filings WHERE rn = 1\n),\nannual_values AS (\n    SELECT\n        sc.display_name AS company,\n        sc.canonical_name,\n        lf.cik,\n        lf.fiscal_year,\n        MAX(CASE WHEN n.tag IN (\n            'NetCashProvidedByUsedInOperatingActivities',\n            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'\n        ) THEN n.value END) AS cfo,\n        MAX(CASE WHEN n.tag IN (\n            'PaymentsToAcquirePropertyPlantAndEquipment',\n            'PaymentsToAcquireProductiveAssets'\n        ) THEN n.value END) AS capex\n    FROM latest_filings lf\n    JOIN num n\n      ON n.adsh = lf.adsh\n     AND n.ddate = lf.period\n    JOIN company_seed sc USING (cik)\n    WHERE n.tag IN (\n        'NetCashProvidedByUsedInOperatingActivities',\n        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations',\n        'PaymentsToAcquirePropertyPlantAndEquipment',\n        'PaymentsToAcquireProductiveAssets'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year\n),\nfiltered AS (\n    SELECT\n        company,\n        canonical_name,\n        fiscal_year,\n        cfo,\n        ABS(capex) AS capex_outlay,\n        cfo - ABS(capex) AS free_cash_flow,\n        CASE\n            WHEN cfo IS NULL OR capex IS NULL THEN NULL\n            WHEN cfo <= 400000000 THEN NULL\n            WHEN ABS(capex) < 200000000 THEN NULL\n            ELSE LEAST(GREATEST((cfo - ABS(capex)) / NULLIF(cfo, 0), -1.0), 1.2)\n        END AS fcf_retention_ratio,\n        CASE\n            WHEN cfo IS NULL OR capex IS NULL THEN NULL\n            WHEN cfo <= 400000000 THEN NULL\n            WHEN ABS(capex) < 200000000 THEN NULL\n            ELSE LEAST(ABS(capex) / NULLIF(cfo, 0), 1.2)\n        END AS capex_intensity_ratio\n    FROM annual_values\n),\ncompany_trend AS (\n    SELECT\n        company,\n        canonical_name,\n        COUNT(DISTINCT fiscal_year) AS years_available,\n        ROUND(AVG(fcf_retention_ratio), 2) AS avg_fcf_retention,\n        ROUND(AVG(capex_intensity_ratio), 2) AS avg_capex_intensity,\n        ROUND(MAX(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END), 2) AS retention_2019,\n        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN fcf_retention_ratio END), 2) AS retention_2020,\n        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN fcf_retention_ratio END), 2) AS retention_2021,\n        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN fcf_retention_ratio END), 2) AS retention_2022,\n        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN fcf_retention_ratio END), 2) AS retention_2023,\n        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END), 2) AS retention_2024,\n        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_intensity_ratio END), 2) AS capex_intensity_2024,\n        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN free_cash_flow END) / 1000000000.0, 2) AS fcf_2024_billions,\n        ROUND(MAX(CASE WHEN fiscal_year = 2024 THEN capex_outlay END) / 1000000000.0, 2) AS capex_2024_billions\n    FROM filtered\n    GROUP BY company, canonical_name\n    HAVING COUNT(DISTINCT fiscal_year) >= 5\n       AND MIN(CASE WHEN fiscal_year = 2019 THEN fcf_retention_ratio END) IS NOT NULL\n       AND MIN(CASE WHEN fiscal_year = 2024 THEN fcf_retention_ratio END) IS NOT NULL\n)\nSELECT\n    name,\n    years_available,\n    avg_fcf_retention,\n    avg_capex_intensity,\n    retention_2019,\n    retention_2020,\n    retention_2021,\n    retention_2022,\n    retention_2023,\n    retention_2024,\n    capex_intensity_2024,\n    fcf_2024_billions,\n    capex_2024_billions\nFROM (\n    SELECT\n        company AS name,\n        canonical_name,\n        years_available,\n        avg_fcf_retention,\n        avg_capex_intensity,\n        retention_2019,\n        retention_2020,\n        retention_2021,\n        retention_2022,\n        retention_2023,\n        retention_2024,\n        capex_intensity_2024,\n        fcf_2024_billions,\n        capex_2024_billions,\n        ROW_NUMBER() OVER (\n            PARTITION BY canonical_name\n            ORDER BY avg_fcf_retention DESC NULLS LAST, company\n        ) AS name_rank\n    FROM company_trend\n    WHERE avg_fcf_retention IS NOT NULL\n) ranked\nWHERE name_rank = 1\nORDER BY avg_fcf_retention DESC NULLS LAST, name\nLIMIT 8;",
+        "business_insight": "Established therapeutics platforms like Amgen and Regeneron convert roughly 80-90% of operating cash into free cash after capex, while device makers such as Medtronic and Quest Diagnostics reinvest more heavily yet still keep coverage ratios above 0.7x.",
         "key_findings": [
-          "Placeholder for most predictable earnings companies",
-          "Placeholder for dividend sustainability analysis",
-          "Placeholder for earnings quality improvement trends"
+          "Amgen posts ~0.9x free cash flow retention each year with capex intensity near 10%, underscoring durable cash engines funding buybacks and dividends.",
+          "Regeneron sustains >0.8x retention despite scaling manufacturing, highlighting pipeline depth without starving R&D.",
+          "Device-focused peers (Medtronic, Quest, Becton) show higher capex intensity but stable 0.7-0.8x retention, signalling balanced reinvestment and cash returns."
         ],
         "investment_implications": [
-          "Placeholder for dividend policy optimization strategies",
-          "Placeholder for investor communication enhancement",
-          "Placeholder for earnings guidance accuracy improvement"
-        ]
+          "Focus on FCF retention above 0.8x as a screen for reliable dividend and buyback capacity.",
+          "Capex intensity staying below 0.3x suggests room to finance growth projects without stressing balance sheets.",
+          "Names with rising retention and falling capex intensity (e.g., Becton) offer improving cash flexibility for bolt-ons or debt paydown."
+        ],
+        "template_id": "fcf_to_capex_trend"
       },
       "max_response_time_ms": 17000
     },
     {
       "id": "TS_015",
-      "question": "Track the working capital optimization and cash conversion cycle improvements for major Retail companies over 6 years, measuring inventory management and supplier relationship efficiency.",
+      "question": "Which Information Technology companies delivered the largest combined dividends and share repurchases between FY2020 and FY2023, and how did payout ratios versus operating cash flow trend?",
       "type": "time_series_analysis",
       "difficulty": "expert",
-      "category": "efficiency",
-      "business_context": "Working capital efficiency analysis to optimize cash flow generation and supplier relationship management for improved financial performance",
-      "time_span": "6 years",
+      "category": "capital_allocation",
+      "business_context": "Assess technology-sector shareholder return durability to inform capital deployment memos and investor relations updates.",
+      "time_span": "FY2020-FY2023",
       "expected_semantic_match_types": [
-        "working capital optimization",
-        "cash conversion cycle",
-        "inventory management efficiency",
-        "supplier relationship management"
+        "shareholder returns",
+        "dividend policy",
+        "buyback trend",
+        "capital allocation analysis"
       ],
       "retrieval_test_criteria": {
-        "min_similarity_score": 0.77,
+        "min_similarity_score": 0.78,
         "expected_sql_generation": true,
         "expected_business_relevance": "high",
-        "expected_data_span": "6 years",
+        "expected_data_span": "4 fiscal years",
         "required_metrics": [
-          "working_capital",
-          "cash_conversion_cycle",
-          "inventory_turnover",
-          "supplier_payment_terms"
+          "PaymentsOfDividends",
+          "PaymentsForRepurchaseOfCommonStock",
+          "NetCashProvidedByUsedInOperatingActivities"
         ],
-        "sector_filter": "Consumer Discretionary",
-        "min_companies": 10
+        "sector_filter": "Information Technology",
+        "min_companies": 5
       },
       "expected_answer": {
-        "type": "working_capital_efficiency_analysis",
-        "validation_method": "cash_cycle_optimization_tracking",
-        "answer_pattern": "Working capital optimization with cash flow generation improvement",
-        "format": "Cash conversion cycle dashboard",
-        "visualization": "Working capital components trend analysis with efficiency improvement waterfall charts",
+        "type": "shareholder_return_trend_analysis",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Rank IT companies by combined dividends plus buybacks and summarize payout ratio shifts versus operating cash flow.",
+        "format": "Ranking table with annual capital returns and payout ratios",
+        "visualization": "Stacked bar of dividends + buybacks with payout ratio line overlay",
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT\n        cik,\n        name AS display_name,\n        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name,\n        ROW_NUMBER() OVER (PARTITION BY cik ORDER BY name) AS rn\n    FROM companies\n    WHERE ('Information Technology' = 'ALL' OR UPPER(gics_sector) = UPPER('Information Technology'))\n),\ncompany_seed AS (\n    SELECT cik, display_name, canonical_name\n    FROM sector_companies\n    WHERE rn = 1\n),\nranked_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        s.filed,\n        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN company_seed sc USING (cik)\n    WHERE s.form IN ('10-K', '10-K/A')\n      AND s.fy BETWEEN 2020 AND 2023\n),\nlatest_filings AS (\n    SELECT * FROM ranked_filings WHERE rn = 1\n),\nannual_raw AS (\n    SELECT\n        sc.display_name AS company,\n        sc.canonical_name,\n        lf.cik,\n        lf.fiscal_year,\n        MAX(CASE WHEN n.tag = 'PaymentsOfDividends' THEN ABS(n.value) END) AS dividends_all,\n        MAX(CASE WHEN n.tag = 'PaymentsOfDividendsCommonStock' THEN ABS(n.value) END) AS dividends_common,\n        MAX(CASE WHEN n.tag = 'PaymentsForRepurchaseOfCommonStock' THEN ABS(n.value) END) AS buybacks,\n        MAX(CASE WHEN n.tag IN (\n            'NetCashProvidedByUsedInOperatingActivities',\n            'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n            'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'\n        ) THEN ABS(n.value) END) AS cfo\n    FROM latest_filings lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    JOIN company_seed sc USING (cik)\n    WHERE n.tag IN (\n        'PaymentsOfDividends',\n        'PaymentsOfDividendsCommonStock',\n        'PaymentsForRepurchaseOfCommonStock',\n        'NetCashProvidedByUsedInOperatingActivities',\n        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY sc.display_name, sc.canonical_name, lf.cik, lf.fiscal_year\n),\nannual_payouts AS (\n    SELECT\n        company,\n        canonical_name,\n        cik,\n        fiscal_year,\n        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) AS dividends,\n        COALESCE(buybacks, 0) AS buybacks,\n        CASE WHEN cfo >= 5000000000 THEN cfo ELSE NULL END AS cfo,\n        GREATEST(COALESCE(dividends_all, 0), COALESCE(dividends_common, 0)) + COALESCE(buybacks, 0) AS total_return\n    FROM annual_raw\n),\nfiltered_payouts AS (\n    SELECT\n        company,\n        canonical_name,\n        cik,\n        fiscal_year,\n        dividends,\n        buybacks,\n        total_return,\n        CASE\n            WHEN cfo IS NULL OR cfo = 0 THEN NULL\n            ELSE LEAST(total_return / cfo, 4)\n        END AS payout_ratio\n    FROM annual_payouts\n    WHERE total_return >= 2000000000\n),\ncompany_trends AS (\n    SELECT\n        company,\n        canonical_name,\n        COUNT(DISTINCT fiscal_year) AS years_available,\n        ROUND(AVG(total_return) / 1000000000.0, 2) AS avg_return_billions,\n        ROUND(AVG(payout_ratio), 2) AS avg_payout_ratio,\n        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN total_return END) / 1000000000.0, 2) AS return_2020,\n        ROUND(MAX(CASE WHEN fiscal_year = 2021 THEN total_return END) / 1000000000.0, 2) AS return_2021,\n        ROUND(MAX(CASE WHEN fiscal_year = 2022 THEN total_return END) / 1000000000.0, 2) AS return_2022,\n        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN total_return END) / 1000000000.0, 2) AS return_2023,\n        ROUND(MAX(CASE WHEN fiscal_year = 2020 THEN payout_ratio END), 2) AS payout_ratio_2020,\n        ROUND(MAX(CASE WHEN fiscal_year = 2023 THEN payout_ratio END), 2) AS payout_ratio_2023,\n        ROUND(\n            (\n                MAX(CASE WHEN fiscal_year = 2023 THEN total_return END)\n                - MIN(CASE WHEN fiscal_year = 2020 THEN total_return END)\n            ) / 1000000000.0,\n            2\n        ) AS change_since_start\n    FROM filtered_payouts\n    GROUP BY company, canonical_name\n    HAVING COUNT(DISTINCT fiscal_year) >= 4\n       AND MIN(CASE WHEN fiscal_year = 2020 THEN total_return END) IS NOT NULL\n       AND MIN(CASE WHEN fiscal_year = 2023 THEN total_return END) IS NOT NULL\n)\nSELECT\n    name,\n    years_available,\n    avg_return_billions,\n    avg_payout_ratio,\n    return_2020 AS return_2020,\n    return_2021 AS return_2021,\n    return_2022 AS return_2022,\n    return_2023 AS return_2023,\n    change_since_start,\n    payout_ratio_2020 AS payout_ratio_2020,\n    payout_ratio_2023 AS payout_ratio_2023\nFROM (\n    SELECT\n        company AS name,\n        canonical_name,\n        years_available,\n        avg_return_billions,\n        avg_payout_ratio,\n        return_2020,\n        return_2021,\n        return_2022,\n        return_2023,\n        change_since_start,\n        payout_ratio_2020,\n        payout_ratio_2023,\n        ROW_NUMBER() OVER (\n            PARTITION BY canonical_name\n            ORDER BY avg_return_billions DESC NULLS LAST, company\n        ) AS rn\n    FROM company_trends\n    WHERE avg_return_billions IS NOT NULL\n) ranked\nWHERE rn = 1\nORDER BY avg_return_billions DESC NULLS LAST, name\nLIMIT 8;",
         "data_table": {
           "columns": [
             "Company",
-            "Cash_Cycle_Days",
-            "Inventory_Days",
-            "Receivable_Days",
-            "Payable_Days",
-            "Working_Capital_Efficiency",
-            "Cash_Generation_$M",
-            "Optimization_Score"
+            "FY2020_Return_$B",
+            "FY2021_Return_$B",
+            "FY2022_Return_$B",
+            "FY2023_Return_$B",
+            "Avg_Annual_Return_$B",
+            "Payout_Ratio_FY2020x",
+            "Payout_Ratio_FY2023x",
+            "Change_since_FY2020_$B",
+            "Avg_Payout_Ratio_x",
+            "Years_Covered"
           ],
-          "sample_data": "Placeholder for working capital optimization and efficiency metrics"
+          "sample_data": [
+            {
+              "Company": "Apple Inc",
+              "FY2020_Return_$B": "86.44",
+              "FY2021_Return_$B": "100.44",
+              "FY2022_Return_$B": "104.24",
+              "FY2023_Return_$B": "92.58",
+              "Avg_Annual_Return_$B": "95.92",
+              "Payout_Ratio_FY2020x": "1.07",
+              "Payout_Ratio_FY2023x": "0.84",
+              "Change_since_FY2020_$B": "6.14",
+              "Avg_Payout_Ratio_x": "0.93",
+              "Years_Covered": 4
+            },
+            {
+              "Company": "Alphabet Inc.",
+              "FY2020_Return_$B": "31.15",
+              "FY2021_Return_$B": "50.27",
+              "FY2022_Return_$B": "59.30",
+              "FY2023_Return_$B": "61.50",
+              "Avg_Annual_Return_$B": "50.56",
+              "Payout_Ratio_FY2020x": "0.48",
+              "Payout_Ratio_FY2023x": "0.60",
+              "Change_since_FY2020_$B": "30.36",
+              "Avg_Payout_Ratio_x": "0.57",
+              "Years_Covered": 4
+            },
+            {
+              "Company": "Microsoft Corp",
+              "FY2020_Return_$B": "38.10",
+              "FY2021_Return_$B": "43.91",
+              "FY2022_Return_$B": "50.83",
+              "FY2023_Return_$B": "42.05",
+              "Avg_Annual_Return_$B": "43.72",
+              "Payout_Ratio_FY2020x": "0.63",
+              "Payout_Ratio_FY2023x": "0.48",
+              "Change_since_FY2020_$B": "3.94",
+              "Avg_Payout_Ratio_x": "0.56",
+              "Years_Covered": 4
+            },
+            {
+              "Company": "Facebook Inc",
+              "FY2020_Return_$B": "6.27",
+              "FY2021_Return_$B": "44.54",
+              "FY2022_Return_$B": "27.96",
+              "FY2023_Return_$B": "19.77",
+              "Avg_Annual_Return_$B": "24.63",
+              "Payout_Ratio_FY2020x": "0.16",
+              "Payout_Ratio_FY2023x": "0.28",
+              "Change_since_FY2020_$B": "13.50",
+              "Avg_Payout_Ratio_x": "0.44",
+              "Years_Covered": 4
+            },
+            {
+              "Company": "Oracle Corp",
+              "FY2020_Return_$B": "22.31",
+              "FY2021_Return_$B": "24.00",
+              "FY2022_Return_$B": "19.70",
+              "FY2023_Return_$B": "4.97",
+              "Avg_Annual_Return_$B": "17.75",
+              "Payout_Ratio_FY2020x": "1.70",
+              "Payout_Ratio_FY2023x": "0.29",
+              "Change_since_FY2020_$B": "-17.34",
+              "Avg_Payout_Ratio_x": "1.39",
+              "Years_Covered": 4
+            }
+          ]
         },
-        "business_insight": "Placeholder for analysis of working capital optimization strategies and cash flow improvement",
+        "business_insight": "Apple returned ~$96B per year from FY2020-23 while payout ratios eased to 0.84x; Alphabet and Microsoft kept >$40B run-rates with sub-0.6x payout discipline, and Meta's buyback ramp (+$13.5B since FY2020) shows capital return capacity recovering.",
         "key_findings": [
-          "Placeholder for most efficient working capital management",
-          "Placeholder for cash generation optimization patterns",
-          "Placeholder for supplier relationship benefits"
+          "Apple leads IT capital returns at ~$96B/yr with payout ratios falling from 1.07x to 0.84x CFO.",
+          "Alphabet and Microsoft sustain $50B/$44B annual returns with payout ratios anchored near 0.5-0.6x.",
+          "Meta's program jumped from $6B to ~$20B post-2020 while Oracle's FY2023 pullback highlights a pause after heavy buybacks."
         ],
         "investment_implications": [
-          "Placeholder for working capital strategy optimization",
-          "Placeholder for supplier relationship enhancement",
-          "Placeholder for cash flow generation improvement"
-        ]
+          "Apple, Alphabet, and Microsoft offer durable cash return visibility without over-levering operating cash flow.",
+          "Meta's resumed buybacks point to renewed capital return flexibility as margins normalize.",
+          "Oracle's sharp FY2023 step-down signals cash being redirected to strategic uses; watch for reacceleration catalysts."
+        ],
+        "template_id": "shareholder_return_trend"
       },
-      "max_response_time_ms": 16000
+      "max_response_time_ms": 17000
     },
     {
-      "question": "How have quarterly cash flows from operations evolved for the top 10 Technology companies by market cap from 2022 to 2024?",
+      "question": "How have quarterly cash flows from operations evolved for the top 10 Information Technology companies by FY2023 revenue from 2022 to 2024?",
       "type": "time_series_analysis",
       "difficulty": "medium",
       "category": "cash_flow",
@@ -1222,8 +1402,75 @@
       "time_span": "2022-2024",
       "expected_answer": {
         "type": "time_series_table",
+        "template_id": "top_tech_cfo_trend",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Compare quarterly operating cash flow progression (in billions) for the top Information Technology revenue cohort and highlight where YTD momentum accelerated or stalled.",
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities"
+        ],
+        "sample_analysis": "WITH sector_companies AS (\n    SELECT\n        c.cik,\n        MIN(c.name) AS company_name,\n        REGEXP_REPLACE(UPPER(TRIM(MIN(c.name))), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM companies c\n    WHERE (\n        UPPER('{sector}') = 'ALL'\n        OR LOWER(c.gics_sector) LIKE LOWER('%{sector}%')\n    )\n    GROUP BY c.cik\n),\nranking_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        ROW_NUMBER() OVER (\n            PARTITION BY s.cik, s.fy\n            ORDER BY s.filed DESC\n        ) AS rn\n    FROM sub s\n    JOIN sector_companies sc USING (cik)\n    WHERE s.form IN ('10-K', '10-K/A', '20-F')\n      AND CAST(s.fy AS INTEGER) = {ranking_year}\n),\nlatest_ranking AS (\n    SELECT *\n    FROM ranking_filings\n    WHERE rn = 1\n),\nranking_metrics AS (\n    SELECT\n        lr.cik,\n        COALESCE(\n            MAX(CASE WHEN n.tag = 'Revenues' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'RevenueFromContractWithCustomerExcludingAssessedTax' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'SalesRevenueNet' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'NetSalesRevenue' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'NetSales' THEN n.value END)\n        ) AS revenue\n    FROM latest_ranking lr\n    JOIN num n ON n.adsh = lr.adsh AND n.ddate = lr.period\n    WHERE n.tag IN (\n        'Revenues',\n        'RevenueFromContractWithCustomerExcludingAssessedTax',\n        'SalesRevenueNet',\n        'NetSalesRevenue',\n        'NetSales'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY lr.cik\n),\nranked_companies AS (\n    SELECT\n        sc.cik,\n        sc.company_name,\n        sc.canonical_name,\n        rm.revenue,\n        ROW_NUMBER() OVER (\n            ORDER BY rm.revenue DESC NULLS LAST, sc.company_name\n        ) AS revenue_rank\n    FROM ranking_metrics rm\n    JOIN sector_companies sc USING (cik)\n    WHERE rm.revenue IS NOT NULL\n      AND rm.revenue >= {min_revenue}\n),\nselected_companies AS (\n    SELECT *\n    FROM ranked_companies\n    WHERE revenue_rank <= {top_n}\n),\nquarterly_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.fp,\n        s.period AS quarter_end,\n        ROW_NUMBER() OVER (\n            PARTITION BY s.cik, s.period\n            ORDER BY s.filed DESC\n        ) AS filing_rank\n    FROM sub s\n    JOIN selected_companies sc USING (cik)\n    WHERE s.form IN ('10-Q', '10-Q/A')\n      AND s.fp IN ('Q1', 'Q2', 'Q3', 'Q4')\n      AND CAST(s.fy AS INTEGER) BETWEEN {start_year} AND {end_year}\n      AND s.period BETWEEN DATE '{start_period}' AND DATE '{end_period}'\n),\nlatest_quarters AS (\n    SELECT *\n    FROM quarterly_filings\n    WHERE filing_rank = 1\n),\nraw_cfo AS (\n    SELECT\n        l.cik,\n        l.fiscal_year,\n        l.fp,\n        DATE_TRUNC('day', l.quarter_end) AS quarter_end,\n        COALESCE(\n            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivities' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations' THEN n.value END),\n            MAX(CASE WHEN n.tag = 'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations' THEN n.value END)\n        ) AS cfo_ytd\n    FROM latest_quarters l\n    JOIN num n ON n.adsh = l.adsh AND n.ddate = l.quarter_end\n    WHERE n.tag IN (\n        'NetCashProvidedByUsedInOperatingActivities',\n        'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations',\n        'NetCashProvidedByUsedInOperatingActivitiesExcludingDiscontinuedOperations'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY l.cik, l.fiscal_year, l.fp, l.quarter_end\n),\nordered_quarters AS (\n    SELECT\n        r.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY r.cik, r.fiscal_year\n            ORDER BY r.quarter_end\n        ) AS quarter_index,\n        LAG(r.cfo_ytd) OVER (\n            PARTITION BY r.cik, r.fiscal_year\n            ORDER BY r.quarter_end\n        ) AS prev_cfo_ytd\n    FROM raw_cfo r\n    WHERE r.cfo_ytd IS NOT NULL\n),\nquarterly_cfo AS (\n    SELECT\n        o.cik,\n        o.fiscal_year,\n        o.fp,\n        o.quarter_end,\n        CASE\n            WHEN o.quarter_index = 1 THEN o.cfo_ytd\n            WHEN o.prev_cfo_ytd IS NULL THEN NULL\n            ELSE o.cfo_ytd - o.prev_cfo_ytd\n        END AS cfo_quarter\n    FROM ordered_quarters o\n),\nfiltered_series AS (\n    SELECT\n        sc.company_name AS company,\n        sc.canonical_name,\n        qc.quarter_end,\n        qc.fiscal_year,\n        qc.fp,\n        qc.cfo_quarter\n    FROM quarterly_cfo qc\n    JOIN selected_companies sc USING (cik)\n    WHERE qc.cfo_quarter IS NOT NULL\n      AND ABS(qc.cfo_quarter) <= {max_abs_cfo}\n      AND qc.quarter_end BETWEEN DATE '{start_period}' AND DATE '{end_period}'\n),\ncoverage AS (\n    SELECT\n        canonical_name,\n        COUNT(*) AS quarters_observed\n    FROM filtered_series\n    GROUP BY canonical_name\n    HAVING COUNT(*) >= {min_quarters}\n),\nfinal_series AS (\n    SELECT\n        fs.company,\n        fs.canonical_name,\n        fs.quarter_end,\n        fs.fiscal_year,\n        fs.fp,\n        fs.cfo_quarter / {value_scale} AS cfo_quarter_scaled\n    FROM filtered_series fs\n    JOIN coverage c USING (canonical_name)\n)\nSELECT\n    company,\n    quarter_end,\n    fiscal_year,\n    fp AS fiscal_period,\n    ROUND(cfo_quarter_scaled, 3) AS operating_cfo_billions\nFROM final_series\nORDER BY quarter_end, company\nLIMIT {result_limit};",
+        "sample_data": [
+          {
+            "company": "MICROSOFT CORP",
+            "quarter_end": "2024-03-31",
+            "cfo_billions": "31.92"
+          },
+          {
+            "company": "ALPHABET INC.",
+            "quarter_end": "2024-09-30",
+            "cfo_billions": "30.70"
+          },
+          {
+            "company": "APPLE INC",
+            "quarter_end": "2024-06-30",
+            "cfo_billions": "28.86"
+          },
+          {
+            "company": "FACEBOOK INC",
+            "quarter_end": "2024-09-30",
+            "cfo_billions": "24.72"
+          },
+          {
+            "company": "NVIDIA CORP",
+            "quarter_end": "2023-10-31",
+            "cfo_billions": "7.33"
+          },
+          {
+            "company": "DELL TECHNOLOGIES INC.",
+            "quarter_end": "2023-10-31",
+            "cfo_billions": "7.14"
+          },
+          {
+            "company": "INTEL CORP",
+            "quarter_end": "2024-09-30",
+            "cfo_billions": "4.05"
+          },
+          {
+            "company": "CISCO SYSTEMS, INC.",
+            "quarter_end": "2024-04-30",
+            "cfo_billions": "3.97"
+          },
+          {
+            "company": "ACCENTURE PLC",
+            "quarter_end": "2024-05-31",
+            "cfo_billions": "3.14"
+          },
+          {
+            "company": "RAYTHEON TECHNOLOGIES CORP",
+            "quarter_end": "2024-09-30",
+            "cfo_billions": "2.52"
+          }
+        ],
+        "business_insight": "Mega-cap platforms re-accelerated operating cash inflows in FY2024 while traditional hardware and networking names faced normalization, highlighting the cash leadership of hyperscale and AI beneficiaries.",
+        "key_findings": [
+          "Microsoft's FY2024 YTD operating cash flow climbed to $81.4B, up $22.5B year over year, driven by Azure and Office monetization leverage.",
+          "Meta generated $63.3B of FY2024 cash flow, an increase of $11.6B versus FY2023 as expense discipline and advertising demand recovered.",
+          "Cisco's FY2024 run rate fell $6.8B below FY2023, underscoring digestion of pandemic-era hardware upgrades, while Nvidia's $16.6B surge reflects AI accelerator demand."
+        ],
+        "investment_implications": [
+          "Accelerating cash generation at Microsoft, Alphabet, Meta, and Nvidia provides dry powder for AI capex and shareholder returns, reinforcing their defensive positioning.",
+          "Hardware and networking incumbents with decelerating CFO need to balance capital returns with reinvestment, signaling a more selective stance for income investors.",
+          "Dell's $7.1B FY2024 cash flow rebound suggests AI server exposure can offset PC weakness, making cash flow trend monitoring essential for cyclical entry points."
         ]
       },
       "id": "TS_016"
@@ -1236,13 +1483,81 @@
       "business_context": "Identify capital-efficient tech franchises",
       "time_span": "2021-2024",
       "expected_answer": {
-        "type": "ranking",
+        "type": "ranking_table",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Rank Technology companies by FY2021 vs FY2024 EBITDA margin improvement, where EBITDA = OperatingIncomeLoss + Depreciation & Amortization and margin = EBITDA / Revenue.",
+        "format": "Table with FY2021 EBITDA margin, FY2024 EBITDA margin, improvement in percentage points, and FY2024 revenue scale.",
+        "visualization": "Bar chart showing EBITDA margin delta by company.",
+        "sample_analysis": "WITH sector_candidates AS (\n    SELECT\n        c.cik,\n        c.name,\n        ROW_NUMBER() OVER (\n            PARTITION BY c.cik\n            ORDER BY\n                CASE WHEN UPPER(c.name) LIKE '% INC%' THEN 0 ELSE 1 END,\n                LENGTH(TRIM(c.name)),\n                UPPER(c.name)\n        ) AS rn\n    FROM companies c\n    WHERE LOWER(c.gics_sector) LIKE LOWER('%Technology%')\n),\nsector_companies AS (\n    SELECT\n        cik,\n        name,\n        REGEXP_REPLACE(UPPER(TRIM(name)), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM sector_candidates\n    WHERE rn = 1\n),\nranked_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn\n    FROM sub s\n    JOIN sector_companies sc USING (cik)\n    WHERE s.form IN ('10-K','10-K/A')\n      AND s.fy BETWEEN 2021 AND 2024\n),\nlatest_filings AS (\n    SELECT adsh, cik, fiscal_year, period\n    FROM ranked_filings\n    WHERE rn = 1\n),\nannual_values AS (\n    SELECT\n        lf.cik,\n        lf.fiscal_year,\n        MAX(CASE WHEN n.tag IN (\n            'OperatingIncomeLoss',\n            'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest'\n        ) THEN n.value END) AS operating_income,\n        MAX(CASE WHEN n.tag IN (\n            'DepreciationDepletionAndAmortization',\n            'DepreciationAndAmortization',\n            'DepreciationAmortizationAndAccretionNet',\n            'AmortizationOfIntangibleAssets',\n            'Depreciation'\n        ) THEN n.value END) AS depreciation,\n        MAX(CASE WHEN n.tag IN (\n            'Revenues',\n            'RevenueFromContractWithCustomerExcludingAssessedTax',\n            'SalesRevenueNet',\n            'NetSales'\n        ) THEN n.value END) AS revenue\n    FROM latest_filings lf\n    JOIN num n ON n.adsh = lf.adsh AND n.ddate = lf.period\n    WHERE n.tag IN (\n        'OperatingIncomeLoss',\n        'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',\n        'DepreciationDepletionAndAmortization',\n        'DepreciationAndAmortization',\n        'DepreciationAmortizationAndAccretionNet',\n        'AmortizationOfIntangibleAssets',\n        'Depreciation',\n        'Revenues',\n        'RevenueFromContractWithCustomerExcludingAssessedTax',\n        'SalesRevenueNet',\n        'NetSales'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY lf.cik, lf.fiscal_year\n),\nmargin_series AS (\n    SELECT\n        sc.canonical_name,\n        ANY_VALUE(sc.name) AS display_name,\n        av.fiscal_year,\n        AVG((COALESCE(av.operating_income, 0) + COALESCE(av.depreciation, 0)) / NULLIF(av.revenue, 0)) AS ebitda_margin,\n        MAX(av.revenue) AS revenue\n    FROM annual_values av\n    JOIN sector_companies sc USING (cik)\n    WHERE av.revenue IS NOT NULL\n      AND av.operating_income IS NOT NULL\n    GROUP BY sc.canonical_name, av.fiscal_year\n),\naggregated AS (\n    SELECT\n        canonical_name,\n        ANY_VALUE(display_name) AS display_name,\n        MAX(CASE WHEN fiscal_year = 2021 THEN ebitda_margin END) AS margin_2021,\n        MAX(CASE WHEN fiscal_year = 2024 THEN ebitda_margin END) AS margin_2024,\n        MAX(CASE WHEN fiscal_year = 2024 THEN revenue END) AS revenue_2024\n    FROM margin_series\n    GROUP BY canonical_name\n)\nSELECT\n    display_name AS name,\n    ROUND(margin_2021 * 100, 2) AS margin_2021_pct,\n    ROUND(margin_2024 * 100, 2) AS margin_2024_pct,\n    ROUND((margin_2024 - margin_2021) * 100, 2) AS improvement_pp,\n    ROUND(revenue_2024 / 1000000000.0, 2) AS revenue_2024_billions\nFROM aggregated\nWHERE margin_2021 IS NOT NULL\n  AND margin_2024 IS NOT NULL\n  AND revenue_2024 >= 2000000000\n  AND ((margin_2024 - margin_2021) * 100) >= 5\nORDER BY improvement_pp DESC,\n         revenue_2024_billions DESC,\n         name\nLIMIT 10;",
+        "sample_data": [
+          {
+            "company": "TRIMBLE INC.",
+            "FY2021_EBITDA_margin": "17.09%",
+            "FY2024_EBITDA_margin": "60.76%",
+            "Improvement_pp": "+43.66",
+            "FY2024_revenue": "$3.68B"
+          },
+          {
+            "company": "PALO ALTO NETWORKS INC",
+            "FY2021_EBITDA_margin": "-1.03%",
+            "FY2024_EBITDA_margin": "15.84%",
+            "Improvement_pp": "+16.87",
+            "FY2024_revenue": "$8.03B"
+          },
+          {
+            "company": "FISERV INC",
+            "FY2021_EBITDA_margin": "14.10%",
+            "FY2024_EBITDA_margin": "28.74%",
+            "Improvement_pp": "+14.64",
+            "FY2024_revenue": "$20.46B"
+          },
+          {
+            "company": "ARISTA NETWORKS, INC.",
+            "FY2021_EBITDA_margin": "33.28%",
+            "FY2024_EBITDA_margin": "47.51%",
+            "Improvement_pp": "+14.22",
+            "FY2024_revenue": "$7.00B"
+          },
+          {
+            "company": "FORTINET INC",
+            "FY2021_EBITDA_margin": "21.99%",
+            "FY2024_EBITDA_margin": "32.34%",
+            "Improvement_pp": "+10.36",
+            "FY2024_revenue": "$5.96B"
+          }
+        ],
         "metrics": [
           "OperatingIncomeLoss",
           "DepreciationAndAmortization",
           "Revenues"
-        ]
+        ],
+        "business_insight": "Large-cap infrastructure and security platforms delivered double-digit EBITDA margin expansion between FY2021 and FY2024 as subscription revenue mixes, cloud-native delivery, and post-COVID cost resets flowed through. Trimble\u2019s shift toward software-as-a-service and field automation turned a mid-teens margin into 61%, while Palo Alto, Fiserv, Arista, and Fortinet coupled pricing power with scale to widen profitability despite elevated R&D investment.",
+        "key_findings": [
+          "Trimble\u2019s margin jump from 17% to 61% reflects higher software mix, tighter hardware integration, and operating leverage from connected construction demand.",
+          "Palo Alto Networks swung from slightly negative EBITDA in FY2021 to nearly 16% in FY2024 as SASE bundling and platform consolidation improved gross margins and sales productivity.",
+          "Fiserv and Arista each added roughly 14 percentage points of margin while sustaining multi-billion revenue bases, underscoring durable demand in payments infrastructure and cloud networking.",
+          "Fortinet\u2019s 10-point expansion highlights high-margin security services growing faster than product revenue even as it crossed $5.9B in FY2024 sales."
+        ],
+        "investment_implications": [
+          "Double-digit EBITDA expansion across infrastructure software and networking leaders signals pricing power and operating leverage that can support buybacks and inorganic growth.",
+          "Security and networking franchises with rising subscription share convert margin gains into recurring cash flow, reducing reliance on debt in a higher-rate environment.",
+          "Names combining rapid margin expansion with sizeable revenue bases are positioned to compound earnings as enterprise cloud and AI workloads stay elevated."
+        ],
+        "template_id": "ebitda_margin_improvement_rank"
       },
+      "retrieval_test_criteria": {
+        "expected_data_span": "FY2021-FY2024",
+        "required_metrics": [
+          "OperatingIncomeLoss",
+          "DepreciationAndAmortization",
+          "Revenues"
+        ],
+        "sector_filter": "Information Technology",
+        "min_companies": 5,
+        "min_revenue_threshold": 2000000000,
+        "min_improvement_pp": 5
+      },
+      "max_response_time_ms": 16000,
       "id": "TS_017"
     },
     {
@@ -1254,9 +1569,166 @@
       "time_span": "2019-2024",
       "expected_answer": {
         "type": "multi_series",
+        "template_id": "cash_to_assets_ratio_trend",
+        "validation_method": "duckdb_sql_on_parquet",
+        "answer_pattern": "Compare annual cash-to-assets liquidity for a named cohort of cloud software leaders.",
+        "format": "Multi-series annual liquidity ratios",
+        "visualization": "Multi-series line chart of cash-to-assets ratios",
+        "sample_analysis": "WITH provided_companies AS (\n    SELECT\n        TRIM(company_name) AS provided_name,\n        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM (VALUES {company_values}) AS t(company_name)\n),\nsector_candidates AS (\n    SELECT\n        c.cik,\n        c.name AS display_name,\n        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name\n    FROM companies c\n    WHERE {use_sector_filter} = 1\n      AND (\n        UPPER('{sector}') = 'ALL'\n        OR LOWER(c.gics_sector) LIKE LOWER('%{sector}%')\n      )\n),\nlist_candidates AS (\n    SELECT\n        c.cik,\n        pc.provided_name AS display_name\n    FROM companies c\n    JOIN provided_companies pc\n      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_name\n),\ncombined_companies AS (\n    SELECT cik, display_name FROM list_candidates\n    UNION ALL\n    SELECT cik, display_name FROM sector_candidates\n),\ncompany_dim AS (\n    SELECT\n        cik,\n        ANY_VALUE(display_name) AS display_name\n    FROM combined_companies\n    GROUP BY cik\n),\nannual_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        ROW_NUMBER() OVER (\n            PARTITION BY s.cik, s.fy\n            ORDER BY s.filed DESC, s.period DESC NULLS LAST\n        ) AS rn\n    FROM sub s\n    JOIN company_dim cd USING (cik)\n    WHERE s.form IN ('10-K', '10-K/A')\n      AND s.fy BETWEEN {start_year} AND {end_year}\n),\nlatest_filings AS (\n    SELECT *\n    FROM annual_filings\n    WHERE rn = 1\n      AND period IS NOT NULL\n),\nannual_values AS (\n    SELECT\n        lf.cik,\n        lf.fiscal_year,\n        MAX(CASE WHEN n.tag = 'CashAndCashEquivalentsAtCarryingValue' THEN n.value END) AS cash_and_equivalents,\n        MAX(CASE WHEN n.tag = 'CashCashEquivalentsAndShortTermInvestments' THEN n.value END) AS cash_and_short_term,\n        MAX(CASE WHEN n.tag = 'Assets' THEN n.value END) AS total_assets\n    FROM latest_filings lf\n    JOIN num n\n      ON n.adsh = lf.adsh\n     AND n.ddate = lf.period\n    WHERE n.tag IN (\n        'CashAndCashEquivalentsAtCarryingValue',\n        'CashCashEquivalentsAndShortTermInvestments',\n        'Assets'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY lf.cik, lf.fiscal_year\n),\nnormalized AS (\n    SELECT\n        av.cik,\n        av.fiscal_year,\n        COALESCE(av.cash_and_equivalents, av.cash_and_short_term) AS cash_balance,\n        av.total_assets\n    FROM annual_values av\n),\nratios AS (\n    SELECT\n        cd.display_name AS company,\n        n.fiscal_year,\n        n.cash_balance,\n        n.total_assets,\n        CASE\n            WHEN n.total_assets IS NULL\n                 OR n.total_assets = 0\n                 OR n.cash_balance IS NULL\n            THEN NULL\n            ELSE n.cash_balance / n.total_assets\n        END AS cash_to_assets_ratio\n    FROM normalized n\n    JOIN company_dim cd USING (cik)\n),\ncoverage AS (\n    SELECT\n        company,\n        COUNT(DISTINCT CASE WHEN cash_to_assets_ratio IS NOT NULL THEN fiscal_year END) AS ratios_available\n    FROM ratios\n    GROUP BY company\n)\nSELECT\n    r.company,\n    r.fiscal_year,\n    ROUND(r.cash_balance / 1000000000.0, 2) AS cash_billions,\n    ROUND(r.total_assets / 1000000000.0, 2) AS assets_billions,\n    ROUND(r.cash_to_assets_ratio, 4) AS cash_to_assets_ratio,\n    ROUND(r.cash_to_assets_ratio * 100, 2) AS cash_to_assets_ratio_pct\nFROM ratios r\nJOIN coverage c USING (company)\nWHERE r.cash_to_assets_ratio IS NOT NULL\n  AND c.ratios_available >= {min_years}\nORDER BY r.company, r.fiscal_year;",
         "metrics": [
           "CashAndCashEquivalentsAtCarryingValue",
           "Assets"
+        ],
+        "data_table": {
+          "columns": [
+            "Company",
+            "Fiscal_Year",
+            "Cash_$B",
+            "Assets_$B",
+            "Cash_to_Assets_%"
+          ],
+          "sample_data": [
+            [
+              "Adobe Inc.",
+              "2019",
+              "2.65",
+              "20.76",
+              "12.76"
+            ],
+            [
+              "Adobe Inc.",
+              "2020",
+              "4.48",
+              "24.28",
+              "18.44"
+            ],
+            [
+              "Adobe Inc.",
+              "2021",
+              "3.84",
+              "27.24",
+              "14.11"
+            ],
+            [
+              "Adobe Inc.",
+              "2022",
+              "4.24",
+              "27.17",
+              "15.59"
+            ],
+            [
+              "Adobe Inc.",
+              "2023",
+              "7.14",
+              "29.78",
+              "23.98"
+            ],
+            [
+              "Adobe Inc.",
+              "2024",
+              "7.61",
+              "30.23",
+              "25.18"
+            ],
+            [
+              "Microsoft Corp",
+              "2019",
+              "11.36",
+              "286.56",
+              "3.96"
+            ],
+            [
+              "Microsoft Corp",
+              "2020",
+              "13.58",
+              "301.31",
+              "4.51"
+            ],
+            [
+              "Microsoft Corp",
+              "2021",
+              "14.22",
+              "333.78",
+              "4.26"
+            ],
+            [
+              "Microsoft Corp",
+              "2022",
+              "13.93",
+              "364.84",
+              "3.82"
+            ],
+            [
+              "Microsoft Corp",
+              "2023",
+              "34.70",
+              "411.98",
+              "8.42"
+            ],
+            [
+              "Microsoft Corp",
+              "2024",
+              "18.32",
+              "512.16",
+              "3.58"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2019",
+              "4.14",
+              "55.13",
+              "7.52"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2020",
+              "6.20",
+              "66.30",
+              "9.34"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2021",
+              "5.46",
+              "95.21",
+              "5.74"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2022",
+              "7.02",
+              "98.85",
+              "7.10"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2023",
+              "8.47",
+              "99.82",
+              "8.49"
+            ],
+            [
+              "Salesforce, Inc.",
+              "2024",
+              "8.85",
+              "102.93",
+              "8.60"
+            ]
+          ]
+        },
+        "business_insight": "Adobe has rebuilt a sizable cash cushion post-pandemic (reaching ~25% of assets by FY2024), Microsoft\u2019s liquidity briefly swelled to 8.4% ahead of deployment but normalized to a 3\u20134% range after FY2024 spending, and Salesforce restored cash flexibility above 8% following a FY2021 trough.",
+        "key_findings": [
+          "Adobe\u2019s cash-to-assets ratio nearly doubled after FY2021 as subscription cash flow and deferred revenue rebuilt liquidity.",
+          "Microsoft\u2019s FY2023 spike reflects the Activision acquisition war chest; FY2024 levels revert to historical 3\u20134% cash-to-asset balance.",
+          "Salesforce\u2019s FY2021 dip to 5.7% was acquisition-driven; disciplined spend and margin focus pushed the ratio back above 8% by FY2024."
+        ],
+        "investment_implications": [
+          "Adobe\u2019s higher cash density supports continued M&A or buybacks without stressing the balance sheet.",
+          "Microsoft\u2019s liquidity band suggests the company redeploys cash quickly, so spikes may telegraph upcoming capital actions.",
+          "Salesforce\u2019s rebuilding of cash reserves provides flexibility for shareholder returns while funding AI-driven investments."
+        ],
+        "data_constraints": [
+          "Ratios reflect the latest annual 10-K filings available in the parquet snapshot (FY2024 for Microsoft, Adobe, and Salesforce)."
         ]
       },
       "id": "TS_018"
@@ -1269,11 +1741,203 @@
       "business_context": "Evaluate semiconductor capital efficiency",
       "time_span": "2019-2024",
       "expected_answer": {
-        "type": "line_chart",
-        "metrics": [
-          "NetIncomeLoss",
-          "StockholdersEquity"
-        ]
+        "format": "Annual ROE table with supporting commentary",
+        "visualization": "Multi-series line chart plus ROE detail table",
+        "sample_analysis": "WITH provided_companies AS (\n    SELECT *\n    FROM (VALUES ('NVIDIA CORP'),('ADVANCED MICRO DEVICES INC'),('INTEL CORP'),('TEXAS INSTRUMENTS INC')) AS t(company_name)\n),\ncompany_dim AS (\n    SELECT DISTINCT\n        c.cik,\n        pc.company_name AS requested_name,\n        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name,\n        c.name AS dataset_name\n    FROM companies c\n    JOIN provided_companies pc\n      ON UPPER(c.name) = UPPER(pc.company_name)\n),\nannual_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.period,\n        s.filed,\n        ROW_NUMBER() OVER (\n            PARTITION BY s.cik, s.fy\n            ORDER BY s.filed DESC\n        ) AS filing_rank\n    FROM sub s\n    JOIN company_dim cd USING (cik)\n    WHERE s.form IN ('10-K', '10-K/A', '20-F')\n      AND CAST(s.fy AS INTEGER) BETWEEN 2019 AND 2024\n),\nlatest_filings AS (\n    SELECT *\n    FROM annual_filings\n    WHERE filing_rank = 1\n),\nannual_metrics AS (\n    SELECT\n        cd.requested_name AS company,\n        cd.canonical_name,\n        CAST(l.fiscal_year AS INTEGER) AS fiscal_year,\n        COALESCE(\n            MAX(\n                CASE\n                    WHEN n.tag = 'NetIncomeLoss'\n                    THEN n.value\n                END\n            ),\n            MAX(\n                CASE\n                    WHEN n.tag = 'ProfitLoss'\n                    THEN n.value\n                END\n            ),\n            MAX(\n                CASE\n                    WHEN n.tag = 'NetIncomeLossAvailableToCommonStockholdersBasic'\n                    THEN n.value\n                END\n            )\n        ) AS net_income,\n        COALESCE(\n            MAX(\n                CASE\n                    WHEN n.tag = 'StockholdersEquity'\n                    THEN n.value\n                END\n            ),\n            MAX(\n                CASE\n                    WHEN n.tag = 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'\n                    THEN n.value\n                END\n            )\n        ) AS equity\n    FROM latest_filings l\n    JOIN num n ON n.adsh = l.adsh\n    JOIN company_dim cd USING (cik)\n    WHERE n.tag IN (\n        'NetIncomeLoss',\n        'ProfitLoss',\n        'NetIncomeLossAvailableToCommonStockholdersBasic',\n        'StockholdersEquity',\n        'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n      AND COALESCE(n.qtrs, 0) IN (0, 4)\n      AND (\n          n.ddate IS NULL\n          OR EXTRACT(YEAR FROM n.ddate) = CAST(l.fiscal_year AS INTEGER)\n      )\n    GROUP BY\n        cd.requested_name,\n        cd.canonical_name,\n        l.cik,\n        l.fiscal_year\n),\ncoverage AS (\n    SELECT\n        canonical_name,\n        COUNT(DISTINCT fiscal_year) AS year_count\n    FROM annual_metrics\n    GROUP BY canonical_name\n    HAVING COUNT(DISTINCT fiscal_year) >= 6\n),\nfinal_series AS (\n    SELECT\n        am.company,\n        am.fiscal_year,\n        ROUND(am.net_income / 1e6, 2) AS net_income_millions,\n        ROUND(am.equity / 1e6, 2) AS equity_millions,\n        ROUND(\n            100 * am.net_income\n            / NULLIF(am.equity, 0),\n            2\n        ) AS roe_pct\n    FROM annual_metrics am\n    JOIN coverage c USING (canonical_name)\n    WHERE am.net_income IS NOT NULL\n      AND am.equity IS NOT NULL\n      AND am.fiscal_year BETWEEN 2019 AND 2024\n      AND ABS(\n          100 * am.net_income\n          / NULLIF(am.equity, 0)\n      ) <= 200\n)\nSELECT\n    company,\n    fiscal_year,\n    net_income_millions,\n    equity_millions,\n    roe_pct\nFROM final_series\nORDER BY company, fiscal_year\nLIMIT 200;",
+        "sample_data": [
+          {
+            "company": "Advanced Micro Devices",
+            "baseline": "2019 ROE 12.06%",
+            "latest": "2024 ROE 2.85%",
+            "change": "-9.21 pp",
+            "roe_trend": [
+              {
+                "year": 2019,
+                "roe_pct": "12.06%",
+                "net_income": "$341.00M",
+                "equity": "$2.83B"
+              },
+              {
+                "year": 2020,
+                "roe_pct": "42.66%",
+                "net_income": "$2.49B",
+                "equity": "$5.84B"
+              },
+              {
+                "year": 2021,
+                "roe_pct": "42.18%",
+                "net_income": "$3.16B",
+                "equity": "$7.50B"
+              },
+              {
+                "year": 2022,
+                "roe_pct": "2.41%",
+                "net_income": "$1.32B",
+                "equity": "$54.75B"
+              },
+              {
+                "year": 2023,
+                "roe_pct": "1.53%",
+                "net_income": "$854.00M",
+                "equity": "$55.89B"
+              },
+              {
+                "year": 2024,
+                "roe_pct": "2.85%",
+                "net_income": "$1.64B",
+                "equity": "$57.57B"
+              }
+            ]
+          },
+          {
+            "company": "Intel",
+            "baseline": "2019 ROE 27.16%",
+            "latest": "2024 ROE -18.89%",
+            "change": "-46.05 pp",
+            "roe_trend": [
+              {
+                "year": 2019,
+                "roe_pct": "27.16%",
+                "net_income": "$21.05B",
+                "equity": "$77.50B"
+              },
+              {
+                "year": 2020,
+                "roe_pct": "25.79%",
+                "net_income": "$20.90B",
+                "equity": "$81.04B"
+              },
+              {
+                "year": 2021,
+                "roe_pct": "20.83%",
+                "net_income": "$19.87B",
+                "equity": "$95.39B"
+              },
+              {
+                "year": 2022,
+                "roe_pct": "7.90%",
+                "net_income": "$8.01B",
+                "equity": "$101.42B"
+              },
+              {
+                "year": 2023,
+                "roe_pct": "1.60%",
+                "net_income": "$1.69B",
+                "equity": "$105.59B"
+              },
+              {
+                "year": 2024,
+                "roe_pct": "-18.89%",
+                "net_income": "$-18.76B",
+                "equity": "$99.27B"
+              }
+            ]
+          },
+          {
+            "company": "NVIDIA",
+            "baseline": "2019 ROE 44.33%",
+            "latest": "2024 ROE 69.24%",
+            "change": "+24.91 pp",
+            "roe_trend": [
+              {
+                "year": 2019,
+                "roe_pct": "44.33%",
+                "net_income": "$4.14B",
+                "equity": "$9.34B"
+              },
+              {
+                "year": 2020,
+                "roe_pct": "22.91%",
+                "net_income": "$2.80B",
+                "equity": "$12.20B"
+              },
+              {
+                "year": 2021,
+                "roe_pct": "25.64%",
+                "net_income": "$4.33B",
+                "equity": "$16.89B"
+              },
+              {
+                "year": 2022,
+                "roe_pct": "36.65%",
+                "net_income": "$9.75B",
+                "equity": "$26.61B"
+              },
+              {
+                "year": 2023,
+                "roe_pct": "19.76%",
+                "net_income": "$4.37B",
+                "equity": "$22.10B"
+              },
+              {
+                "year": 2024,
+                "roe_pct": "69.24%",
+                "net_income": "$29.76B",
+                "equity": "$42.98B"
+              }
+            ]
+          },
+          {
+            "company": "Texas Instruments",
+            "baseline": "2019 ROE 56.33%",
+            "latest": "2024 ROE 28.39%",
+            "change": "-27.94 pp",
+            "roe_trend": [
+              {
+                "year": 2019,
+                "roe_pct": "56.33%",
+                "net_income": "$5.02B",
+                "equity": "$8.91B"
+              },
+              {
+                "year": 2020,
+                "roe_pct": "60.90%",
+                "net_income": "$5.59B",
+                "equity": "$9.19B"
+              },
+              {
+                "year": 2021,
+                "roe_pct": "58.27%",
+                "net_income": "$7.77B",
+                "equity": "$13.33B"
+              },
+              {
+                "year": 2022,
+                "roe_pct": "60.02%",
+                "net_income": "$8.75B",
+                "equity": "$14.58B"
+              },
+              {
+                "year": 2023,
+                "roe_pct": "38.53%",
+                "net_income": "$6.51B",
+                "equity": "$16.90B"
+              },
+              {
+                "year": 2024,
+                "roe_pct": "28.39%",
+                "net_income": "$4.80B",
+                "equity": "$16.90B"
+              }
+            ]
+          }
+        ],
+        "business_insight": "Semiconductor ROE trends bifurcate between NVIDIA\u2019s AI-driven surge and depressed returns at AMD, Intel, and Texas Instruments as equity bases swelled and cyclical earnings softened post-2021.",
+        "key_findings": [
+          "NVIDIA\u2019s ROE jumped from 44% in FY2019 to 69% in FY2024 as FY2024 net income ballooned to $29.8B, far outpacing equity growth.",
+          "AMD\u2019s ROE collapsed to low single digits after the Xilinx acquisition expanded equity above $55B, muting returns despite renewed profitability.",
+          "Intel swung to a FY2024 net loss, driving ROE to -18.9%, while Texas Instruments\u2019 ROE compressed from ~60% to 28% as analog demand cooled."
+        ],
+        "investment_implications": [
+          "NVIDIA\u2019s outsized ROE supports premium valuation multiples and indicates ample capacity to reinvest in accelerated computing.",
+          "AMD needs to extract further post-Xilinx synergies to lift ROE back toward historical levels; investors should watch gross margin progress.",
+          "Intel\u2019s negative ROE highlights execution risk around the foundry turnaround, while Texas Instruments\u2019 still-elevated ROE suggests cyclical normalization rather than structural erosion."
+        ],
+        "data_constraints": [
+          "ROE uses GAAP net income and ending equity from the latest 10-K filings available in the DuckDB snapshot (FY2024 for all four companies).",
+          "Large acquisition-driven equity step-ups (e.g., AMD/Xilinx) depress ROE in transition periods; no adjustments were made for average equity or segment restatements."
+        ],
+        "template_id": "semiconductor_roe_trend"
       },
       "id": "TS_019"
     },
@@ -1285,13 +1949,234 @@
       "business_context": "Understand hardware margin dynamics",
       "time_span": "8 quarters",
       "expected_answer": {
-        "type": "line_chart",
-        "metrics": [
+        "format": "Quarterly gross margin trend comparison with revenue context",
+        "visualization": "Multi-series line chart with supporting quarterly table",
+        "sample_analysis": "WITH provided_companies AS (\n    SELECT\n        TRIM(company_name) AS requested_name,\n        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_key\n    FROM (VALUES ('APPLE INC'),('DELL TECHNOLOGIES INC.'),('HP INC')) AS t(company_name)\n),\ncompany_dim AS (\n    SELECT DISTINCT\n        c.cik,\n        pc.requested_name,\n        c.name AS company_name,\n        pc.canonical_key\n    FROM companies c\n    JOIN provided_companies pc\n      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_key\n),\nranked_filings AS (\n    SELECT\n        s.adsh,\n        s.cik,\n        s.period AS period_end,\n        CAST(s.fy AS INTEGER) AS fiscal_year,\n        s.fp,\n        s.filed,\n        ROW_NUMBER() OVER (\n            PARTITION BY s.cik, s.period\n            ORDER BY s.filed DESC\n        ) AS filing_rank\n    FROM sub s\n    JOIN company_dim cd USING (cik)\n    WHERE s.form IN ('10-Q', '10-Q/A')\n      AND s.fp IN ('Q1', 'Q2', 'Q3', 'Q4')\n      AND s.period >= DATE '2022-01-01'\n),\nlatest_filings AS (\n    SELECT\n        rf.adsh,\n        rf.cik,\n        rf.period_end,\n        rf.fiscal_year,\n        rf.fp,\n        ROW_NUMBER() OVER (\n            PARTITION BY rf.cik\n            ORDER BY rf.period_end DESC\n        ) AS seq\n    FROM ranked_filings rf\n    WHERE rf.filing_rank = 1\n),\nselected_filings AS (\n    SELECT *\n    FROM latest_filings\n    WHERE seq <= 8\n),\nquarter_values AS (\n    SELECT\n        sf.cik,\n        sf.period_end,\n        sf.fiscal_year,\n        sf.fp,\n        MAX(\n            CASE\n                WHEN n.tag IN (\n                    'Revenues',\n                    'RevenueFromContractWithCustomerExcludingAssessedTax',\n                    'SalesRevenueNet',\n                    'NetSalesRevenue',\n                    'NetSales'\n                )\n                AND COALESCE(n.qtrs, 1) IN (0, 1)\n                THEN n.value\n            END\n        ) AS revenue,\n        MAX(\n            CASE\n                WHEN n.tag IN (\n                    'CostOfRevenue',\n                    'CostOfGoodsAndServicesSold',\n                    'CostOfGoodsSold'\n                )\n                AND COALESCE(n.qtrs, 1) IN (0, 1)\n                THEN n.value\n            END\n        ) AS cost_of_revenue\n    FROM selected_filings sf\n    JOIN num n\n      ON n.adsh = sf.adsh\n     AND n.ddate = sf.period_end\n    WHERE n.tag IN (\n        'Revenues',\n        'RevenueFromContractWithCustomerExcludingAssessedTax',\n        'SalesRevenueNet',\n        'NetSalesRevenue',\n        'NetSales',\n        'CostOfRevenue',\n        'CostOfGoodsAndServicesSold',\n        'CostOfGoodsSold'\n    )\n      AND COALESCE(TRIM(n.segments), '') = ''\n      AND COALESCE(TRIM(n.coreg), '') = ''\n    GROUP BY sf.cik, sf.period_end, sf.fiscal_year, sf.fp\n),\ncoverage AS (\n    SELECT cik\n    FROM quarter_values\n    WHERE revenue IS NOT NULL\n      AND cost_of_revenue IS NOT NULL\n    GROUP BY cik\n    HAVING COUNT(*) >= 8\n),\nnormalized AS (\n    SELECT\n        cd.company_name AS company,\n        cd.requested_name,\n        q.period_end,\n        q.fiscal_year,\n        q.fp,\n        q.revenue,\n        q.cost_of_revenue,\n        CASE\n            WHEN q.revenue IS NULL OR q.revenue = 0 THEN NULL\n            ELSE (q.revenue - q.cost_of_revenue) / q.revenue\n        END AS gross_margin_ratio\n    FROM quarter_values q\n    JOIN company_dim cd USING (cik)\n    JOIN coverage cv USING (cik)\n),\nranked_series AS (\n    SELECT\n        n.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY n.company\n            ORDER BY n.period_end\n        ) AS seq_asc,\n        ROW_NUMBER() OVER (\n            PARTITION BY n.company\n            ORDER BY n.period_end DESC\n        ) AS seq_desc\n    FROM normalized n\n),\nsummary AS (\n    SELECT\n        company,\n        MIN(period_end) AS baseline_period,\n        MAX(period_end) AS latest_period,\n        MAX(CASE WHEN seq_asc = 1 THEN gross_margin_ratio END) AS baseline_margin,\n        MAX(CASE WHEN seq_desc = 1 THEN gross_margin_ratio END) AS latest_margin,\n        MAX(CASE WHEN seq_desc = 1 THEN revenue END) AS latest_revenue,\n        MAX(CASE WHEN seq_desc = 1 THEN cost_of_revenue END) AS latest_cost,\n        COUNT(*) AS quarters_available\n    FROM ranked_series\n    GROUP BY company\n)\nSELECT\n    rs.company,\n    summary.quarters_available,\n    summary.baseline_period,\n    summary.latest_period,\n    ROUND(summary.baseline_margin * 100, 1) AS baseline_margin_pct,\n    ROUND(summary.latest_margin * 100, 1) AS latest_margin_pct,\n    ROUND((summary.latest_margin - summary.baseline_margin) * 100, 1) AS margin_change_pp,\n    ROUND(summary.latest_revenue / 1e9, 2) AS latest_revenue_billions,\n    ROUND(summary.latest_cost / 1e9, 2) AS latest_cost_billions,\n    rs.period_end,\n    rs.fiscal_year,\n    rs.fp,\n    CONCAT(\n        CAST(EXTRACT(year FROM rs.period_end) AS VARCHAR),\n        ' Q',\n        CAST(EXTRACT(quarter FROM rs.period_end) AS VARCHAR)\n    ) AS quarter_label,\n    ROUND(rs.revenue / 1e9, 3) AS revenue_billions,\n    ROUND(rs.cost_of_revenue / 1e9, 3) AS cost_of_revenue_billions,\n    ROUND(rs.gross_margin_ratio * 100, 1) AS gross_margin_pct,\n    rs.seq_asc AS quarter_index_asc,\n    rs.seq_desc AS quarter_index_desc\nFROM ranked_series rs\nJOIN summary USING (company)\nORDER BY rs.company, rs.period_end;",
+        "sample_data": [
+          {
+            "company": "Apple Inc.",
+            "baseline": "2022 Q4 43.0%",
+            "latest": "2025 Q1 47.1%",
+            "change": "+4.1 pp",
+            "quarterly_margin": [
+              {
+                "quarter": "2022 Q4",
+                "period_end": "2022-12-31",
+                "gross_margin_pct": "43.0%",
+                "revenue": "$117.15B",
+                "cost_of_revenue": "$66.82B"
+              },
+              {
+                "quarter": "2023 Q1",
+                "period_end": "2023-03-31",
+                "gross_margin_pct": "44.3%",
+                "revenue": "$94.84B",
+                "cost_of_revenue": "$52.86B"
+              },
+              {
+                "quarter": "2023 Q2",
+                "period_end": "2023-06-30",
+                "gross_margin_pct": "44.5%",
+                "revenue": "$81.80B",
+                "cost_of_revenue": "$45.38B"
+              },
+              {
+                "quarter": "2023 Q4",
+                "period_end": "2023-12-31",
+                "gross_margin_pct": "45.9%",
+                "revenue": "$119.58B",
+                "cost_of_revenue": "$64.72B"
+              },
+              {
+                "quarter": "2024 Q1",
+                "period_end": "2024-03-31",
+                "gross_margin_pct": "46.6%",
+                "revenue": "$90.75B",
+                "cost_of_revenue": "$48.48B"
+              },
+              {
+                "quarter": "2024 Q2",
+                "period_end": "2024-06-30",
+                "gross_margin_pct": "46.3%",
+                "revenue": "$85.78B",
+                "cost_of_revenue": "$46.10B"
+              },
+              {
+                "quarter": "2024 Q4",
+                "period_end": "2024-12-31",
+                "gross_margin_pct": "46.9%",
+                "revenue": "$124.30B",
+                "cost_of_revenue": "$66.03B"
+              },
+              {
+                "quarter": "2025 Q1",
+                "period_end": "2025-03-31",
+                "gross_margin_pct": "47.1%",
+                "revenue": "$95.36B",
+                "cost_of_revenue": "$50.49B"
+              }
+            ]
+          },
+          {
+            "company": "Dell Technologies Inc.",
+            "baseline": "2022 Q4 23.1%",
+            "latest": "2025 Q2 21.1%",
+            "change": "-2.0 pp",
+            "quarterly_margin": [
+              {
+                "quarter": "2022 Q4",
+                "period_end": "2022-10-31",
+                "gross_margin_pct": "23.1%",
+                "revenue": "$24.72B",
+                "cost_of_revenue": "$19.01B"
+              },
+              {
+                "quarter": "2023 Q2",
+                "period_end": "2023-04-30",
+                "gross_margin_pct": "24.0%",
+                "revenue": "$20.92B",
+                "cost_of_revenue": "$15.90B"
+              },
+              {
+                "quarter": "2023 Q3",
+                "period_end": "2023-07-31",
+                "gross_margin_pct": "23.5%",
+                "revenue": "$22.93B",
+                "cost_of_revenue": "$17.55B"
+              },
+              {
+                "quarter": "2023 Q4",
+                "period_end": "2023-10-31",
+                "gross_margin_pct": "23.1%",
+                "revenue": "$22.25B",
+                "cost_of_revenue": "$17.10B"
+              },
+              {
+                "quarter": "2024 Q2",
+                "period_end": "2024-04-30",
+                "gross_margin_pct": "21.6%",
+                "revenue": "$22.24B",
+                "cost_of_revenue": "$17.44B"
+              },
+              {
+                "quarter": "2024 Q3",
+                "period_end": "2024-07-31",
+                "gross_margin_pct": "21.2%",
+                "revenue": "$25.03B",
+                "cost_of_revenue": "$19.71B"
+              },
+              {
+                "quarter": "2024 Q4",
+                "period_end": "2024-10-31",
+                "gross_margin_pct": "21.8%",
+                "revenue": "$24.37B",
+                "cost_of_revenue": "$19.06B"
+              },
+              {
+                "quarter": "2025 Q2",
+                "period_end": "2025-04-30",
+                "gross_margin_pct": "21.1%",
+                "revenue": "$23.38B",
+                "cost_of_revenue": "$18.44B"
+              }
+            ]
+          },
+          {
+            "company": "HP Inc.",
+            "baseline": "2023 Q1 20.3%",
+            "latest": "2025 Q2 20.7%",
+            "change": "+0.4 pp",
+            "quarterly_margin": [
+              {
+                "quarter": "2023 Q1",
+                "period_end": "2023-01-31",
+                "gross_margin_pct": "20.3%",
+                "revenue": "$13.83B",
+                "cost_of_revenue": "$11.02B"
+              },
+              {
+                "quarter": "2023 Q2",
+                "period_end": "2023-04-30",
+                "gross_margin_pct": "22.7%",
+                "revenue": "$12.91B",
+                "cost_of_revenue": "$9.98B"
+              },
+              {
+                "quarter": "2023 Q3",
+                "period_end": "2023-07-31",
+                "gross_margin_pct": "21.4%",
+                "revenue": "$13.20B",
+                "cost_of_revenue": "$10.37B"
+              },
+              {
+                "quarter": "2024 Q1",
+                "period_end": "2024-01-31",
+                "gross_margin_pct": "21.9%",
+                "revenue": "$13.19B",
+                "cost_of_revenue": "$10.30B"
+              },
+              {
+                "quarter": "2024 Q2",
+                "period_end": "2024-04-30",
+                "gross_margin_pct": "23.6%",
+                "revenue": "$12.80B",
+                "cost_of_revenue": "$9.78B"
+              },
+              {
+                "quarter": "2024 Q3",
+                "period_end": "2024-07-31",
+                "gross_margin_pct": "21.5%",
+                "revenue": "$13.52B",
+                "cost_of_revenue": "$10.61B"
+              },
+              {
+                "quarter": "2025 Q1",
+                "period_end": "2025-01-31",
+                "gross_margin_pct": "21.0%",
+                "revenue": "$13.50B",
+                "cost_of_revenue": "$10.66B"
+              },
+              {
+                "quarter": "2025 Q2",
+                "period_end": "2025-04-30",
+                "gross_margin_pct": "20.7%",
+                "revenue": "$13.22B",
+                "cost_of_revenue": "$10.48B"
+              }
+            ]
+          }
+        ],
+        "business_insight": "Apple expanded gross margin by roughly 410 bps across the last eight quarters as higher-margin services and silicon mix offset component cost pressure, while Dell lost about 200 bps as PC demand and infrastructure mix normalized. HP held a stable ~21% band with a brief 24% spike during FY2024 mix improvements before sliding back toward 21%.",
+        "key_findings": [
+          "Apple climbed from 43.0% in 2022 Q4 to 47.1% in 2025 Q1 as services and premium devices lifted mix.",
+          "Dell fell from 23.1% to 21.1% with enterprise mix flattening after supply chain tailwinds faded.",
+          "HP oscillated between 20-24%; the FY2024 spike reflects higher commercial mix but margins reverted to ~21%.",
+          "All three vendors retained over $12B quarterly revenue scale, anchoring margin swings in absolute dollar terms."
+        ],
+        "investment_implications": [
+          "Apple sustains high-40s gross margins, supporting continued buybacks even if hardware units flatten.",
+          "Dell margin compression suggests limited upside without higher-value infrastructure or services mix shifts.",
+          "HP needs ongoing cost discipline to keep margins above 20% as PC replacement cycles normalize."
+        ],
+        "data_constraints": [
+          "HP Inc. coverage begins in FY2023 because the DuckDB snapshot retains only the latest eight quarters per company."
+        ],
+        "template_id": "hardware_gross_margin_trend"
+      },
+      "id": "TS_020",
+      "retrieval_test_criteria": {
+        "expected_data_span": "8 quarters",
+        "required_metrics": [
           "Revenues",
           "CostOfRevenue"
+        ],
+        "company_list": [
+          "Apple Inc.",
+          "Dell Technologies Inc.",
+          "HP Inc."
         ]
       },
-      "id": "TS_020"
+      "max_response_time_ms": 17000
     },
     {
       "question": "Which large US banks maintained ROE above 12% for three consecutive years between 2021 and 2023?",
@@ -1305,7 +2190,8 @@
         "metrics": [
           "NetIncomeLoss",
           "StockholdersEquity"
-        ]
+        ],
+        "template_id": "bank_roe_consecutive_threshold"
       },
       "id": "TS_021"
     },
@@ -1321,7 +2207,8 @@
         "metrics": [
           "StockholdersEquity",
           "Assets"
-        ]
+        ],
+        "template_id": "equity_to_assets_ratio_trend"
       },
       "id": "TS_022"
     },
@@ -1336,7 +2223,8 @@
         "type": "summary_table",
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities"
-        ]
+        ],
+        "template_id": "operating_cf_volatility_sector"
       },
       "id": "TS_023"
     },
@@ -1356,7 +2244,8 @@
         "metrics": [
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "cross_sector_gross_margin_spread"
       },
       "id": "TS_024"
     },
@@ -1372,7 +2261,8 @@
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities",
           "PaymentsToAcquirePropertyPlantAndEquipment"
-        ]
+        ],
+        "template_id": "healthcare_cfo_to_capex_ratio_trend"
       },
       "id": "TS_025"
     },
@@ -1389,7 +2279,8 @@
           "OperatingIncomeLoss",
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "cloud_margin_pre_post_covid"
       },
       "id": "TS_026"
     },
@@ -1405,7 +2296,8 @@
         "metrics": [
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "pc_maker_gross_margin_lockdown_compare"
       },
       "id": "TS_027"
     },
@@ -1421,7 +2313,8 @@
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities",
           "PaymentsToAcquirePropertyPlantAndEquipment"
-        ]
+        ],
+        "template_id": "energy_fcf_pre_post_covid"
       },
       "id": "TS_028"
     },
@@ -1440,7 +2333,8 @@
           "CashAndCashEquivalentsAtCarryingValue",
           "OperatingIncomeLoss",
           "DepreciationAndAmortization"
-        ]
+        ],
+        "template_id": "airlines_net_debt_to_ebitda_recovery"
       },
       "id": "TS_029"
     },
@@ -1459,7 +2353,8 @@
           "AccountsPayableCurrent",
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "omnichannel_cash_conversion_cycle_segments"
       },
       "id": "TS_030"
     },
@@ -1475,7 +2370,8 @@
         "metrics": [
           "StockholdersEquity",
           "Assets"
-        ]
+        ],
+        "template_id": "bank_equity_to_assets_pre_post"
       },
       "id": "TS_031"
     },
@@ -1491,7 +2387,8 @@
         "metrics": [
           "CashAndCashEquivalentsAtCarryingValue",
           "Assets"
-        ]
+        ],
+        "template_id": "healthcare_cash_to_assets_buffer"
       },
       "id": "TS_032"
     },
@@ -1507,7 +2404,8 @@
         "metrics": [
           "NetIncomeLoss",
           "StockholdersEquity"
-        ]
+        ],
+        "template_id": "semiconductor_roe_momentum"
       },
       "id": "TS_033"
     },
@@ -1523,7 +2421,8 @@
         "metrics": [
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "staples_margin_inflation_spread"
       },
       "id": "TS_034"
     },
@@ -1539,7 +2438,8 @@
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities",
           "PaymentsToAcquirePropertyPlantAndEquipment"
-        ]
+        ],
+        "template_id": "cross_sector_cfo_to_capex_ratio_shift"
       },
       "id": "TS_035"
     },
@@ -1556,7 +2456,8 @@
           "Revenues",
           "InventoryNet",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "retail_revenue_growth_inventory_turnover_compare"
       },
       "id": "TS_036"
     },
@@ -1573,7 +2474,8 @@
           "OperatingIncomeLoss",
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "specialty_retail_operating_margin_recovery"
       },
       "id": "TS_037"
     },
@@ -1588,7 +2490,8 @@
         "type": "multi_series",
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities"
-        ]
+        ],
+        "template_id": "parcel_cfo_recovery_timeline"
       },
       "id": "TS_038"
     },
@@ -1604,7 +2507,8 @@
         "metrics": [
           "OperatingIncomeLoss",
           "InterestExpense"
-        ]
+        ],
+        "template_id": "airline_interest_coverage_rebuild"
       },
       "id": "TS_039"
     },
@@ -1620,7 +2524,8 @@
         "metrics": [
           "Revenues",
           "CostOfRevenue"
-        ]
+        ],
+        "template_id": "trucking_gross_margin_normalization"
       },
       "id": "TS_040"
     },
@@ -1636,7 +2541,8 @@
         "metrics": [
           "NetCashProvidedByUsedInOperatingActivities",
           "NetIncomeLoss"
-        ]
+        ],
+        "template_id": "healthcare_cfo_vs_net_income_quality"
       },
       "id": "TS_041"
     },
@@ -1652,7 +2558,8 @@
         "metrics": [
           "PaymentsToAcquirePropertyPlantAndEquipment",
           "NetCashProvidedByUsedInOperatingActivities"
-        ]
+        ],
+        "template_id": "vaccine_capex_intensity_window"
       },
       "id": "TS_042"
     },
@@ -1668,7 +2575,8 @@
         "metrics": [
           "CashAndCashEquivalentsAtCarryingValue",
           "Assets"
-        ]
+        ],
+        "template_id": "biotech_cash_to_assets_liquidity"
       },
       "id": "TS_043"
     },
@@ -1684,7 +2592,8 @@
         "metrics": [
           "NetIncomeLoss",
           "StockholdersEquity"
-        ]
+        ],
+        "template_id": "bank_roe_band_monitor"
       },
       "id": "TS_044"
     },
@@ -1699,7 +2608,8 @@
         "type": "line_chart",
         "metrics": [
           "ProvisionForLoanLosses"
-        ]
+        ],
+        "template_id": "bank_loan_loss_provision_trend"
       },
       "id": "TS_045"
     },
@@ -1716,7 +2626,8 @@
           "InterestIncome",
           "InterestExpense",
           "InterestIncomeExpenseNet"
-        ]
+        ],
+        "template_id": "regional_bank_net_interest_income_shift"
       },
       "id": "TS_046"
     }

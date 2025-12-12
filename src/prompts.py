@@ -619,12 +619,13 @@ def get_sql_custom_generation_prompt(
         1. Produce read-only SQL (SELECT statements only).
         2. Join numeric facts through SUB (num.adsh = sub.adsh) before linking to COMPANIES.
         3. Prefer latest 10-K/10-Q filings (form in ('10-K','10-K/A','10-Q','10-Q/A')) unless a specific period is specified.
-        4. Use canonical tag names from the schema (e.g., Revenues, NetIncomeLoss, Assets).
-        5. Filter out segmented data unless dimensions are explicitly requested (`num.segments IS NULL OR TRIM(num.segments) = ''`).
-        6. CIKs are zero-padded 10-character strings; use companies.cik or sub.cik rather than num.cik (which does not exist).
-        7. Alias columns with business-friendly names and keep result sets compact (LIMIT when appropriate).
-        8. Never invent tables or columns not present in the schema description.
-        9. Return the SQL inside a ```sql code block followed by a brief explanation paragraph.
+        4. Use canonical tag names from the schema with proper casing (e.g., Revenues, NetIncomeLoss, Assets, AssetsCurrent, LiabilitiesCurrent). Never use lowercase versions like 'assetscurrent' or 'liabilitiescurrent'.
+        5. When computing ratios (ROE, equity-to-assets, interest coverage, etc.), use the numerator/denominator tags indicated in the hints and guard against division by zero.
+        6. Filter out segmented data unless dimensions are explicitly requested (`num.segments IS NULL OR TRIM(num.segments) = ''`).
+        7. CIKs are zero-padded 10-character strings; use companies.cik or sub.cik rather than num.cik (which does not exist).
+        8. Alias columns with business-friendly names and keep result sets compact (LIMIT when appropriate).
+        9. Never invent tables or columns not present in the schema description.
+        10. Return the SQL inside a ```sql code block followed by a brief explanation paragraph.
         """
     ).strip()
 
@@ -813,15 +814,19 @@ def get_answer_formatter_prompt(
         {result_json}
 
         REQUIREMENTS
-        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the FY time frame (FY2020-FY2023). Make it read like an analyst note, not a raw data recap.
+        1. Narrative: open with 2-3 sentences that explain the trend, name the standout companies, and reference the timeframe actually asked (e.g., FY2020–FY2023 or just FY2023 if that was the ask). Make it read like an analyst note, not a raw data recap.
         2. Highlights: produce 2-3 short, insight-focused bullets when data is available (leaders vs laggards, biggest deltas, noteworthy growth). Use [] ONLY when the dataset is empty.
-        3. Table: echo the most helpful columns if data exists.
+        3. Table: include only when helpful; match the grain implied by the question and columns.
+           - Multi-year asks → show per-year columns (not just start/end).
+           - Single-year asks → use quarters/months if present, otherwise the key single-period columns.
+           - If monthly is requested and available, show months; if quarterly, show quarters.
+           - Keep columns concise and ordered by time ascending; include deltas when present in DATA.
            {{
              "columns": [...],
              "rows": [{{"col1": "value"}}],
              "truncated": true/false
            }}
-           Set table to null if no data or if narrative already covers everything.
+           Set table to null only when the question is a simple lookup or when DATA is empty.
         4. Warnings: note truncation, sparse data, or assumptions (use [] if none).
         5. DO NOT hallucinate metrics. Cite only from DATA. If DATA is empty, explain that.
         6. Output MUST be minified JSON matching:

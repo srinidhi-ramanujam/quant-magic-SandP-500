@@ -2,6 +2,8 @@
 Execute representative SQL templates against DuckDB to ensure they are schema-compatible.
 """
 
+from typing import Dict
+
 import pandas as pd
 import pytest
 
@@ -59,10 +61,406 @@ TEMPLATE_CASES = {
         "min_net_income": "500000000",
         "max_ratio": "3",
     },
+    "top_tech_cfo_trend": {
+        "sector": "Information Technology",
+        "ranking_year": "2023",
+        "min_revenue": "10000000000",
+        "top_n": "10",
+        "start_year": "2022",
+        "end_year": "2024",
+        "start_period": "2021-09-01",
+        "end_period": "2024-12-31",
+        "min_quarters": "6",
+        "max_abs_cfo": "400000000000",
+        "value_scale": "1000000000.0",
+        "result_limit": "500",
+    },
+    "hardware_gross_margin_trend": {
+        "company_values": "('APPLE INC'),('DELL TECHNOLOGIES INC.'),('HP INC')",
+        "quarter_count": "8",
+        "min_period": "2022-01-01",
+    },
+    "ebitda_margin_improvement_rank": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2024",
+        "min_revenue": "2000000000",
+        "min_improvement_pp": "5",
+        "limit": "10",
+    },
+    "fcf_to_capex_trend": {
+        "sector": "Health Care",
+        "start_year": "2019",
+        "year_2": "2020",
+        "year_3": "2021",
+        "year_4": "2022",
+        "year_5": "2023",
+        "end_year": "2024",
+        "min_years": "5",
+        "min_cfo": "400000000",
+        "min_capex_abs": "200000000",
+        "max_fcf_retention": "1.2",
+        "min_fcf_retention": "-1.0",
+        "max_capex_intensity": "1.2",
+        "limit": "5",
+    },
+    "cash_to_assets_ratio_trend": {
+        "company_values": "('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')",
+        "use_sector_filter": "0",
+        "sector": "ALL",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": "4",
+    },
+    "shareholder_return_trend": {
+        "sector": "Information Technology",
+        "start_year": "2020",
+        "year_2": "2021",
+        "year_3": "2022",
+        "end_year": "2023",
+        "min_years": "4",
+        "min_total_return": "2000000000",
+        "min_cfo": "5000000000",
+        "max_payout_ratio": "4",
+        "limit": "8",
+    },
+    "semiconductor_roe_trend": {
+        "company_values": "('NVIDIA CORP'),('ADVANCED MICRO DEVICES INC'),('INTEL CORP'),('TEXAS INSTRUMENTS INC')",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": "6",
+        "max_abs_roe": "200",
+        "result_limit": "200",
+    },
+    "net_debt_to_ebitda_trend": {
+        "company_values": "('APPLE INC'),('MICROSOFT CORP')",
+        "start_year": "2020",
+        "end_year": "2023",
+        "use_sector_filter": "0",
+        "sector": "ALL",
+        "min_ebitda": "100000000",
+        "limit": "5",
+    },
+    "debt_reduction_progression": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2023",
+        "min_reduction": "0",
+        "limit": "5",
+    },
+    "profit_margin_consistency_trend": {
+        "sector": "Information Technology",
+        "start_year": "2019",
+        "end_year": "2023",
+        "limit": "5",
+    },
+    "operating_margin_rebound_sector": {
+        "sector": "Information Technology",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2022",
+        "post_end_year": "2024",
+        "min_revenue": "1000000000",
+        "min_improvement_pp": "1",
+        "limit": "5",
+    },
+    "capital_allocation_spike_screen": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2024",
+        "acquisition_threshold": "500000000",
+        "capex_to_revenue_threshold": "0.05",
+        "limit": "5",
+    },
+    "leverage_coverage_comparison": {
+        "sector_a": "Utilities",
+        "sector_b": "Energy",
+        "fiscal_year": "2023",
+        "min_revenue": "1000000000",
+        "min_interest_coverage": "0",
+        "max_debt_to_equity": "10",
+        "limit": "5",
+    },
+    "fcf_quality_screen": {
+        "sector": "Information Technology",
+        "start_year": "2020",
+        "end_year": "2024",
+        "min_years": "2",
+        "min_net_income": "100000000",
+        "min_cfo": "100000000",
+        "max_ratio": "5",
+        "limit": "5",
+    },
+    "payout_ratio_leaderboard": {
+        "sector": "Information Technology",
+        "start_year": "2021",
+        "end_year": "2024",
+        "min_cfo": "1000000000",
+        "max_payout_ratio": "5",
+        "limit": "5",
+    },
+    "gross_margin_sector_spread": {
+        "sector_a": "Information Technology",
+        "sector_b": "Health Care",
+        "start_year": "2019",
+        "end_year": "2024",
+    },
+    "working_capital_efficiency_compare": {
+        "sector_a": "Information Technology",
+        "sector_b": "Industrials",
+        "start_year": "2020",
+        "end_year": "2024",
+    },
+    "capex_intensity_rank": {
+        "sector": "Information Technology",
+        "start_year": "2020",
+        "end_year": "2024",
+        "min_revenue": "1000000000",
+        "sic_filter_enabled": "0",
+        "sic_min": "0",
+        "sic_max": "9999",
+        "limit": "5",
+    },
+    "growth_profitability_quadrant": {
+        "sector": "Information Technology",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_revenue": "10000000000",
+        "growth_threshold_pct": "5",
+        "margin_threshold_pct": "5",
+        "limit": "5",
+    },
+    "energy_roe_threshold_detector": {
+        "sector": "Energy",
+        "start_year": "2020",
+        "end_year": "2024",
+        "min_consecutive_years": "3",
+        "min_years_reported": "3",
+        "roe_threshold": "15",
+        "min_equity": "100000000",
+        "max_roe_pct": "150",
+        "limit": "5",
+    },
+    "bank_roe_consecutive_threshold": {
+        "company_values": "('JPMORGANCHASECO'),('BANKOFAMERICA'),('CITIGROUPINC'),('WELLSFARGO&CO')",
+        "use_sector_filter": "0",
+        "sector": "ALL",
+        "start_year": "2020",
+        "end_year": "2024",
+        "min_consecutive_years": "3",
+        "min_years_reported": "3",
+        "roe_threshold": "12",
+        "min_equity": "100000000",
+        "max_roe_pct": "200",
+        "limit": "5",
+    },
+    "cross_sector_gross_margin_spread": {
+        "sector_a": "Consumer Staples",
+        "sector_b": "Consumer Discretionary",
+        "start_year": "2019",
+        "end_year": "2023",
+        "limit": "5",
+    },
+    "healthcare_cfo_to_capex_ratio_trend": {
+        "sector": "Health Care",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_capex_abs": "200000000",
+        "min_cfo": "400000000",
+        "min_years": "3",
+        "limit": "5",
+    },
+    "cloud_margin_pre_post_covid": {
+        "company_values": "('MICROSOFT CORP'),('ADOBE INC.'),('SALESFORCE, INC.')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2022",
+        "min_revenue": "1000000000",
+        "limit": "5",
+    },
+    "pc_maker_gross_margin_lockdown_compare": {
+        "company_values": "('APPLE INC'),('DELL TECHNOLOGIES INC.'),('HP INC')",
+        "pre_start_period": "2018-01-01",
+        "pre_end_period": "2019-12-31",
+        "lockdown_start_period": "2020-01-01",
+        "lockdown_end_period": "2021-12-31",
+        "min_quarters": "4",
+        "limit": "5",
+    },
+    "energy_fcf_pre_post_covid": {
+        "company_values": "('EXXON MOBIL CORP'),('CHEVRON CORP'),('CONOCOPHILLIPS')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2022",
+        "min_revenue": "10000000000",
+        "limit": "5",
+    },
+    "airlines_net_debt_to_ebitda_recovery": {
+        "company_values": "('DELTA AIR LINES INC'),('UNITED AIRLINES HOLDINGS, INC.'),('AMERICAN AIRLINES GROUP INC'),('SOUTHWEST AIRLINES CO')",
+        "start_year": "2018",
+        "end_year": "2023",
+        "baseline_year": "2019",
+        "spike_year": "2020",
+        "recovery_year": "2023",
+        "min_ebitda": "10000000",
+        "limit": "5",
+    },
+    "omnichannel_cash_conversion_cycle_segments": {
+        "company_values": "('WALMART INC'),('TARGET CORP'),('COSTCO WHOLESALE CORP')",
+        "start_year": "2018",
+        "end_year": "2023",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "lockdown_start_year": "2020",
+        "lockdown_end_year": "2021",
+        "recovery_start_year": "2022",
+        "recovery_end_year": "2023",
+        "min_periods_per_bucket": "2",
+    },
+    "bank_equity_to_assets_pre_post": {
+        "company_values": "('JPMORGAN CHASE & CO.'),('BANK OF AMERICA CORPORATION'),('CITIGROUP INC'),('WELLS FARGO & COMPANY')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2023",
+        "min_equity": "100000000",
+        "limit": "5",
+    },
+    "healthcare_cash_to_assets_buffer": {
+        "company_values": "('PFIZER INC'),('MODERNA, INC.'),('JOHNSON & JOHNSON')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "scaleup_start_year": "2020",
+        "scaleup_end_year": "2021",
+        "limit": "5",
+    },
+    "semiconductor_roe_momentum": {
+        "company_values": "('NVIDIA CORP'),('ADVANCED MICRO DEVICES INC'),('INTEL CORP'),('TEXAS INSTRUMENTS INC')",
+        "baseline_start_year": "2018",
+        "baseline_end_year": "2019",
+        "boom_start_year": "2021",
+        "boom_end_year": "2023",
+        "max_abs_roe_pct": "200",
+        "limit": "5",
+    },
+    "staples_margin_inflation_spread": {
+        "sector": "Consumer Staples",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "inflation_start_year": "2022",
+        "inflation_end_year": "2022",
+        "limit": "5",
+    },
+    "cross_sector_cfo_to_capex_ratio_shift": {
+        "sector_a": "Information Technology",
+        "sector_b": "Energy",
+        "sector_c": "Industrials",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2023",
+        "min_capex_abs": "200000000",
+        "min_cfo": "400000000",
+        "limit": "5",
+    },
+    "retail_revenue_growth_inventory_turnover_compare": {
+        "company_values": "('WALMART INC'),('TARGET CORP'),('COSTCO WHOLESALE CORP')",
+        "start_year": "2018",
+        "end_year": "2023",
+        "min_years": "3",
+        "limit": "5",
+    },
+    "specialty_retail_operating_margin_recovery": {
+        "company_values": "('HOME DEPOT INC'),('LOWE''S COMPANIES INC'),('BEST BUY CO INC')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2023",
+        "min_revenue": "500000000",
+        "limit": "5",
+    },
+    "parcel_cfo_recovery_timeline": {
+        "company_values": "('UNITED PARCEL SERVICE INC'),('FEDEX CORP'),('XPO INC')",
+        "start_year": "2018",
+        "end_year": "2023",
+        "baseline_year": "2019",
+        "recovery_year_1": "2021",
+        "recovery_year_2": "2023",
+        "min_revenue": "1000000000",
+        "limit": "5",
+    },
+    "airline_interest_coverage_rebuild": {
+        "company_values": "('DELTA AIR LINES INC'),('UNITED AIRLINES HOLDINGS, INC.'),('AMERICAN AIRLINES GROUP INC'),('SOUTHWEST AIRLINES CO')",
+        "start_year": "2018",
+        "end_year": "2023",
+        "baseline_start_year": "2018",
+        "baseline_end_year": "2019",
+        "rebuild_start_year": "2021",
+        "rebuild_end_year": "2023",
+        "limit": "5",
+    },
+    "trucking_gross_margin_normalization": {
+        "company_values": "('J.B. HUNT TRANSPORT SERVICES, INC.'),('OLD DOMINION FREIGHT LINE, INC.'),('KNIGHT-SWIFT TRANSPORTATION HOLDINGS INC.')",
+        "spike_start_year": "2021",
+        "spike_end_year": "2021",
+        "normalization_start_year": "2023",
+        "normalization_end_year": "2023",
+        "limit": "5",
+    },
+    "healthcare_cfo_vs_net_income_quality": {
+        "company_values": "('UNITEDHEALTH GROUP INC'),('HCA HEALTHCARE, INC.'),('MEDTRONIC PLC'),('ABBOTT LABORATORIES')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "post_start_year": "2021",
+        "post_end_year": "2023",
+        "limit": "5",
+    },
+    "vaccine_capex_intensity_window": {
+        "company_values": "('PFIZER INC'),('MODERNA, INC.'),('JOHNSON & JOHNSON')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "vaccine_start_year": "2020",
+        "vaccine_end_year": "2022",
+        "limit": "5",
+    },
+    "biotech_cash_to_assets_liquidity": {
+        "company_values": "('AMGEN INC'),('GILEAD SCIENCES, INC.'),('BIOGEN INC')",
+        "pre_start_year": "2018",
+        "pre_end_year": "2019",
+        "build_start_year": "2020",
+        "build_end_year": "2021",
+        "limit": "5",
+    },
+    "bank_roe_band_monitor": {
+        "company_values": "('JPMORGAN CHASE & CO.'),('BANK OF AMERICA CORPORATION'),('CITIGROUP INC'),('WELLS FARGO & COMPANY')",
+        "baseline_start_year": "2018",
+        "baseline_end_year": "2019",
+        "band_start_year": "2020",
+        "band_end_year": "2021",
+        "revert_year": "2023",
+        "band_bps": "200",
+        "limit": "5",
+    },
+    "bank_loan_loss_provision_trend": {
+        "company_values": "('JPMORGAN CHASE & CO.'),('BANK OF AMERICA CORPORATION'),('CITIGROUP INC'),('WELLS FARGO & COMPANY')",
+        "start_period": "2018-01-01",
+        "end_period": "2023-12-31",
+        "limit": "5",
+    },
+    "regional_bank_net_interest_income_shift": {
+        "company_values": "('PNC FINANCIAL SERVICES GROUP, INC.'),('TRUIST FINANCIAL CORPORATION'),('U.S. BANCORP')",
+        "pre_start_year": "2020",
+        "pre_end_year": "2021",
+        "hike_start_year": "2022",
+        "hike_end_year": "2023",
+        "limit": "5",
+    },
 }
 
 
-def render_template(template_id: str, params: dict[str, str]) -> str:
+def render_template(template_id: str, params: Dict[str, str]) -> str:
     sql = TEMPLATE_DF.loc[template_id, "sql_template"]
     for key, value in params.items():
         sql = sql.replace(f"{{{key}}}", value)
@@ -87,3 +485,43 @@ def test_template_executes_without_error(template_id, params, query_engine):
     sql = render_template(template_id, params)
     result = query_engine.execute(sql)
     assert result is not None
+
+
+def test_cash_to_assets_ratio_trend_parameter_substitution():
+    """Test that cash_to_assets_ratio_trend template handles mixed parameter types correctly."""
+    from src.sql_generator import SQLGenerator
+    from src.intelligence_loader import IntelligenceLoader
+
+    # Create a generator with a mock template that includes the cash_to_assets_ratio_trend
+    loader = IntelligenceLoader()
+    generator = SQLGenerator(loader)
+
+    # Test parameters that include non-string values to simulate the bug scenario
+    test_params = {
+        "company_values": "('PFIZER INC'),('JOHNSON & JOHNSON'),('AMGEN INC')",
+        "use_sector_filter": 0,  # This is an int, not a string
+        "sector": "Health Care",
+        "start_year": "2019",
+        "end_year": "2024",
+        "min_years": 4,  # This is an int, not a string
+    }
+
+    # Get the template
+    template = loader.get_template_by_id("cash_to_assets_ratio_trend")
+    assert template is not None
+
+    # This should not raise a "replace() argument 2 must be str, not bool/int" error
+    try:
+        sql = template.sql_template
+        for param_name, param_value in test_params.items():
+            placeholder = f"{{{param_name}}}"
+            if placeholder in sql:
+                sql = sql.replace(placeholder, str(param_value))
+
+        # Verify the SQL contains the substituted values
+        assert "0" in sql  # use_sector_filter should be "0"
+        assert "4" in sql  # min_years should be "4"
+        assert "('PFIZER INC'),('JOHNSON & JOHNSON'),('AMGEN INC')" in sql
+
+    except Exception as e:
+        pytest.fail(f"Parameter substitution failed with error: {e}")

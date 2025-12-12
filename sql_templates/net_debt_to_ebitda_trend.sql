@@ -1,12 +1,32 @@
 WITH provided_companies AS (
-    SELECT *
+    SELECT
+        TRIM(company_name) AS provided_name,
+        REGEXP_REPLACE(UPPER(TRIM(company_name)), '[^A-Z0-9]', '', 'g') AS canonical_name
     FROM (VALUES {company_values}) AS t(company_name)
 ),
 company_dim AS (
-    SELECT DISTINCT c.cik, pc.company_name AS display_name
+    SELECT DISTINCT
+        c.cik,
+        pc.provided_name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name
     FROM companies c
     JOIN provided_companies pc
-      ON UPPER(c.name) = UPPER(pc.company_name)
+      ON REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') = pc.canonical_name
+      OR UPPER(c.name) LIKE '%' || UPPER(pc.provided_name) || '%'
+),
+sector_companies AS (
+    SELECT
+        c.cik,
+        c.name AS display_name,
+        REGEXP_REPLACE(UPPER(TRIM(c.name)), '[^A-Z0-9]', '', 'g') AS canonical_name
+    FROM companies c
+    WHERE {use_sector_filter} = 1
+      AND (UPPER('{sector}') = 'ALL' OR LOWER(c.gics_sector) LIKE LOWER('%{sector}%'))
+),
+cohort AS (
+    SELECT DISTINCT cik, display_name, canonical_name FROM company_dim
+    UNION
+    SELECT DISTINCT cik, display_name, canonical_name FROM sector_companies
 ),
 ranked_filings AS (
     SELECT
@@ -17,7 +37,7 @@ ranked_filings AS (
         s.filed,
         ROW_NUMBER() OVER (PARTITION BY s.cik, s.fy ORDER BY s.filed DESC) AS rn
     FROM sub s
-    JOIN company_dim cd USING (cik)
+    JOIN cohort cd USING (cik)
     WHERE s.form IN ('10-K','10-K/A')
       AND s.fy BETWEEN {start_year} AND {end_year}
 ),
@@ -61,7 +81,6 @@ annual_values AS (
         'OperatingIncomeLoss','IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest',
         'DepreciationDepletionAndAmortization','DepreciationAndAmortization','DepreciationAmortizationAndAccretionNet'
     )
-      AND COALESCE(TRIM(n.segments),'') = ''
       AND COALESCE(TRIM(n.coreg),'') = ''
     GROUP BY lf.cik, lf.fiscal_year
 ),
@@ -78,12 +97,12 @@ metrics AS (
         CASE
             WHEN operating_income IS NULL OR depreciation IS NULL THEN NULL
             WHEN (operating_income + COALESCE(depreciation, 0)) <= 0 THEN NULL
-            WHEN ABS(operating_income + COALESCE(depreciation, 0)) < 100000000 THEN NULL
+            WHEN (operating_income + COALESCE(depreciation, 0)) < {min_ebitda} THEN NULL
             ELSE (COALESCE(long_term_debt, 0) + COALESCE(short_term_debt, 0) - COALESCE(cash, 0)) /
                  (operating_income + COALESCE(depreciation, 0))
         END AS net_debt_to_ebitda
     FROM annual_values av
-    JOIN company_dim cd USING (cik)
+    JOIN cohort cd USING (cik)
 )
 SELECT
     company,
@@ -92,4 +111,6 @@ SELECT
     ROUND(ebitda / 1000000000.0, 2) AS ebitda_billions,
     ROUND(net_debt_to_ebitda, 2) AS net_debt_to_ebitda
 FROM metrics
-ORDER BY company, fiscal_year;
+WHERE net_debt_to_ebitda IS NOT NULL
+ORDER BY net_debt_to_ebitda ASC, company, fiscal_year
+LIMIT {limit};

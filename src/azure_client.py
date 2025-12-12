@@ -496,27 +496,114 @@ Please provide:
             str: Extracted text content
         """
         try:
+
+            def _extract_text_candidate(obj: Any) -> Optional[str]:
+                if obj is None:
+                    return None
+                if isinstance(obj, str):
+                    value = obj.strip()
+                    return value or None
+                if isinstance(obj, dict):
+                    for key in ("value", "text", "content", "output_text"):
+                        if key in obj:
+                            candidate = _extract_text_candidate(obj[key])
+                            if candidate:
+                                return candidate
+                    return None
+                if isinstance(obj, (list, tuple)):
+                    parts = [_extract_text_candidate(item) for item in obj]
+                    parts = [part for part in parts if part]
+                    if parts:
+                        return "\n".join(parts)
+                    return None
+                if hasattr(obj, "value"):
+                    candidate = _extract_text_candidate(getattr(obj, "value"))
+                    if candidate:
+                        return candidate
+                if hasattr(obj, "text"):
+                    candidate = _extract_text_candidate(getattr(obj, "text"))
+                    if candidate:
+                        return candidate
+                if hasattr(obj, "content"):
+                    candidate = _extract_text_candidate(getattr(obj, "content"))
+                    if candidate:
+                        return candidate
+                return None
+
+            def _extract_from_output(output_obj: Any) -> Optional[str]:
+                if not output_obj:
+                    return None
+
+                if isinstance(output_obj, dict):
+                    return _extract_text_candidate(output_obj.get("content"))
+
+                if isinstance(output_obj, (list, tuple)):
+                    for entry in output_obj:
+                        entry_type = getattr(entry, "type", None)
+                        # Skip explicit reasoning blocks – they do not contain the JSON payload.
+                        if entry_type == "reasoning":
+                            continue
+
+                        if isinstance(entry, dict):
+                            content_items = entry.get("content")
+                        else:
+                            content_items = getattr(entry, "content", entry)
+
+                        candidate = _extract_text_candidate(content_items)
+                        if candidate:
+                            return candidate
+                    return None
+
+                # Pydantic response objects expose `.content`; fall back to generic recursion.
+                if hasattr(output_obj, "content"):
+                    return _extract_text_candidate(getattr(output_obj, "content"))
+
+                return _extract_text_candidate(output_obj)
+
+            incomplete_details = getattr(response, "incomplete_details", None)
+            if incomplete_details:
+                reason = getattr(incomplete_details, "reason", None)
+                logger.warning(
+                    "Azure OpenAI response marked incomplete (reason=%s)", reason
+                )
+
             # Method 1: output_text attribute (simplest)
             if hasattr(response, "output_text"):
-                return response.output_text
+                text = response.output_text
+                if text:
+                    return text
 
             # Method 2: Structured output parsing (GPT-5 format)
             if hasattr(response, "output"):
-                output = response.output
-                if isinstance(output, list) and len(output) > 0:
-                    content_items = output[0].get("content", [])
-                    for item in content_items:
-                        if item.get("type") == "text":
-                            text_value = item.get("text", {}).get("value", "")
-                            if text_value:
-                                return text_value
+                extracted = _extract_from_output(getattr(response, "output"))
+                if extracted:
+                    return extracted
+
+            # Method 3: model_dump (Responses API objects are Pydantic models)
+            if hasattr(response, "model_dump"):
+                try:
+                    payload = response.model_dump()
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("model_dump unavailable on response: %s", exc)
+                else:
+                    extracted = _extract_from_output(payload.get("output"))
+                    if extracted:
+                        return extracted
 
             # Fallback: convert to string
-            return str(response)
+            fallback = str(response)
+            if not fallback:
+                logger.warning(
+                    "Azure OpenAI response had no textual content: %s", response
+                )
+            return fallback
 
         except Exception as e:
             logger.error(f"Error parsing API response: {e}")
-            return ""
+            try:
+                return str(response)
+            except Exception:  # noqa: BLE001
+                return ""
 
     def _extract_sql_and_explanation(self, content: str) -> Tuple[Optional[str], str]:
         """

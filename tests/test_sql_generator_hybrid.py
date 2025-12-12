@@ -658,3 +658,91 @@ def test_parameter_mapping_incomplete(
         # System should try to construct 'period' parameter
         # (Will be tested after implementation)
         pass
+
+
+def test_sector_mismatch_rejects_fast_path(sql_generator, request_context):
+    """Templates tied to Technology should not answer Healthcare questions."""
+    question = "Which Healthcare companies improved current ratios the most since 2019?"
+    sql_generator.template_retriever = None
+    sql_generator.use_llm = False
+    sql_generator.azure_client = None
+
+    tech_template = sql_generator.intelligence.get_template_by_id("top_tech_cfo_trend")
+    assert tech_template is not None, "Expected technology template to be available"
+
+    healthcare_entities = ExtractedEntities(
+        companies=[],
+        metrics=["current_ratio"],
+        sectors=["Health Care"],
+        time_periods=["2019", "2023"],
+        question_type="trend",
+        confidence=0.7,
+    )
+
+    with patch.object(sql_generator.intelligence, "match_pattern") as mock_match:
+        mock_match.return_value = IntelligenceMatch(
+            template=tech_template,
+            match_confidence=0.85,
+            matched_parameters={"sector": "Information Technology"},
+            fallback_to_llm=False,
+        )
+
+        result = sql_generator.generate(healthcare_entities, question, request_context)
+
+    assert result is None
+    assert request_context.metadata.get("template_selection_method") != "fast_path"
+    rejection = request_context.metadata.get("template_rejection")
+    assert rejection and "top_tech_cfo_trend" in rejection
+
+
+def test_llm_candidates_filtered_by_sector(sql_generator_with_llm, request_context):
+    """Ensure incompatible templates are removed before LLM selection."""
+    question = (
+        "Which Healthcare companies improved cash flow coverage relative to net income?"
+    )
+    sql_generator_with_llm.template_retriever = None
+
+    tech_template = sql_generator_with_llm.intelligence.get_template_by_id(
+        "top_tech_cfo_trend"
+    )
+    health_template = sql_generator_with_llm.intelligence.get_template_by_id(
+        "cfo_to_net_income_trend"
+    )
+
+    assert tech_template is not None
+    assert health_template is not None
+
+    healthcare_entities = ExtractedEntities(
+        companies=[],
+        metrics=["Cash"],
+        sectors=["Health Care"],
+        time_periods=["2019", "2024"],
+        question_type="trend",
+        confidence=0.7,
+    )
+
+    with patch.object(
+        sql_generator_with_llm.intelligence, "match_pattern"
+    ) as mock_match, patch.object(
+        sql_generator_with_llm.intelligence, "get_all_templates"
+    ) as mock_get_all, patch.object(
+        sql_generator_with_llm, "_select_template_with_llm"
+    ) as mock_select, patch.object(
+        sql_generator_with_llm, "_generate_custom_sql", return_value=None
+    ):
+        mock_match.return_value = IntelligenceMatch(
+            template=None,
+            match_confidence=0.0,
+            matched_parameters={},
+            fallback_to_llm=True,
+        )
+        mock_get_all.return_value = [tech_template, health_template]
+        mock_select.return_value = None
+
+        sql_generator_with_llm.generate(healthcare_entities, question, request_context)
+
+        candidate_templates = mock_select.call_args[0][2]
+        candidate_ids = {template.template_id for template in candidate_templates}
+
+        assert "top_tech_cfo_trend" not in candidate_ids
+        assert "cfo_to_net_income_trend" in candidate_ids

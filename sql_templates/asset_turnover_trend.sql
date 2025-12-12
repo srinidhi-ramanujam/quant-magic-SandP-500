@@ -6,7 +6,9 @@ WITH sector_companies AS (
         {sic_filter_enabled} = 0
         OR (
             sic IS NOT NULL
-            AND CAST(sic AS INTEGER) BETWEEN {sic_min} AND {sic_max}
+            AND CAST(sic AS INTEGER) BETWEEN
+                CAST(COALESCE(NULLIF('{sic_min}', 'None'), '0') AS INTEGER)
+                AND CAST(COALESCE(NULLIF('{sic_max}', 'None'), '9999') AS INTEGER)
         )
       )
 ),
